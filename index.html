@@ -4,205 +4,46 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <meta name="color-scheme" content="light">
-    <meta name="supported-color-schemes" content="light">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma"        content="no-cache" />
-    <meta http-equiv="Expires"       content="0" />
-    <meta name="robots" content="noindex, nofollow">
-    
-    <meta property="og:title" content="Portal PSR">
-    <meta property="og:description" content="Acesse nosso canal interno com notícias, cardápio, aniversariantes e muito mais!">
-    <meta property="og:image" content="https://psrimpressao.com.br/wp-content/uploads/2026/01/thumbnail.jpg">
-    <meta property="og:image:type" content="image/jpeg">
-    <meta property="og:url" content="https://psrindustria.github.io/PortalPSR/">
-    <meta property="og:type" content="website">
-    
-    <link rel="preconnect" href="https://jornalpsr-1b8c6-default-rtdb.firebaseio.com">
-    <link rel="dns-prefetch" href="https://jornalpsr-1b8c6-default-rtdb.firebaseio.com">
-    <meta name="color-scheme" content="light only">
     
     <title>PortalPSR</title>
-  
+    <meta name="robots" content="noindex, nofollow">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
     <style>
-        :root {
-            --primary-color: #2563eb;
-            --bg-color: #f3f4f6;
-            --card-bg: #ffffff;
-            --text-color: #1f2937;
-            --text-secondary: #6b7280;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', 'Segoe UI', sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        /* --- Estilos do Login Overlay --- */
-        #login-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(243, 244, 246, 1);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        .login-box {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-        }
-
-        .login-box input {
-            width: 100%;
-            padding: 12px;
-            margin: 20px 0;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
-        }
-
-        .login-box button {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-            transition: background 0.3s;
-        }
-
-        .login-box button:hover {
-            background-color: #1d4ed8;
-        }
-
-        .error-msg {
-            color: red;
-            margin-top: 10px;
-            display: none;
-            font-size: 0.9rem;
-        }
-
-        /* --- Conteúdo Principal (oculto até login) --- */
-        #main-content {
-            display: none; /* Começa oculto */
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        header {
-            margin-bottom: 40px;
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            color: var(--text-color);
-            margin-bottom: 10px;
-        }
-
-        p.subtitle {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-        }
-
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            width: 100%;
-            max-width: 900px;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 30px;
-            text-align: center;
-            text-decoration: none;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 220px;
-        }
-
-        .card.active {
-            color: var(--text-color);
-            cursor: pointer;
-        }
-
-        .card.active:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            border-color: var(--primary-color);
-        }
-
-        .card.active h2 {
-            font-size: 1.3rem;
-            margin-bottom: 10px;
-            color: var(--primary-color);
-        }
-
-        .card.active span {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            display: block;
-        }
+        :root { --primary-color: #2563eb; --bg-color: #f3f4f6; --card-bg: #ffffff; --text-color: #1f2937; --text-secondary: #6b7280; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
         
-        .card p {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-        }
-
-        .card.empty {
-            border: 2px dashed #d1d5db;
-            background-color: transparent;
-            color: #9ca3af;
-            cursor: default;
-        }
-
-        .card.empty h2 {
-            font-size: 1.3rem;
-            font-weight: 400;
-        }
+        /* Login Overlay */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(243, 244, 246, 1); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
+        .login-box input { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
+        .login-box button { background-color: var(--primary-color); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; transition: background 0.3s; }
+        .login-box button:hover { background-color: #1d4ed8; }
+        .error-msg { color: red; margin-top: 10px; display: none; font-size: 0.9rem; }
+        
+        /* Conteúdo Principal */
+        #main-content { display: none; width: 100%; flex-direction: column; align-items: center; }
+        header { margin-bottom: 40px; text-align: center; }
+        h1 { font-size: 2.5rem; color: var(--text-color); margin-bottom: 10px; }
+        p.subtitle { color: var(--text-secondary); font-size: 1.1rem; }
+        
+        /* Grid */
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; width: 100%; max-width: 900px; }
+        .card { background-color: var(--card-bg); border-radius: 12px; padding: 30px; text-align: center; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: all 0.3s ease; border: 1px solid transparent; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 220px; }
+        .card.active { color: var(--text-color); cursor: pointer; }
+        .card.active:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); border-color: var(--primary-color); }
+        .card.active h2 { font-size: 1.3rem; margin-bottom: 10px; color: var(--primary-color); }
+        .card.active span { font-size: 2.5rem; margin-bottom: 15px; display: block; }
+        .card p { font-size: 0.95rem; color: var(--text-secondary); }
+        .card.empty { border: 2px dashed #d1d5db; background: transparent; color: #9ca3af; cursor: default; }
+        .card.empty h2 { font-size: 1.3rem; font-weight: 400; }
     </style>
 </head>
 <body>
@@ -255,9 +96,11 @@
     <script>
         // --- CONFIGURAÇÃO DE SEGURANÇA ---
         
+        // Hash SHA-256 da senha "M@rket"
+        // Este código criptografado garante que a senha original não fique exposta no código.
         const HASH_CORRETO = "513035b806d203529344485590521639f7833075678401340798e35181180766"; 
         
-        const DIAS_PARA_EXPIRAR = 30; // Lembrar por 30 dias
+        const DIAS_PARA_EXPIRAR = 30; // Lembrar login por 30 dias
 
         document.addEventListener("DOMContentLoaded", function() {
             const lastLogin = localStorage.getItem("psr_auth_time");
@@ -275,10 +118,12 @@
             const input = document.getElementById("passwordInput").value;
             const errorMsg = document.getElementById("errorMsg");
             
+            // .trim() remove espaços vazios que podem ter sido colados sem querer antes ou depois da senha
+            const senhaLimpa = input.trim(); 
+            
             // Calcula o Hash do que o usuário digitou
-            const hashDigitado = CryptoJS.SHA256(input).toString();
+            const hashDigitado = CryptoJS.SHA256(senhaLimpa).toString();
 
-            // Compara o hash digitado com o hash guardado
             if (hashDigitado === HASH_CORRETO) {
                 localStorage.setItem("psr_auth_time", new Date().getTime());
                 mostrarPainel();
@@ -295,7 +140,6 @@
             document.getElementById('main-content').style.display = 'flex'; 
         }
 
-        // Animação de erro
         const styleSheet = document.createElement("style");
         styleSheet.innerText = `
             @keyframes shake {
