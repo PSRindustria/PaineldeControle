@@ -417,16 +417,27 @@
     firebase.auth().onAuthStateChanged((user) => {
         const overlay = document.getElementById('login-overlay');
         
+        // --- LISTA DE E-MAILS PERMITIDOS ---
+        const emailsPermitidos = ["marketingpsrimpressao@gmail.com", "rohsantos1@gmail.com"];
+        
         if (user) {
-            // LOGADO: Remove o bloqueio e libera o painel
-            console.log("Admin conectado:", user.email);
-            if(overlay) overlay.remove(); 
-            
-            user.getIdToken().then(token => {
-                AUTH_TOKEN = token;
-                showToast(`Bem-vindo(a), ${user.displayName || 'Admin'}!`, "success");
-                iniciarDashboard();
-            });
+            // Verifica se o e-mail do usuário está na lista permitida
+            if (emailsPermitidos.includes(user.email.toLowerCase())) {
+                // USUÁRIO AUTORIZADO
+                console.log("Admin conectado:", user.email);
+                if(overlay) overlay.remove(); 
+                
+                user.getIdToken().then(token => {
+                    AUTH_TOKEN = token;
+                    showToast(`Bem-vindo(a), ${user.displayName || 'Admin'}!`, "success");
+                    iniciarDashboard();
+                });
+            } else {
+                // USUÁRIO NÃO AUTORIZADO (Logado, mas com e-mail errado)
+                alert("⛔ ACESSO NEGADO ⛔\n\nO e-mail " + user.email + " não tem permissão para acessar este painel.\n\nPor favor, entre com uma conta autorizada.");
+                firebase.auth().signOut(); // Força o logout
+                criarBloqueio(); // Garante que a tela continue bloqueada
+            }
         } else {
             // NÃO LOGADO: Cria o bloqueio imediatamente
             criarBloqueio();
