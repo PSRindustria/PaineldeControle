@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Controle Marketing</title>
+    <style>
+        :root {
+            --primary-color: #2563eb; /* Azul corporativo */
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+            --text-secondary: #6b7280;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        header {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        p.subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        /* Estilo Geral dos Cards */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            text-decoration: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+
+        /* Card Ativo (Linkado) */
+        .card.active {
+            color: var(--text-color);
+            cursor: pointer;
+        }
+
+        .card.active:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-color: var(--primary-color);
+        }
+
+        .card.active h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .card.active span {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        /* Card Vazio */
+        .card.empty {
+            border: 2px dashed #d1d5db;
+            background-color: transparent;
+            color: #9ca3af;
+            cursor: default;
+        }
+
+        .card.empty h2 {
+            font-size: 1.5rem;
+            font-weight: 400;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Painel de Controle Marketing</h1>
+        <p class="subtitle">Selecione o módulo desejado</p>
+    </header>
+
+    <div class="grid-container">
+        
+        <a href="https://psrindustria.github.io/PaineldeControle/" class="card active" target="_blank">
+            <span>📊</span> <h2>Dashboard Principal</h2>
+            <p>Acessar visualização de dados</p>
+        </a>
+
+        <div class="card empty">
+            <span>🚧</span>
+            <h2>Em breve</h2>
+            <p>Espaço reservado</p>
+        </div>
+
+    </div>
+
+</body>
+</html>
