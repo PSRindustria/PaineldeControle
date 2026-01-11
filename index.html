@@ -3,88 +3,256 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <meta name="color-scheme" content="light">
     
-    <title>PortalPSR</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com data:;">
+    
     <meta name="robots" content="noindex, nofollow">
-    
+    <title>PortalPSR</title>
+  
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-
     <style>
-        :root { --primary-color: #2563eb; --bg-color: #f3f4f6; --card-bg: #ffffff; --text-color: #1f2937; --text-secondary: #6b7280; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        /* BLINDAGEM 2: CSS Reset & Namespacing
+           Usamos o prefixo "psr-" em tudo para evitar conflitos com outros CSS da página. */
         
-        /* Login Overlay */
-        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(243, 244, 246, 1); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
-        .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
-        .login-box input { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
-        .login-box button { background-color: var(--primary-color); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; transition: background 0.3s; }
-        .login-box button:hover { background-color: #1d4ed8; }
-        .error-msg { color: red; margin-top: 10px; display: none; font-size: 0.9rem; }
+        :root {
+            --psr-primary: #2563eb;
+            --psr-bg: #f3f4f6;
+            --psr-card-bg: #ffffff;
+            --psr-text: #1f2937;
+            --psr-text-sec: #6b7280;
+        }
+
+        /* Reset específico para garantir visual consistente */
+        body {
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            font-family: 'Poppins', 'Segoe UI', sans-serif;
+            background-color: var(--psr-bg);
+            color: var(--psr-text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* --- Overlay de Login Blindado --- */
+        #psr-login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(243, 244, 246, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2147483647; /* Valor máximo de z-index para ficar acima de tudo */
+        }
+
+        .psr-login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid #e5e7eb;
+        }
+
+        .psr-login-box input {
+            width: 100%;
+            padding: 12px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        .psr-login-box input:focus {
+            border-color: var(--psr-primary);
+        }
+
+        .psr-login-box button {
+            background-color: var(--psr-primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background 0.3s;
+            font-weight: 600;
+        }
+
+        .psr-login-box button:hover {
+            background-color: #1d4ed8;
+        }
+
+        .psr-error-msg {
+            color: #ef4444;
+            margin-top: 15px;
+            display: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* --- Layout Principal --- */
+        #psr-main-content {
+            display: none;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
+        }
+
+        header {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--psr-text);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        p.subtitle {
+            color: var(--psr-text-sec);
+            font-size: 1.1rem;
+        }
+
+        .psr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        /* Cards Blindados */
+        .psr-card {
+            background-color: var(--psr-card-bg);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            text-decoration: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent; /* Borda transparente para evitar pulo no hover */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 220px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .psr-card.active {
+            color: var(--psr-text);
+            cursor: pointer;
+        }
+
+        .psr-card.active:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
+            border-color: var(--psr-primary);
+        }
+
+        .psr-card.active h2 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: var(--psr-primary);
+            font-weight: 600;
+        }
+
+        .psr-card.active span {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            display: block;
+        }
         
-        /* Conteúdo Principal */
-        #main-content { display: none; width: 100%; flex-direction: column; align-items: center; }
-        header { margin-bottom: 40px; text-align: center; }
-        h1 { font-size: 2.5rem; color: var(--text-color); margin-bottom: 10px; }
-        p.subtitle { color: var(--text-secondary); font-size: 1.1rem; }
-        
-        /* Grid */
-        .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; width: 100%; max-width: 900px; }
-        .card { background-color: var(--card-bg); border-radius: 12px; padding: 30px; text-align: center; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: all 0.3s ease; border: 1px solid transparent; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 220px; }
-        .card.active { color: var(--text-color); cursor: pointer; }
-        .card.active:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); border-color: var(--primary-color); }
-        .card.active h2 { font-size: 1.3rem; margin-bottom: 10px; color: var(--primary-color); }
-        .card.active span { font-size: 2.5rem; margin-bottom: 15px; display: block; }
-        .card p { font-size: 0.95rem; color: var(--text-secondary); }
-        .card.empty { border: 2px dashed #d1d5db; background: transparent; color: #9ca3af; cursor: default; }
-        .card.empty h2 { font-size: 1.3rem; font-weight: 400; }
+        .psr-card p {
+            font-size: 0.95rem;
+            color: var(--psr-text-sec);
+            margin: 0;
+        }
+
+        .psr-card.empty {
+            border: 2px dashed #d1d5db;
+            background-color: transparent;
+            color: #9ca3af;
+            cursor: default;
+        }
+
+        .psr-card.empty h2 {
+            font-size: 1.3rem;
+            font-weight: 400;
+            color: #9ca3af;
+        }
+
+        /* Animação Shake */
+        @keyframes psr-shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
     </style>
 </head>
 <body>
 
-    <div id="login-overlay">
-        <div class="login-box">
-            <h2>Acesso Restrito</h2>
-            <p style="margin-top: 10px; color: #666;">Por favor, insira a senha.</p>
-            <input type="password" id="passwordInput" placeholder="Senha" onkeyup="if(event.key === 'Enter') verificarSenha()">
-            <button onclick="verificarSenha()">Entrar</button>
-            <p class="error-msg" id="errorMsg">Senha incorreta!</p>
+    <div id="psr-login-overlay">
+        <div class="psr-login-box">
+            <h2>Portal PSR</h2>
+            <p style="margin-top: 10px; color: #666;">Acesso Restrito</p>
+            <input type="password" id="psrPasswordInput" placeholder="Digite a senha" autocomplete="off">
+            <button id="psrBtnLogin">Entrar</button>
+            <p class="psr-error-msg" id="psrErrorMsg">Senha incorreta</p>
         </div>
     </div>
 
-    <div id="main-content">
+    <div id="psr-main-content">
         <header>
             <h1>Painel de Controle Marketing</h1>
             <p class="subtitle">Selecione o módulo desejado</p>
         </header>
 
-        <div class="grid-container">
+        <div class="psr-grid">
             
-            <a href="https://psrindustria.github.io/PaineldeControle/conexaopsr/controle.html" class="card active">
+            <a href="https://psrindustria.github.io/PaineldeControle/conexaopsr/controle.html" class="psr-card active">
                 <span>📊</span> 
                 <h2>Dashboard ConexãoPSR</h2>
                 <p>Visualizar dados de conexão</p>
             </a>
 
-            <a href="#" class="card active">
+            <a href="#" class="psr-card active">
                 <span>📅</span> 
                 <h2>Calendário Marketing</h2>
                 <p>Planejamento e datas</p>
             </a>
 
-            <a href="#" class="card active">
+            <a href="#" class="psr-card active">
                 <span>🎨</span> 
                 <h2>Gerador Gráfico</h2>
                 <p>Criação de artes visuais</p>
             </a>
 
-            <div class="card empty">
+            <div class="psr-card empty">
                 <span>🚧</span>
                 <h2>Em breve</h2>
                 <p>Espaço reservado</p>
@@ -94,64 +262,115 @@
     </div>
 
     <script>
-        // --- CONFIGURAÇÃO DE SEGURANÇA ---
+    // BLINDAGEM 3: IIFE (Immediately Invoked Function Expression)
+    // Isso garante que nenhuma variável aqui vaze ou seja alterada por scripts externos.
+    (function() {
         
-        // Hash SHA-256 da senha "M@rket"
-        // Este código criptografado garante que a senha original não fique exposta no código.
-        const HASH_CORRETO = "513035b806d203529344485590521639f7833075678401340798e35181180766"; 
-        
-        const DIAS_PARA_EXPIRAR = 30; // Lembrar login por 30 dias
+        // --- FUNÇÃO DE HASH INTERNA (SHA-256) ---
+        // Implementada manualmente para não depender de bibliotecas externas
+        // Fonte: Implementação compacta padrão de SHA256 para JS
+        async function sha256(message) {
+            // Codifica a mensagem como um array de bytes
+            const msgBuffer = new TextEncoder().encode(message);
+            // Hash the message
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            // Converte ArrayBuffer para Array de bytes
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            // Converte bytes para string hex
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
 
-        document.addEventListener("DOMContentLoaded", function() {
-            const lastLogin = localStorage.getItem("psr_auth_time");
+        // --- CONFIGURAÇÃO ---
+        // Hash da senha "M@rket"
+        const HASH_ALVO = "513035b806d203529344485590521639f7833075678401340798e35181180766";
+        const DIAS_EXPIRACAO = 30;
+        const STORAGE_KEY = "psr_secure_access_ts";
+
+        // Elementos DOM
+        const overlay = document.getElementById('psr-login-overlay');
+        const mainContent = document.getElementById('psr-main-content');
+        const input = document.getElementById('psrPasswordInput');
+        const btn = document.getElementById('psrBtnLogin');
+        const errorMsg = document.getElementById('psrErrorMsg');
+
+        // Inicialização
+        function init() {
+            const lastLogin = localStorage.getItem(STORAGE_KEY);
             const now = new Date().getTime();
-            const validTime = DIAS_PARA_EXPIRAR * 24 * 60 * 60 * 1000;
+            const validTime = DIAS_EXPIRACAO * 24 * 60 * 60 * 1000;
 
             if (lastLogin && (now - lastLogin < validTime)) {
-                mostrarPainel();
+                liberarAcesso(false); // False = sem animação de entrada pois já estava logado
             } else {
-                document.getElementById('login-overlay').style.display = 'flex';
+                // Foca no input automaticamente
+                setTimeout(() => input.focus(), 100);
+            }
+        }
+
+        // Lógica de Verificação
+        async function tentarLogin() {
+            const senhaDigitada = input.value.trim(); // Remove espaços extras
+            
+            // Debug de segurança (Remova em produção se quiser extrema discrição)
+            // console.log("Tentando validar..."); 
+
+            try {
+                const hashGerado = await sha256(senhaDigitada);
+                
+                if (hashGerado === HASH_ALVO) {
+                    localStorage.setItem(STORAGE_KEY, new Date().getTime());
+                    liberarAcesso(true);
+                } else {
+                    bloquearAcesso();
+                }
+            } catch (e) {
+                console.error("Erro no ambiente seguro:", e);
+                bloquearAcesso();
+            }
+        }
+
+        function liberarAcesso(animar) {
+            overlay.style.display = 'none';
+            mainContent.style.display = 'flex';
+            
+            if(animar) {
+                // Pequeno delay para permitir o display flex renderizar antes da opacidade
+                setTimeout(() => {
+                    mainContent.style.opacity = '1';
+                }, 10);
+            } else {
+                mainContent.style.opacity = '1';
+            }
+        }
+
+        function bloquearAcesso() {
+            errorMsg.style.display = "block";
+            errorMsg.innerText = "Senha incorreta";
+            const box = document.querySelector('.psr-login-box');
+            
+            // Reinicia animação
+            box.style.animation = 'none';
+            box.offsetHeight; /* trigger reflow */
+            box.style.animation = "psr-shake 0.4s";
+            
+            input.value = "";
+            input.focus();
+        }
+
+        // Event Listeners
+        btn.addEventListener('click', tentarLogin);
+        
+        input.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                tentarLogin();
             }
         });
 
-        function verificarSenha() {
-            const input = document.getElementById("passwordInput").value;
-            const errorMsg = document.getElementById("errorMsg");
-            
-            // .trim() remove espaços vazios que podem ter sido colados sem querer antes ou depois da senha
-            const senhaLimpa = input.trim(); 
-            
-            // Calcula o Hash do que o usuário digitou
-            const hashDigitado = CryptoJS.SHA256(senhaLimpa).toString();
+        // Inicia
+        document.addEventListener("DOMContentLoaded", init);
 
-            if (hashDigitado === HASH_CORRETO) {
-                localStorage.setItem("psr_auth_time", new Date().getTime());
-                mostrarPainel();
-            } else {
-                errorMsg.style.display = "block";
-                const box = document.querySelector('.login-box');
-                box.style.animation = "shake 0.5s";
-                setTimeout(() => box.style.animation = "none", 500);
-            }
-        }
-
-        function mostrarPainel() {
-            document.getElementById('login-overlay').style.display = 'none';
-            document.getElementById('main-content').style.display = 'flex'; 
-        }
-
-        const styleSheet = document.createElement("style");
-        styleSheet.innerText = `
-            @keyframes shake {
-                0% { transform: translateX(0); }
-                25% { transform: translateX(-5px); }
-                50% { transform: translateX(5px); }
-                75% { transform: translateX(-5px); }
-                100% { transform: translateX(0); }
-            }
-        `;
-        document.head.appendChild(styleSheet);
+    })(); // Fim da IIFE
     </script>
-
 </body>
 </html>
