@@ -561,8 +561,13 @@
                     <button class="btn-trash" onclick="deleteRef('${deletePath}')"><i class="fas fa-trash"></i></button>
                 </div>`;
 
+            // --- ATUALIZAÇÃO: BUSCA CURTIDAS EM 'hobby_interactions_history' ---
             let likesHtml = '';
-            if(db.hobby_interactions?.likes) Object.keys(db.hobby_interactions.likes).forEach(u => likesHtml += makeItem(`${u} curtiu.`, `hobby_interactions/likes/${u}`));
+            // Acessa hobby_interactions_history > DATA > likes
+            const histLikes = db.hobby_interactions_history?.[filterDate]?.likes;
+            if(histLikes) Object.keys(histLikes).forEach(u => 
+                likesHtml += makeItem(`${u} curtiu.`, `hobby_interactions_history/${filterDate}/likes/${u}`)
+            );
             document.getElementById('monitor-hobby-likes').innerHTML = likesHtml || 'Zero.';
 
             let commHtml = '';
@@ -571,10 +576,14 @@
             });
             document.getElementById('monitor-hobby-comments').innerHTML = commHtml || 'Zero.';
 
+            // --- ATUALIZAÇÃO: BUSCA DESAFIOS EM 'challenges_history' ---
             let chalHtml = '';
-            if(db.challenges_v2) for(const [t, d] of Object.entries(db.challenges_v2)) {
+            // Acessa challenges_history > DATA
+            const histChal = db.challenges_history?.[filterDate];
+            if(histChal) for(const [t, d] of Object.entries(histChal)) {
                 chalHtml += `<b>${t}</b><br>`;
-                Object.entries(d).forEach(([u, s]) => chalHtml += makeItem(`${u}: ${s}`, `challenges_v2/${t}/${u}`));
+                // O caminho de delete deve incluir a data também
+                Object.entries(d).forEach(([u, s]) => chalHtml += makeItem(`${u}: ${s}`, `challenges_history/${filterDate}/${t}/${u}`));
             }
             document.getElementById('monitor-challenges').innerHTML = chalHtml || 'Zero.';
 
@@ -631,12 +640,15 @@
             processSugg('recipe_suggestions', 'Receita', s => `<b>${s.author}</b>: Prato "${s.dish}"`);
             document.getElementById('monitor-suggestions').innerHTML = suggHtml || 'Sem sugestões.';
 
-            // Ratings
+            // --- ATUALIZAÇÃO: BUSCA AVALIAÇÕES EM 'ratings_history' ---
             let rateHtml = '';
-            if(db.ratings_v2) for(const [itemId, votes] of Object.entries(db.ratings_v2)) {
+            // Acessa ratings_history > DATA
+            const histRate = db.ratings_history?.[filterDate];
+            if(histRate) for(const [itemId, votes] of Object.entries(histRate)) {
                 rateHtml += `<div style="margin:10px 0 5px; font-weight:bold; color:var(--primary);">${itemId}</div>`;
+                // O caminho de delete deve incluir a data também
                 Object.entries(votes).forEach(([userId, stars]) => {
-                    rateHtml += makeItem(`<span class="id-badge">${userId}</span> : ${stars} ⭐`, `ratings_v2/${itemId}/${userId}`);
+                    rateHtml += makeItem(`<span class="id-badge">${userId}</span> : ${stars} ⭐`, `ratings_history/${filterDate}/${itemId}/${userId}`);
                 });
             }
             document.getElementById('monitor-ratings').innerHTML = rateHtml || 'Sem avaliações.';
