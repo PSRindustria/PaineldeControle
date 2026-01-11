@@ -1,12 +1,38 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Controle Marketing</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma"        content="no-cache" />
+    <meta http-equiv="Expires"       content="0" />
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" href="favicon.png" type="image/png">
+    
+    <meta property="og:title" content="Portal PSR">
+    <meta property="og:description" content="Acesse nosso canal interno com notícias, cardápio, aniversariantes e muito mais!">
+    <meta property="og:image" content="https://psrimpressao.com.br/wp-content/uploads/2026/01/thumbnail.jpg">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:url" content="https://psrindustria.github.io/PortalPSR/">
+    <meta property="og:type" content="website">
+    
+    <link rel="preconnect" href="https://jornalpsr-1b8c6-default-rtdb.firebaseio.com">
+    <link rel="dns-prefetch" href="https://jornalpsr-1b8c6-default-rtdb.firebaseio.com">
+    <meta name="color-scheme" content="light only">
+    
+    <title>PortalPSR</title>
+  
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=2" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
     <style>
         :root {
-            --primary-color: #2563eb; /* Azul corporativo */
+            --primary-color: #2563eb;
             --bg-color: #f3f4f6;
             --card-bg: #ffffff;
             --text-color: #1f2937;
@@ -17,7 +43,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Poppins', 'Segoe UI', sans-serif; /* Atualizado para Poppins conforme seu link */
         }
 
         body {
@@ -29,6 +55,72 @@
             justify-content: center;
             min-height: 100vh;
             padding: 20px;
+        }
+
+        /* --- Estilos do Login Overlay --- */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(243, 244, 246, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .login-box button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background 0.3s;
+        }
+
+        .login-box button:hover {
+            background-color: #1d4ed8;
+        }
+
+        .error-msg {
+            color: red;
+            margin-top: 10px;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        /* --- Conteúdo Principal (oculto até login) --- */
+        #main-content {
+            display: none; /* Começa oculto */
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         header {
@@ -49,17 +141,17 @@
 
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 2rem;
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
         }
 
         /* Estilo Geral dos Cards */
         .card {
             background-color: var(--card-bg);
             border-radius: 12px;
-            padding: 40px;
+            padding: 30px;
             text-align: center;
             text-decoration: none;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -69,7 +161,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 200px;
+            height: 220px;
         }
 
         /* Card Ativo (Linkado) */
@@ -85,15 +177,20 @@
         }
 
         .card.active h2 {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             margin-bottom: 10px;
             color: var(--primary-color);
         }
 
         .card.active span {
-            font-size: 3rem;
+            font-size: 2.5rem;
             margin-bottom: 15px;
             display: block;
+        }
+        
+        .card p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
         }
 
         /* Card Vazio */
@@ -105,33 +202,116 @@
         }
 
         .card.empty h2 {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 400;
         }
-
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>Painel de Controle Marketing</h1>
-        <p class="subtitle">Selecione o módulo desejado</p>
-    </header>
-
-    <div class="grid-container">
-        
-        <a href="https://psrindustria.github.io/PaineldeControle/conexaopsr/controle.html" class="card active" target="_blank">
-            <span>📊</span> <h2>Dashboard Principal</h2>
-            <p>Acessar visualização de dados</p>
-        </a>
-
-        <div class="card empty">
-            <span>🚧</span>
-            <h2>Em breve</h2>
-            <p>Espaço reservado</p>
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2>Acesso Restrito</h2>
+            <p style="margin-top: 10px; color: #666;">Por favor, insira a senha.</p>
+            <input type="password" id="passwordInput" placeholder="Senha" onkeyup="if(event.key === 'Enter') verificarSenha()">
+            <button onclick="verificarSenha()">Entrar</button>
+            <p class="error-msg" id="errorMsg">Senha incorreta!</p>
         </div>
-
     </div>
+
+    <div id="main-content" style="display: none;"> <header>
+            <h1>Painel de Controle Marketing</h1>
+            <p class="subtitle">Selecione o módulo desejado</p>
+        </header>
+
+        <div class="grid-container">
+            
+            <a href="https://psrindustria.github.io/PaineldeControle/conexaopsr/controle.html" class="card active">
+                <span>📊</span> 
+                <h2>Dashboard ConexãoPSR</h2>
+                <p>Visualizar dados de conexão</p>
+            </a>
+
+            <a href="#" class="card active">
+                <span>📅</span> 
+                <h2>Calendário Marketing</h2>
+                <p>Planejamento e datas</p>
+            </a>
+
+            <a href="#" class="card active">
+                <span>🎨</span> 
+                <h2>Gerador Gráfico</h2>
+                <p>Criação de artes visuais</p>
+            </a>
+
+            <div class="card empty">
+                <span>🚧</span>
+                <h2>Em breve</h2>
+                <p>Espaço reservado</p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURAÇÃO DA SENHA ---
+        const SENHA_CORRETA = "M@rket"; // <--- ALTERE A SENHA AQUI
+        const DIAS_PARA_EXPIRAR = 30; // Frequência da senha (em dias)
+        
+        // Lógica de Autenticação
+        document.addEventListener("DOMContentLoaded", function() {
+            const lastLogin = localStorage.getItem("psr_auth_time");
+            const now = new Date().getTime();
+            const validTime = DIAS_PARA_EXPIRAR * 24 * 60 * 60 * 1000;
+
+            // Se existe registro e ainda é válido (menor que 30 dias)
+            if (lastLogin && (now - lastLogin < validTime)) {
+                mostrarPainel();
+            } else {
+                // Caso contrário, mantem o overlay de login visível
+                document.getElementById('login-overlay').style.display = 'flex';
+            }
+        });
+
+        function verificarSenha() {
+            const input = document.getElementById("passwordInput").value;
+            const errorMsg = document.getElementById("errorMsg");
+
+            if (input === SENHA_CORRETA) {
+                // Salva o timestamp atual
+                localStorage.setItem("psr_auth_time", new Date().getTime());
+                mostrarPainel();
+            } else {
+                errorMsg.style.display = "block";
+                // Treme o input para feedback visual
+                const box = document.querySelector('.login-box');
+                box.style.animation = "shake 0.5s";
+                setTimeout(() => box.style.animation = "none", 500);
+            }
+        }
+
+        function mostrarPainel() {
+            document.getElementById('login-overlay').style.display = 'none';
+            const mainContent = document.getElementById('main-content');
+            
+            // Remove o style inline 'none' para exibir
+            mainContent.style.display = 'flex'; 
+        }
+
+        // Adicionando animação de erro no CSS via JS se necessário, 
+        // ou apenas uma classe simples
+        const styleSheet = document.createElement("style");
+        styleSheet.innerText = `
+            @keyframes shake {
+                0% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                50% { transform: translateX(5px); }
+                75% { transform: translateX(-5px); }
+                100% { transform: translateX(0); }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+    </script>
 
 </body>
 </html>
