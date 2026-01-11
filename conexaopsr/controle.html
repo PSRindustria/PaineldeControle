@@ -414,17 +414,20 @@
     }
 
     // Monitora se o usuário está logado ou não
-    firebase.auth().onAuthStateChanged((user) => {
+firebase.auth().onAuthStateChanged((user) => {
         const overlay = document.getElementById('login-overlay');
         
         // --- LISTA DE E-MAILS PERMITIDOS ---
         const emailsPermitidos = ["marketingpsrimpressao@gmail.com", "rohsantos1@gmail.com"];
         
         if (user) {
+            // CORREÇÃO AQUI: Verifica se user.email existe antes de usar toLowerCase
+            const emailUsuario = user.email ? user.email.toLowerCase() : "";
+
             // Verifica se o e-mail do usuário está na lista permitida
-            if (emailsPermitidos.includes(user.email.toLowerCase())) {
+            if (emailUsuario && emailsPermitidos.includes(emailUsuario)) {
                 // USUÁRIO AUTORIZADO
-                console.log("Admin conectado:", user.email);
+                console.log("Admin conectado:", emailUsuario);
                 if(overlay) overlay.remove(); 
                 
                 user.getIdToken().then(token => {
@@ -433,8 +436,8 @@
                     iniciarDashboard();
                 });
             } else {
-                // USUÁRIO NÃO AUTORIZADO (Logado, mas com e-mail errado)
-                alert("⛔ ACESSO NEGADO ⛔\n\nO e-mail " + user.email + " não tem permissão para acessar este painel.\n\nPor favor, entre com uma conta autorizada.");
+                // USUÁRIO NÃO AUTORIZADO OU SEM E-MAIL
+                alert("⛔ ACESSO NEGADO ⛔\n\nO e-mail " + (emailUsuario || "Desconhecido") + " não tem permissão para acessar este painel.\n\nPor favor, entre com uma conta autorizada.");
                 firebase.auth().signOut(); // Força o logout
                 criarBloqueio(); // Garante que a tela continue bloqueada
             }
