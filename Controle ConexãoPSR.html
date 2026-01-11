@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Controle - Portal PSR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #003366; --accent: #DAA520; --bg: #f4f7f9; --success: #28a745; --danger: #dc3545; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); padding: 20px; color: #333; margin: 0; }
+        
+        /* HEADER E NAV */
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: var(--primary); margin: 0; }
+        .header p { color: #666; font-size: 0.9em; margin-bottom: 20px; }
+
+        .view-switcher {
+            display: flex; justify-content: center; gap: 15px; margin-bottom: 30px;
+            background: white; padding: 10px; border-radius: 50px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); width: fit-content; margin-left: auto; margin-right: auto;
+        }
+        .view-btn {
+            border: none; background: transparent; padding: 10px 25px; border-radius: 25px;
+            cursor: pointer; font-weight: 600; color: #777; transition: 0.3s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .view-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(0,51,102,0.3); }
+        .view-btn:hover:not(.active) { background: #eee; }
+
+        /* PAINÉIS (VIEWS) */
+        #view-content, #view-interactions { display: none; animation: fadeIn 0.4s ease; }
+        .view-active { display: block !important; }
+
+        /* GRID GERAL */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; max-width: 1400px; margin: 0 auto; }
+
+        /* CARD */
+        .card { 
+            background: white; padding: 25px; border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column;
+            overflow: hidden; position: relative; border: 1px solid #eee;
+        }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--primary); }
+        
+        /* CARD DE INTERAÇÃO */
+        .card-interaction { border-top: 4px solid var(--accent) !important; }
+        .card-interaction::before { display: none; }
+        .card-interaction .card-header h2 { font-size: 1.1em; color: #444; }
+        .card-interaction .card-header { border-bottom: 2px solid #eee; }
+
+        .card-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 20px; }
+        .card h2 { margin: 0; color: var(--primary); font-size: 1.2em; display: flex; align-items: center; gap: 10px; }
+        
+        /* MONITORAMENTO */
+        .monitor-list { max-height: 300px; overflow-y: auto; padding-right: 5px; }
+        .monitor-item {
+            background: #f9f9f9; border-bottom: 1px solid #eee; padding: 10px;
+            margin-bottom: 5px; border-radius: 6px; font-size: 0.85em; position: relative;
+            display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+        }
+        .monitor-content { flex: 1; word-break: break-word; }
+        .monitor-item strong { color: var(--primary); display: block; margin-bottom: 2px; }
+        .monitor-item small { color: #888; display: block; margin-top: 3px; font-size: 0.75em; }
+        
+        .id-badge {
+            background: #e9ecef; color: #495057; padding: 2px 6px; border-radius: 4px;
+            font-family: monospace; font-size: 0.8em; border: 1px solid #ced4da;
+        }
+
+        /* Botões de Ação Monitor */
+        .btn-trash {
+            background: #fff0f0; border: 1px solid #ffcccc; color: var(--danger);
+            width: 24px; height: 24px; border-radius: 4px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            transition: 0.2s;
+        }
+        .btn-trash:hover { background: var(--danger); color: white; border-color: var(--danger); }
+
+        .filter-bar {
+            display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+            max-width: 1400px; margin: 0 auto 20px; background: white; padding: 10px 20px;
+            border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .date-input {
+            padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; color: #555;
+        }
+
+        /* Botões Gerais */
+        .btn-global-clear { margin-top: 15px; background: #ffebeb; color: #dc3545; border: 1px solid #dc3545; padding: 8px 20px; border-radius: 20px; font-size: 0.85em; cursor: pointer; font-weight: 600; text-transform: uppercase; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-global-clear:hover { background: #dc3545; color: white; }
+        .btn-clear-header { background: #f8f9fa; color: #666; border: 1px solid #ddd; padding: 5px 10px; border-radius: 4px; font-size: 0.75em; cursor: pointer; font-weight: 600; text-transform: uppercase; transition: 0.2s; display: flex; align-items: center; gap: 5px; }
+        .btn-save { background: var(--primary); color: white; border: none; padding: 12px 50px; border-radius: 50px; font-size: 1.1em; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(0, 51, 102, 0.3); }
+        .save-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 15px; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); text-align: center; z-index: 100; }
+        .btn-refresh { background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9em; display: inline-flex; align-items: center; gap: 5px; }
+
+        /* Formulários */
+        .form-group { margin-bottom: 15px; width: 100%; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.85em; color: #555; text-transform: uppercase; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 0.9em; transition: 0.3s; }
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--primary); outline: none; }
+        .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .client-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .client-select { width: 100%; padding: 10px 15px; border: 1px solid #e1e4e8; border-radius: 8px; font-family: inherit; font-size: 0.9em; background-color: #ffffff; cursor: pointer; }
+        .client-input-wrapper { display: flex; align-items: center; width: 100%; gap: 5px; }
+        .client-input { flex: 1; height: 42px; padding: 0 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9em; }
+        .client-remove { background: transparent; border: none; color: #bbb; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .client-remove:hover { color: #dc3545; background-color: rgba(220, 53, 69, 0.1); }
+        .btn-add-client { background: #f0f4f8; color: var(--primary); border: 1px dashed #cedae6; width: 100%; padding: 10px; border-radius: 6px; cursor: pointer; margin-top: 10px; font-size: 0.9em; }
+
+        /* Abas Internas */
+        .tabs-header { display: flex; border-bottom: 1px solid #eee; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; background: #f8f9fa; border: none; border-bottom: 2px solid transparent; font-weight: 600; color: #777; transition: 0.3s; }
+        .tab-btn.active { background: white; color: var(--primary); border-bottom-color: var(--accent); }
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        .sub-card { background: #f8f9fa; border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .sub-card-title { font-weight: 700; color: var(--primary); margin-bottom: 10px; font-size: 0.9em; text-transform: uppercase; border-bottom: 1px solid #e0e0e0; padding-bottom: 5px; }
+        .emoji-input { font-size: 1.1em; text-align: center; width: 90px !important; }
+
+        #toast { position: fixed; bottom: 90px; right: 20px; padding: 15px 25px; border-radius: 8px; color: white; display: none; z-index: 101; font-weight: 600; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .success { background: #28a745; }
+        .error { background: #dc3545; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Painel PSR</h1>
+    
+    <div class="view-switcher">
+        <button class="view-btn active" onclick="switchView('content')">
+            <i class="fas fa-edit"></i> Editor de Conteúdo
+        </button>
+        <button class="view-btn" onclick="switchView('interactions')">
+            <i class="fas fa-chart-line"></i> Monitor de Interações
+        </button>
+    </div>
+
+    <div id="editor-controls">
+        <button type="button" class="btn-global-clear" onclick="clearAllFields()">
+            <i class="fas fa-trash"></i> Limpar Todo o Painel
+        </button>
+    </div>
+</div>
+
+<div id="view-content" class="view-active">
+    <form id="dashboardForm" onsubmit="event.preventDefault(); confirmSave();">
+        <div class="dashboard-grid">
+            
+            <div class="card">
+                <div class="card-header"><h2><i class="fas fa-calendar-alt"></i> Tema do Mês</h2></div>
+                <div class="form-group"><label>Título:</label><input type="text" id="tema-titulo" placeholder="Ex: Janeiro Branco"></div>
+                <div class="form-group"><label>Subtítulo:</label><input type="text" id="tema-subtitulo" placeholder="Ex: Quem cuida da mente, cuida da vida!"></div>
+                <div class="form-group"><label>Resumo (Capa):</label><textarea id="tema-resumo" placeholder="Ex: Neste mês, convidamos a todos para uma reflexão..."></textarea></div>
+                <div class="form-group"><label>Conteúdo Completo (HTML):</label><textarea id="tema-conteudo" style="height: 150px;" placeholder="Ex: <p>Texto detalhado sobre a campanha...</p>"></textarea></div>
+                <div class="form-group"><label>Fonte (Nome / Link):</label>
+                    <div class="cols-2">
+                        <input type="text" id="tema-fonte-nome" placeholder="Ex: G1 - Saúde">
+                        <input type="text" id="tema-fonte-link" placeholder="Ex: https://g1.globo.com...">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h2><i class="fas fa-film"></i> Indica Aí</h2></div>
+                <div class="tabs-header">
+                    <button type="button" class="tab-btn active" onclick="openTab('tab-filme', this)">🎥 Filme</button>
+                    <button type="button" class="tab-btn" onclick="openTab('tab-livro', this)">📚 Livro</button>
+                </div>
+                <div id="tab-filme" class="tab-content active">
+                    <input type="hidden" id="cult-filme-id" value="filme_mes">
+                    <input type="hidden" id="cult-filme-tipo" value="video">
+                    <div class="form-group"><label>Título do Filme:</label><input type="text" id="cult-filme-titulo" placeholder="Ex: O Dilema das Redes"></div>
+                    <div class="form-group"><label>Link (YouTube):</label><input type="text" id="cult-filme-link" placeholder="Ex: https://youtube.com/watch?v=..."></div>
+                    <div class="form-group"><label>Capa URL:</label><input type="text" id="cult-filme-img" placeholder="Ex: https://img.youtube.com/..."></div>
+                    <div class="form-group"><label>Indicado por:</label><input type="text" id="cult-filme-indicado" placeholder="Ex: João (TI)"></div>
+                    <div class="form-group"><label>Sinopse:</label><textarea id="cult-filme-sinopse" placeholder="Ex: Especialistas do Vale do Silício alertam..."></textarea></div>
+                    <div class="form-group"><label>Categoria:</label><input type="text" id="cult-filme-tag" placeholder="Ex: Reflexão"></div>
+                </div>
+                <div id="tab-livro" class="tab-content">
+                    <input type="hidden" id="cult-livro-id" value="livro_mes">
+                    <input type="hidden" id="cult-livro-tipo" value="livro">
+                    <div class="form-group"><label>Título do Livro:</label><input type="text" id="cult-livro-titulo" placeholder="Ex: O Poder do Hábito"></div>
+                    <div class="form-group"><label>Link (Opcional):</label><input type="text" id="cult-livro-link" placeholder="Ex: https://amazon.com.br/..."></div>
+                    <div class="form-group"><label>Capa URL:</label><input type="text" id="cult-livro-img" placeholder="Ex: https://imagens.com/livro.jpg"></div>
+                    <div class="form-group"><label>Indicado por:</label><input type="text" id="cult-livro-indicado" placeholder="Ex: Maria (RH)"></div>
+                    <div class="form-group"><label>Sinopse:</label><textarea id="cult-livro-sinopse" placeholder="Ex: O livro explora a ciência dos hábitos..."></textarea></div>
+                    <div class="form-group"><label>Categoria:</label><input type="text" id="cult-livro-tag" placeholder="Ex: Autoajuda"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h2><i class="fas fa-user-circle"></i> Além do Crachá</h2></div>
+                <div class="form-group"><label>Colaborador:</label><input type="text" id="hobby-nome" placeholder="Ex: Iasmim Ferreira"></div>
+                <div class="form-group"><label>Setor:</label><input type="text" id="hobby-cargo" placeholder="Ex: Setor Financeiro"></div>
+                <div class="form-group"><label>Foto URL:</label><input type="text" id="hobby-foto" placeholder="Ex: https://postimg.cc/..."></div>
+                <div class="form-group"><label>Texto "Fora da PSR":</label><textarea id="hobby-texto" style="height: 120px;" placeholder="Ex: Gosto de passear com minha cachorrinha..."></textarea></div>
+                <div class="form-group"><label>Tags (Skills/Hobbies - Máx 3):</label>
+                    <div class="cols-3">
+                        <input type="text" id="hobby-tag-1" placeholder="Ex: ☕ Café">
+                        <input type="text" id="hobby-tag-2" placeholder="Ex: 🗺️ Viajar">
+                        <input type="text" id="hobby-tag-3" placeholder="Ex: 🐶 Animais">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h2><i class="fas fa-heartbeat"></i> Bem-Estar e Saúde</h2></div>
+                <div class="form-group"><label>Subtítulo:</label><input type="text" id="bemestar-subtitulo" placeholder="Ex: A pausa necessária"></div>
+                <div class="form-group"><label>Resumo:</label><textarea id="bemestar-resumo" placeholder="Ex: Na correria do dia a dia..."></textarea></div>
+                <div class="form-group"><label>Conteúdo (HTML):</label><textarea id="bemestar-conteudo" style="height: 120px;" placeholder="Ex: <p>Dicas de ergonomia...</p>"></textarea></div>
+                <div class="form-group"><label>Link da Fonte:</label><input type="text" id="bemestar-link" placeholder="Ex: https://blog.saude.com.br"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h2><i class="fas fa-utensils"></i> Receita do Mês</h2></div>
+                <div class="form-group"><label>Emoji:</label><input type="text" id="rec-emoji" class="emoji-input" placeholder="Ex: 🥘"></div>
+                <div class="form-group"><label>Título:</label><input type="text" id="rec-titulo" placeholder="Ex: Salada de Quinoa"></div>
+                <div class="form-group"><label>Tempo:</label><input type="text" id="rec-tempo" placeholder="Ex: 15 minutos"></div>
+                <div class="form-group"><label>Indicado por:</label><input type="text" id="rec-indicado" placeholder="Ex: Nutricionista Ana"></div>
+                <div class="form-group"><label>Descrição:</label><textarea id="rec-desc" placeholder="Ex: Uma receita leve e nutritiva..."></textarea></div>
+                <div class="form-group"><label>Ingredientes (separar por ;):</label><textarea id="rec-ing" placeholder="Ex: 1 tomate; Azeite; Sal a gosto"></textarea></div>
+                <div class="form-group"><label>Preparo (separar por ;):</label><textarea id="rec-prep" placeholder="Ex: Corte os legumes; Misture tudo; Sirva gelado"></textarea></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h2><i class="fas fa-dumbbell"></i> Desafios (3 Cards)</h2></div>
+                <div class="sub-card">
+                    <div class="sub-card-title">Desafio 1</div><input type="hidden" id="chal-1-id" value="hidratacao">
+                    <div class="cols-2"><div class="form-group"><label>Emoji:</label><input type="text" id="chal-1-emoji" class="emoji-input" placeholder="Ex: 💧"></div><div class="form-group"><label>Título:</label><input type="text" id="chal-1-titulo" placeholder="Ex: Hidratação"></div></div>
+                    <div class="form-group"><label>Descrição:</label><input type="text" id="chal-1-desc" placeholder="Ex: Beber 2L de água"></div>
+                </div>
+                <div class="sub-card">
+                    <div class="sub-card-title">Desafio 2</div><input type="hidden" id="chal-2-id" value="passos">
+                    <div class="cols-2"><div class="form-group"><label>Emoji:</label><input type="text" id="chal-2-emoji" class="emoji-input" placeholder="Ex: 🚶"></div><div class="form-group"><label>Título:</label><input type="text" id="chal-2-titulo" placeholder="Ex: 10 Mil Passos"></div></div>
+                    <div class="form-group"><label>Descrição:</label><input type="text" id="chal-2-desc" placeholder="Ex: Caminhada diária"></div>
+                </div>
+                <div class="sub-card">
+                    <div class="sub-card-title">Desafio 3</div><input type="hidden" id="chal-3-id" value="sono">
+                    <div class="cols-2"><div class="form-group"><label>Emoji:</label><input type="text" id="chal-3-emoji" class="emoji-input" placeholder="Ex: 😴"></div><div class="form-group"><label>Título:</label><input type="text" id="chal-3-titulo" placeholder="Ex: Sono de Qualidade"></div></div>
+                    <div class="form-group"><label>Descrição:</label><input type="text" id="chal-3-desc" placeholder="Ex: Dormir 8h por noite"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h2><i class="fas fa-briefcase"></i> Novos Clientes</h2><button type="button" class="btn-clear-header" onclick="clearClientList()"><i class="fas fa-trash-alt"></i> Limpar Lista</button></div>
+                <div class="cols-2">
+                    <div class="form-group"><label>Qtd:</label><input type="text" id="clientes-qtd" placeholder="Ex: 6"></div>
+                    <div class="form-group"><label>Período:</label><input type="text" id="clientes-periodo" placeholder="Ex: Janeiro/2026"></div>
+                </div>
+                <label style="margin-top:10px; display:block; font-weight:600; font-size:0.85em; color:#555;">LISTA DE EMPRESAS (Selecione a categoria e cole a lista):</label>
+                <div id="clientes-list"></div>
+                <button type="button" class="btn-add-client" onclick="addNewClientRow()">+ Adicionar Cliente Manualmente</button>
+            </div>
+
+        </div>
+        <div style="height: 80px;"></div>
+    </form>
+    <div class="save-bar"><button class="btn-save" onclick="confirmSave()"><i class="fas fa-save"></i> PUBLICAR NO SITE</button></div>
+</div>
+
+<div id="view-interactions">
+    
+    <div class="filter-bar">
+        <div>
+            <label style="font-size:0.85em; font-weight:600; color:#666; margin-right:5px;">Histórico:</label>
+            <input type="month" id="monitor-filter-date" class="date-input" onchange="loadInteractions()">
+        </div>
+        <button class="btn-refresh" onclick="loadInteractions()"><i class="fas fa-sync-alt"></i></button>
+    </div>
+
+    <div class="dashboard-grid">
+        
+        <div class="card card-interaction">
+            <div class="card-header"><h2><i class="fas fa-shield-alt"></i> Quiz - Participantes</h2></div>
+            <div class="monitor-list" id="monitor-quiz">Carregando...</div>
+        </div>
+
+        <div class="card card-interaction">
+            <div class="card-header"><h2><i class="fas fa-user-circle"></i> Hobby - Curtidas (IDs)</h2></div>
+            <div class="monitor-list" id="monitor-hobby-likes">Carregando...</div>
+            <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #eee;">
+                <strong>Comentários:</strong>
+                <div class="monitor-list" id="monitor-hobby-comments" style="margin-top:5px;">Carregando...</div>
+            </div>
+        </div>
+
+        <div class="card card-interaction">
+            <div class="card-header"><h2><i class="fas fa-dumbbell"></i> Desafios (IDs Detalhados)</h2></div>
+            <div class="monitor-list" id="monitor-challenges">Carregando...</div>
+        </div>
+
+        <div class="card card-interaction">
+            <div class="card-header"><h2><i class="fas fa-heart"></i> Elogios Enviados</h2></div>
+            <div class="monitor-list" id="monitor-praise">Carregando...</div>
+        </div>
+
+        <div class="card card-interaction">
+            <div class="card-header"><h2><i class="fas fa-gamepad"></i> Ranking Jogos</h2></div>
+            <div class="monitor-list" id="monitor-games">Carregando...</div>
+        </div>
+
+        <div class="card card-interaction">
+            <div class="card-header"><h2><i class="fas fa-lightbulb"></i> Sugestões Recebidas</h2></div>
+            <div class="monitor-list" id="monitor-suggestions">Carregando...</div>
+        </div>
+
+        <div class="card card-interaction">
+            <div class="card-header"><h2><i class="fas fa-bullhorn"></i> Comunicados</h2></div>
+            <div class="monitor-list" id="monitor-comms">Carregando...</div>
+        </div>
+
+        <div class="card card-interaction">
+            <div class="card-header"><h2><i class="fas fa-star"></i> Avaliações (IDs)</h2></div>
+            <div class="monitor-list" id="monitor-ratings">Carregando...</div>
+        </div>
+
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<style>
+    /* O Fundo Vidro Fosco */
+    #login-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(255, 255, 255, 0.85); /* Branco translúcido */
+        backdrop-filter: blur(15px); /* O "Desfoque" */
+        -webkit-backdrop-filter: blur(15px); /* Para Safari */
+        z-index: 99999; /* Fica acima de tudo */
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        text-align: center;
+    }
+
+    /* A Caixa Central */
+    .login-box {
+        background: white; padding: 50px 60px; border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,51,102,0.2);
+        border: 1px solid rgba(0,0,0,0.05);
+        animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        max-width: 90%; width: 450px;
+    }
+
+    .login-title { 
+        color: #003366; font-size: 1.8rem; margin-bottom: 10px; font-weight: 800; 
+        text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    /* O Botão Gigante */
+    .btn-login-google {
+        background: #4285F4; color: white; border: none; 
+        padding: 18px 30px; width: 100%;
+        font-size: 1.2rem; border-radius: 50px; cursor: pointer; font-weight: 700;
+        display: flex; align-items: center; justify-content: center; gap: 15px; 
+        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 10px 20px rgba(66, 133, 244, 0.3);
+        font-family: 'Poppins', sans-serif;
+    }
+    .btn-login-google:hover { 
+        background: #3367D6; transform: translateY(-3px); 
+        box-shadow: 0 15px 30px rgba(66, 133, 244, 0.4); 
+    }
+    .btn-login-google:active { transform: translateY(0); }
+    
+    @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+<script>
+    // --- 1. CONFIGURAÇÃO ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyBzMvAw9ahEyd-tSYY08HxcMzo9RKf3IFY",
+        authDomain: "jornalpsr-1b8c6.firebaseapp.com",
+        databaseURL: "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com",
+        projectId: "jornalpsr-1b8c6",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const provider = new firebase.auth.GoogleAuthProvider();
+    let AUTH_TOKEN = null;
+
+    const DB_ROOT_URL = "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com/";
+    const CONTENT_URL = DB_ROOT_URL + "content.json";
+
+    // --- 2. SISTEMA DE BLOQUEIO / LOGIN ---
+    
+    // Função que cria o HTML do bloqueio na tela
+    function criarBloqueio() {
+        if(document.getElementById('login-overlay')) return;
+        
+        const div = document.createElement("div");
+        div.id = "login-overlay";
+        div.innerHTML = `
+            <div class="login-box">
+                <i class="fas fa-lock" style="font-size: 4rem; color: #DAA520; margin-bottom: 25px;"></i>
+                <div class="login-title">Acesso Restrito</div>
+                <p style="color:#666; margin-bottom:35px; line-height:1.5;">
+                    Este painel é exclusivo para administradores.<br>
+                    Faça login para gerenciar o conteúdo.
+                </p>
+                <button class="btn-login-google" onclick="fazerLogin()">
+                    <i class="fab fa-google"></i> ENTRAR COM GOOGLE
+                </button>
+            </div>
+        `;
+        document.body.appendChild(div);
+    }
+
+    // Monitora se o usuário está logado ou não
+    firebase.auth().onAuthStateChanged((user) => {
+        const overlay = document.getElementById('login-overlay');
+        
+        if (user) {
+            // LOGADO: Remove o bloqueio e libera o painel
+            console.log("Admin conectado:", user.email);
+            if(overlay) overlay.remove(); 
+            
+            user.getIdToken().then(token => {
+                AUTH_TOKEN = token;
+                showToast(`Bem-vindo(a), ${user.displayName || 'Admin'}!`, "success");
+                iniciarDashboard();
+            });
+        } else {
+            // NÃO LOGADO: Cria o bloqueio imediatamente
+            criarBloqueio();
+        }
+    });
+
+    function fazerLogin() {
+        firebase.auth().signInWithPopup(provider).catch(erro => {
+            console.error(erro);
+            // Mensagem amigável sobre o erro de protocolo file://
+            if(erro.code === 'auth/operation-not-supported-in-this-environment') {
+                alert("⚠️ AVISO IMPORTANTE:\n\nO Google não permite login abrindo o arquivo direto (clicando duas vezes).\n\nVocê precisa rodar um 'Servidor Local' (Localhost) no seu computador para testar.");
+            } else {
+                alert("Erro no login: " + erro.message);
+            }
+        });
+    }
+
+    // --- 3. SECURE FETCH ---
+    async function secureFetch(url, options = {}) {
+        if (!AUTH_TOKEN) {
+            const user = firebase.auth().currentUser;
+            if (user) AUTH_TOKEN = await user.getIdToken();
+        }
+        
+        // Bloqueia se tentar salvar sem estar logado
+        if (!AUTH_TOKEN && options.method && options.method !== 'GET') {
+            alert("Sessão inválida. Recarregue a página e faça login novamente.");
+            throw new Error("Sem token");
+        }
+
+        const separator = url.includes('?') ? '&' : '?';
+        const finalUrl = AUTH_TOKEN ? `${url}${separator}auth=${AUTH_TOKEN}` : url;
+        return fetch(finalUrl, options);
+    }
+
+    // --- 4. FUNÇÕES DO DASHBOARD (MANTIDAS IGUAIS) ---
+    
+    const CATEGORIES_MAP = {
+        "Açougues": "🥩", "Supermercados e Hipermercados": "🛒", "Padarias e Confeitarias": "🥖",
+        "Hortifrutis (Sacolões)": "🍎", "Restaurantes": "🍽️", "Bares e Casas Noturnas": "🍻",
+        "Lanchonetes e Fast Food": "🍔", "Pizzarias e Delivery": "🍕", "Farmácias e Drogarias": "💊",
+        "Hospitais e Laboratórios": "🏥", "Indústria Alimentícia": "🥫", "Indústria de Bebidas": "🥤",
+        "Indústria Farmacêutica": "🧪", "Indústria de Cosméticos": "💄", "Indústria de Produtos de Limpeza": "🧹",
+        "Indústria Automotiva": "🚗", "Confecções (Indústria Têxtil)": "👕", "Transportadoras e Logística": "🚚",
+        "E-commerce": "📦", "Estacionamentos": "🅿️", "Postos de Combustível": "⛽",
+        "Shopping Centers": "🛍️", "Condomínios (Comerciais e Residenciais)": "🏢", "Bancos e Financeiras": "💰"
+    };
+    const DADOS_PRE_CARREGADOS = { temaMes: { titulo: "Carregando..." } };
+
+    function switchView(viewName) {
+        document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.remove('view-active'));
+        if (viewName === 'content') {
+            document.getElementById('view-content').classList.add('view-active');
+            document.querySelector('.view-btn:nth-child(1)').classList.add('active');
+            document.getElementById('editor-controls').style.display = 'block';
+            document.querySelector('.save-bar').style.display = 'block';
+        } else {
+            document.getElementById('view-interactions').classList.add('view-active');
+            document.querySelector('.view-btn:nth-child(2)').classList.add('active');
+            document.getElementById('editor-controls').style.display = 'none';
+            document.querySelector('.save-bar').style.display = 'none';
+            if(!document.getElementById('monitor-filter-date').value) {
+                const now = new Date();
+                document.getElementById('monitor-filter-date').value = now.toISOString().slice(0, 7);
+            }
+            loadInteractions();
+        }
+    }
+
+    async function iniciarDashboard() {
+        try {
+            const resp = await secureFetch(CONTENT_URL);
+            const data = await resp.json();
+            const finalData = (data && data.temaMes) ? data : DADOS_PRE_CARREGADOS;
+            populateForm(finalData);
+        } catch (e) { populateForm(DADOS_PRE_CARREGADOS); }
+        
+        const listEl = document.getElementById('clientes-list');
+        if(listEl) listEl.addEventListener('paste', handleClientPaste);
+    }
+
+    async function deleteRef(path) {
+        if(!confirm("Tem certeza que deseja EXCLUIR este registro?")) return;
+        try {
+            await secureFetch(DB_ROOT_URL + path + ".json", { method: 'DELETE' });
+            showToast("Registro excluído!", "success");
+            loadInteractions();
+        } catch(e) { showToast("Erro ao excluir.", "error"); }
+    }
+
+    async function deleteQuizUser(userId) {
+        if(!confirm("Apagar histórico deste usuário no Quiz?")) return;
+        try {
+            const resp = await secureFetch(DB_ROOT_URL + "safety_quiz.json");
+            const data = await resp.json();
+            if(data) {
+                const promises = Object.keys(data).filter(qId => data[qId][userId]).map(qId => 
+                    secureFetch(DB_ROOT_URL + `safety_quiz/${qId}/${userId}.json`, { method: 'DELETE' })
+                );
+                await Promise.all(promises);
+            }
+            showToast("Usuário limpo do Quiz!", "success");
+            loadInteractions();
+        } catch(e) { showToast("Erro no quiz.", "error"); }
+    }
+
+    async function loadInteractions() {
+        if(!AUTH_TOKEN) return;
+        const filterDate = document.getElementById('monitor-filter-date').value; 
+        
+        try {
+            const resp = await secureFetch(DB_ROOT_URL + ".json");
+            const db = await resp.json();
+            if(!db) return;
+
+            const makeItem = (content, deletePath) => `
+                <div class="monitor-item">
+                    <div class="monitor-content">${content}</div>
+                    <button class="btn-trash" onclick="deleteRef('${deletePath}')"><i class="fas fa-trash"></i></button>
+                </div>`;
+
+            let likesHtml = '';
+            if(db.hobby_interactions?.likes) Object.keys(db.hobby_interactions.likes).forEach(u => likesHtml += makeItem(`${u} curtiu.`, `hobby_interactions/likes/${u}`));
+            document.getElementById('monitor-hobby-likes').innerHTML = likesHtml || 'Zero.';
+
+            let commHtml = '';
+            if(db.hobby_interactions?.comments) Object.entries(db.hobby_interactions.comments).forEach(([k, v]) => {
+                if(!v.date || v.date.startsWith(filterDate)) commHtml += makeItem(`<b>${v.author}:</b> ${v.text}`, `hobby_interactions/comments/${k}`);
+            });
+            document.getElementById('monitor-hobby-comments').innerHTML = commHtml || 'Zero.';
+
+            let chalHtml = '';
+            if(db.challenges_v2) for(const [t, d] of Object.entries(db.challenges_v2)) {
+                chalHtml += `<b>${t}</b><br>`;
+                Object.entries(d).forEach(([u, s]) => chalHtml += makeItem(`${u}: ${s}`, `challenges_v2/${t}/${u}`));
+            }
+            document.getElementById('monitor-challenges').innerHTML = chalHtml || 'Zero.';
+
+            let quizHtml = '';
+            if(db.safety_quiz) {
+                let stats = {};
+                for(let q in db.safety_quiz) for(let u in db.safety_quiz[q]) {
+                    if(!stats[u]) stats[u] = {c:0, t:0};
+                    stats[u].t++; if(db.safety_quiz[q][u]) stats[u].c++;
+                }
+                for(let u in stats) quizHtml += `<div class="monitor-item"><div>${u}<br><small>✅${stats[u].c} / ${stats[u].t}</small></div><button class="btn-trash" onclick="deleteQuizUser('${u}')"><i class="fas fa-trash"></i></button></div>`;
+            }
+            document.getElementById('monitor-quiz').innerHTML = quizHtml || 'Zero.';
+
+            let praiseHtml = '';
+            if(db.praise_messages) Object.entries(db.praise_messages).forEach(([k, v]) => {
+                if(!v.date || v.date.startsWith(filterDate)) praiseHtml += makeItem(`De ${v.from} p/ ${v.to}: "${v.message}"`, `praise_messages/${k}`);
+            });
+            document.getElementById('monitor-praise').innerHTML = praiseHtml || 'Zero.';
+            
+            // Carregando Jogos
+            let gamesHtml = '';
+            if(db.games) {
+                for (const [gameName, gameData] of Object.entries(db.games)) {
+                    if(gameData.scores) {
+                        gamesHtml += `<div style="margin:10px 0 5px; font-weight:bold; color:var(--primary);">${gameName}</div>`;
+                        Object.entries(gameData.scores).forEach(([key, s]) => {
+                            let show = true;
+                            if(s.data) {
+                                const parts = s.data.split('/');
+                                if(parts.length >= 3) {
+                                    const gameMonth = parts[1];
+                                    const gameYear = parts[2].split(',')[0].trim();
+                                    if(`${gameYear}-${gameMonth}` !== filterDate) show = false;
+                                }
+                            }
+                            if(show) gamesHtml += makeItem(`Rank: <b>${s.pontos}</b> - ${s.nome} <small>${s.data}</small>`, `games/${gameName}/scores/${key}`);
+                        });
+                    }
+                }
+            }
+            document.getElementById('monitor-games').innerHTML = gamesHtml || 'Sem jogos no período.';
+
+            // Sugestões
+            let suggHtml = '';
+            const processSugg = (nodeName, label, formatFn) => {
+                if(db[nodeName]) Object.entries(db[nodeName]).forEach(([key, s]) => {
+                    if(s.date && !s.date.startsWith(filterDate)) return;
+                    suggHtml += makeItem(`<strong style="color:#DAA520">${label}</strong> ${formatFn(s)} <small>${new Date(s.date).toLocaleString()}</small>`, `${nodeName}/${key}`);
+                });
+            };
+            processSugg('hobby_suggestions', 'Hobby', s => `De ${s.from} indicando <b>${s.target}</b>: "${s.reason}"`);
+            processSugg('game_suggestions', 'Game', s => `<b>${s.name}</b>: "${s.text}"`);
+            processSugg('recipe_suggestions', 'Receita', s => `<b>${s.author}</b>: Prato "${s.dish}"`);
+            document.getElementById('monitor-suggestions').innerHTML = suggHtml || 'Sem sugestões.';
+
+            // Ratings
+            let rateHtml = '';
+            if(db.ratings_v2) for(const [itemId, votes] of Object.entries(db.ratings_v2)) {
+                rateHtml += `<div style="margin:10px 0 5px; font-weight:bold; color:var(--primary);">${itemId}</div>`;
+                Object.entries(votes).forEach(([userId, stars]) => {
+                    rateHtml += makeItem(`<span class="id-badge">${userId}</span> : ${stars} ⭐`, `ratings_v2/${itemId}/${userId}`);
+                });
+            }
+            document.getElementById('monitor-ratings').innerHTML = rateHtml || 'Sem avaliações.';
+
+            // Comunicados
+            let commHtmlText = '';
+            if(db.Comunicado) Object.entries(db.Comunicado).forEach(([k, c]) => commHtmlText += makeItem(`<b>${c["autor:"]}</b>: "${c["comunicado:"]}"`, `Comunicado/${k}`));
+            if(db.Leituras_Confirmadas && db.Leituras_Confirmadas[0]) {
+                commHtmlText += `<div style="margin-top:10px;"><strong>Leituras Confirmadas (IDs):</strong></div>`;
+                Object.keys(db.Leituras_Confirmadas[0]).forEach(uid => commHtmlText += makeItem(`<span class="id-badge">${uid}</span> Leu.`, `Leituras_Confirmadas/0/${uid}`));
+            }
+            document.getElementById('monitor-comms').innerHTML = commHtmlText || 'Sem dados.';
+             
+        } catch(e) { console.error(e); }
+    }
+
+    function clearAllFields() {
+        if (!confirm("Limpar tudo?")) return;
+        document.querySelectorAll('input, textarea').forEach(el => el.value = "");
+        document.getElementById('clientes-list').innerHTML = '';
+        addNewClientRow();
+    }
+    function openTab(id, btn) {
+        document.querySelectorAll('.tab-content, .tab-btn').forEach(c => c.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
+    }
+    
+    function populateForm(data) {
+        setVal('tema-titulo', data.temaMes?.titulo); setVal('tema-subtitulo', data.temaMes?.subtitulo); setVal('tema-resumo', data.temaMes?.resumo); setVal('tema-conteudo', data.temaMes?.conteudoCompleto); setVal('tema-fonte-nome', data.temaMes?.fonte?.texto); setVal('tema-fonte-link', data.temaMes?.fonte?.link);
+        setVal('bemestar-subtitulo', data.saudeFisica?.subtitulo); setVal('bemestar-resumo', data.saudeFisica?.resumo); setVal('bemestar-conteudo', data.saudeFisica?.conteudoCompleto); setVal('bemestar-link', data.saudeFisica?.fonte?.link);
+        setVal('hobby-nome', data.hobby?.nome); setVal('hobby-cargo', data.hobby?.cargo); setVal('hobby-foto', data.hobby?.foto); setVal('hobby-texto', data.hobby?.texto);
+        if(data.hobby?.tags) { setVal('hobby-tag-1', data.hobby.tags[0]); setVal('hobby-tag-2', data.hobby.tags[1]); setVal('hobby-tag-3', data.hobby.tags[2]); }
+        if(data.cultura && data.cultura[0]) populateCulture('cult-filme', data.cultura[0]);
+        if(data.cultura && data.cultura[1]) populateCulture('cult-livro', data.cultura[1]);
+        if(data.receitas && data.receitas[0]) { const r = data.receitas[0]; setVal('rec-emoji', r.emoji); setVal('rec-titulo', r.titulo); setVal('rec-tempo', r.tempo); setVal('rec-indicado', r.indicadoPor); setVal('rec-desc', r.desc); setVal('rec-ing', r.ingredientes ? r.ingredientes.join('; ') : ''); setVal('rec-prep', r.preparo ? r.preparo.join('; ') : ''); }
+        if(data.desafios) { data.desafios.forEach((d, i) => { const idx = i + 1; if(idx <= 3) { setVal(`chal-${idx}-id`, d.id); setVal(`chal-${idx}-emoji`, d.emoji); setVal(`chal-${idx}-titulo`, d.titulo); setVal(`chal-${idx}-desc`, d.desc); } }); }
+        setVal('clientes-qtd', data.novos_clientes?.resumo?.quantidade); setVal('clientes-periodo', data.novos_clientes?.resumo?.periodo);
+        const listaClientes = data.novos_clientes?.lista || [];
+        document.getElementById('clientes-list').innerHTML = ''; 
+        if(listaClientes.length === 0) addNewClientRow(); else listaClientes.forEach(c => { let cat = Object.keys(CATEGORIES_MAP).find(key => CATEGORIES_MAP[key] === c.icone); addNewClientRow(cat, c.nome); });
+    }
+    function populateCulture(prefix, data) { setVal(`${prefix}-titulo`, data.titulo); setVal(`${prefix}-link`, data.link); setVal(`${prefix}-img`, data.img); setVal(`${prefix}-indicado`, data.indicadoPor); setVal(`${prefix}-sinopse`, data.sinopse); const cleanTag = data.tag ? data.tag.replace(/^Categoria:\s*/i, '') : ''; setVal(`${prefix}-tag`, cleanTag); }
+    function addNewClientRow(selectedCat = "", name = "") { const container = document.getElementById('clientes-list'); const div = document.createElement('div'); div.className = 'client-row'; let options = '<option value="">Selecione...</option>'; for (const [cat, emoji] of Object.entries(CATEGORIES_MAP)) { const isSel = cat === selectedCat ? 'selected' : ''; options += `<option value="${cat}" ${isSel}>${cat}</option>`; } div.innerHTML = `<select class="client-select">${options}</select><div class="client-input-wrapper"><input type="text" class="client-input" value="${name}" placeholder="Nome do Cliente"><button type="button" class="client-remove" onclick="this.closest('.client-row').remove()"><i class="fas fa-trash-alt"></i></button></div>`; container.appendChild(div); }
+    function handleClientPaste(e) { if (!e.target.classList.contains('client-input')) return; const pastedText = (e.clipboardData || window.clipboardData).getData('text'); if (!pastedText.includes('\n')) return; e.preventDefault(); const lines = pastedText.split(/\r?\n/).filter(line => line.trim() !== ''); const currentRow = e.target.closest('.client-row'); const currentCategory = currentRow.querySelector('.client-select').value; e.target.value = lines[0]; for (let i = 1; i < lines.length; i++) { addNewClientRow(currentCategory, lines[i]); } }
+    
+    function confirmSave() { 
+        if(!AUTH_TOKEN) { alert("Faça login!"); return; }
+        if (confirm("Publicar?")) { saveContent(); } 
+    }
+    
+    async function saveContent() {
+        const btn = document.querySelector('.btn-save'); btn.innerHTML = 'SALVANDO...'; btn.disabled = true;
+        let existingData = {}; 
+        try { 
+            const getResp = await secureFetch(CONTENT_URL); existingData = await getResp.json() || {}; 
+        } catch(e) {}
+
+        const getValSafe = (id, existingVal) => { const el = document.getElementById(id); if (!el) return existingVal || ''; const val = el.value.trim(); return val !== '' ? val : (existingVal || ''); };
+        
+        const culturaArr = [{ id: getValSafe('cult-filme-id', existingData.cultura?.[0]?.id), tipo: 'video', titulo: getValSafe('cult-filme-titulo', existingData.cultura?.[0]?.titulo), link: getValSafe('cult-filme-link', existingData.cultura?.[0]?.link), img: getValSafe('cult-filme-img', existingData.cultura?.[0]?.img), indicadoPor: getValSafe('cult-filme-indicado', existingData.cultura?.[0]?.indicadoPor), sinopse: getValSafe('cult-filme-sinopse', existingData.cultura?.[0]?.sinopse), tag: getValSafe('cult-filme-tag', existingData.cultura?.[0]?.tag) }, { id: getValSafe('cult-livro-id', existingData.cultura?.[1]?.id), tipo: 'livro', titulo: getValSafe('cult-livro-titulo', existingData.cultura?.[1]?.titulo), link: getValSafe('cult-livro-link', existingData.cultura?.[1]?.link), img: getValSafe('cult-livro-img', existingData.cultura?.[1]?.img), indicadoPor: getValSafe('cult-livro-indicado', existingData.cultura?.[1]?.indicadoPor), sinopse: getValSafe('cult-livro-sinopse', existingData.cultura?.[1]?.sinopse), tag: getValSafe('cult-livro-tag', existingData.cultura?.[1]?.tag) }];
+        const hobbyTags = [getVal('hobby-tag-1'), getVal('hobby-tag-2'), getVal('hobby-tag-3')].filter(t=>t); const finalHobbyTags = hobbyTags.length > 0 ? hobbyTags : (existingData.hobby?.tags || []);
+        const receitaObj = { emoji: getValSafe('rec-emoji', existingData.receitas?.[0]?.emoji), titulo: getValSafe('rec-titulo', existingData.receitas?.[0]?.titulo), tempo: getValSafe('rec-tempo', existingData.receitas?.[0]?.tempo), indicadoPor: getValSafe('rec-indicado', existingData.receitas?.[0]?.indicadoPor), desc: getValSafe('rec-desc', existingData.receitas?.[0]?.desc), ingredientes: document.getElementById('rec-ing').value.trim() ? getVal('rec-ing').split(';').map(s=>s.trim()).filter(s=>s) : (existingData.receitas?.[0]?.ingredientes || []), preparo: document.getElementById('rec-prep').value.trim() ? getVal('rec-prep').split(';').map(s=>s.trim()).filter(s=>s) : (existingData.receitas?.[0]?.preparo || []) };
+        const desafiosArr = [1, 2, 3].map(i => ({ id: getValSafe(`chal-${i}-id`, existingData.desafios?.[i-1]?.id), emoji: getValSafe(`chal-${i}-emoji`, existingData.desafios?.[i-1]?.emoji), titulo: getValSafe(`chal-${i}-titulo`, existingData.desafios?.[i-1]?.titulo), desc: getValSafe(`chal-${i}-desc`, existingData.desafios?.[i-1]?.desc) }));
+        const clientRows = document.querySelectorAll('.client-row'); const clientesLista = Array.from(clientRows).map(row => { const cat = row.querySelector('.client-select').value; const nome = row.querySelector('.client-input').value; if(!nome) return null; return { icone: CATEGORIES_MAP[cat] || "🏢", nome: nome, data: "", destaque: false }; }).filter(c => c !== null);
+        const data = { temaMes: { titulo: getValSafe('tema-titulo', existingData.temaMes?.titulo), subtitulo: getValSafe('tema-subtitulo', existingData.temaMes?.subtitulo), resumo: getValSafe('tema-resumo', existingData.temaMes?.resumo), conteudoCompleto: getValSafe('tema-conteudo', existingData.temaMes?.conteudoCompleto), fonte: { texto: getValSafe('tema-fonte-nome', existingData.temaMes?.fonte?.texto), link: getValSafe('tema-fonte-link', existingData.temaMes?.fonte?.link) } }, saudeFisica: { subtitulo: getValSafe('bemestar-subtitulo', existingData.saudeFisica?.subtitulo), resumo: getValSafe('bemestar-resumo', existingData.saudeFisica?.resumo), conteudoCompleto: getValSafe('bemestar-conteudo', existingData.saudeFisica?.conteudoCompleto), fonte: { link: getValSafe('bemestar-link', existingData.saudeFisica?.fonte?.link), texto: "Fonte" } }, hobby: { nome: getValSafe('hobby-nome', existingData.hobby?.nome), cargo: getValSafe('hobby-cargo', existingData.hobby?.cargo), foto: getValSafe('hobby-foto', existingData.hobby?.foto), texto: getValSafe('hobby-texto', existingData.hobby?.texto), tags: finalHobbyTags }, cultura: culturaArr, receitas: [receitaObj], desafios: desafiosArr, novos_clientes: { resumo: { quantidade: getValSafe('clientes-qtd', existingData.novos_clientes?.resumo?.quantidade), periodo: getValSafe('clientes-periodo', existingData.novos_clientes?.resumo?.periodo) }, lista: clientesLista } };
+        
+        try { 
+            const resp = await secureFetch(CONTENT_URL, { method: 'PUT', body: JSON.stringify(data) }); 
+            if (resp.ok) showToast("Sucesso!", "success"); 
+            else throw new Error("Erro API"); 
+        } catch (e) { 
+            showToast("Erro ao salvar.", "error"); 
+        } finally { 
+            btn.innerHTML = '<i class="fas fa-save"></i> PUBLICAR NO SITE'; btn.disabled = false; 
+        }
+    }
+
+    function getVal(id) { return document.getElementById(id) ? document.getElementById(id).value : ''; }
+    function setVal(id, v) { if(document.getElementById(id)) document.getElementById(id).value = v || ''; }
+    function showToast(msg, type) { const t = document.getElementById('toast'); t.textContent = msg; t.className = type; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
+</script>
+
+</body>
+</html>
