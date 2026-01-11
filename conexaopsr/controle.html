@@ -546,38 +546,75 @@
         } catch(e) { showToast("Erro no quiz.", "error"); }
     }
 
-    async function loadInteractions() {
+async function loadInteractions() {
         if(!AUTH_TOKEN) return;
-        const filterDate = document.getElementById('monitor-filter-date').value; 
         
+        // 1. Pega o valor do filtro (Ex: "2026-01")
+        const filterDate = document.getElementById('monitor-filter-date').value; 
+        if (!filterDate) return;
+
         try {
             const resp = await secureFetch(DB_ROOT_URL + ".json");
             const db = await resp.json();
             if(!db) return;
 
+            // Função auxiliar para criar o HTML dos itens
             const makeItem = (content, deletePath) => `
                 <div class="monitor-item">
                     <div class="monitor-content">${content}</div>
                     <button class="btn-trash" onclick="deleteRef('${deletePath}')"><i class="fas fa-trash"></i></button>
                 </div>`;
 
+            // --- 1. HOBBY LIKES (Agora dentro de History) ---
             let likesHtml = '';
-            if(db.hobby_interactions?.likes) Object.keys(db.hobby_interactions.likes).forEach(u => likesHtml += makeItem(`${u} curtiu.`, `hobby_interactions/likes/${u}`));
-            document.getElementById('monitor-hobby-likes').innerHTML = likesHtml || 'Zero.';
-
-            let commHtml = '';
-            if(db.hobby_interactions?.comments) Object.entries(db.hobby_interactions.comments).forEach(([k, v]) => {
-                if(!v.date || v.date.startsWith(filterDate)) commHtml += makeItem(`<b>${v.author}:</b> ${v.text}`, `hobby_interactions/comments/${k}`);
-            });
-            document.getElementById('monitor-hobby-comments').innerHTML = commHtml || 'Zero.';
-
-            let chalHtml = '';
-            if(db.challenges_v2) for(const [t, d] of Object.entries(db.challenges_v2)) {
-                chalHtml += `<b>${t}</b><br>`;
-                Object.entries(d).forEach(([u, s]) => chalHtml += makeItem(`${u}: ${s}`, `challenges_v2/${t}/${u}`));
+            // Busca no caminho histórico usando a data do filtro
+            const monthlyLikes = db.hobby_interactions_history?.[filterDate]?.likes || {};
+            
+            if(Object.keys(monthlyLikes).length > 0) {
+                Object.keys(monthlyLikes).forEach(u => {
+                    likesHtml += makeItem(`Usuário ${u} curtiu.`, `hobby_interactions_history/${filterDate}/likes/${u}`);
+                });
+            } else {
+                // Fallback opcional: se não achar no histórico, verifica a raiz (comportamento antigo), mas idealmente usamos só o histórico
+                if (db.hobby_interactions?.likes) {
+                     // Caso queira mostrar apenas se não tiver histórico, ou pode deixar vazio. 
+                     // Deixarei vazio para respeitar o filtro estrito de data.
+                }
             }
-            document.getElementById('monitor-challenges').innerHTML = chalHtml || 'Zero.';
+            document.getElementById('monitor-hobby-likes').innerHTML = likesHtml || 'Nenhuma curtida neste mês.';
 
+            // --- 2. HOBBY COMMENTS / SUGGESTIONS ---
+            let commHtml = '';
+            // O JSON novo não mostrou "comments", mas mostrou "hobby_suggestions". Vamos manter a lógica para Suggestions aqui se quiser,
+            // ou se "comments" voltarem a existir na raiz.
+            if(db.hobby_interactions?.comments) {
+                Object.entries(db.hobby_interactions.comments).forEach(([k, v]) => {
+                    if(!v.date || v.date.startsWith(filterDate)) {
+                        commHtml += makeItem(`<b>${v.author}:</b> ${v.text}`, `hobby_interactions/comments/${k}`);
+                    }
+                });
+            }
+            document.getElementById('monitor-hobby-comments').innerHTML = commHtml || 'Sem comentários.';
+
+            // --- 3. DESAFIOS (Agora dentro de Challenges History) ---
+            let chalHtml = '';
+            // Acessa challenges_history -> [2026-01]
+            const historyMonth = db.challenges_history?.[filterDate];
+            
+            if(historyMonth) {
+                for(const [tipoDesafio, usuarios] of Object.entries(historyMonth)) {
+                    chalHtml += `<b style="color:var(--primary); text-transform:capitalize">${tipoDesafio}</b><br>`;
+                    Object.entries(usuarios).forEach(([u, status]) => {
+                        // Limpa espaços em branco nas chaves de usuário que apareceram no JSON (ex: " user_123")
+                        const cleanUser = u.trim(); 
+                        const statusIcon = status === 'success' ? '✅' : '❌';
+                        chalHtml += makeItem(`${cleanUser}: ${statusIcon} (${status})`, `challenges_history/${filterDate}/${tipoDesafio}/${u}`);
+                    });
+                }
+            }
+            document.getElementById('monitor-challenges').innerHTML = chalHtml || 'Sem registros para este mês.';
+
+            // --- 4. QUIZ (Mantido Geral - JSON não tem data) ---
             let quizHtml = '';
             if(db.safety_quiz) {
                 let stats = {};
@@ -585,72 +622,126 @@
                     if(!stats[u]) stats[u] = {c:0, t:0};
                     stats[u].t++; if(db.safety_quiz[q][u]) stats[u].c++;
                 }
-                for(let u in stats) quizHtml += `<div class="monitor-item"><div>${u}<br><small>✅${stats[u].c} / ${stats[u].t}</small></div><button class="btn-trash" onclick="deleteQuizUser('${u}')"><i class="fas fa-trash"></i></button></div>`;
+                for(let u in stats) {
+                    // Quiz não tem data no JSON, então mostra sempre (ou filtra se adicionar data futuramente)
+                    quizHtml += `<div class="monitor-item"><div><span class="id-badge">${u}</span><br><small>✅ Acertos: ${stats[u].c} / ${stats[u].t}</small></div><button class="btn-trash" onclick="deleteQuizUser('${u}')"><i class="fas fa-trash"></i></button></div>`;
+                }
             }
-            document.getElementById('monitor-quiz').innerHTML = quizHtml || 'Zero.';
+            document.getElementById('monitor-quiz').innerHTML = quizHtml || 'Sem participantes.';
 
+            // --- 5. ELOGIOS (Praise Messages) ---
             let praiseHtml = '';
             if(db.praise_messages) Object.entries(db.praise_messages).forEach(([k, v]) => {
-                if(!v.date || v.date.startsWith(filterDate)) praiseHtml += makeItem(`De ${v.from} p/ ${v.to}: "${v.message}"`, `praise_messages/${k}`);
+                // Filtra pela data ISO (ex: 2026-01-07...)
+                if(v.date && v.date.startsWith(filterDate)) {
+                    praiseHtml += makeItem(`De <b>${v.from}</b> p/ <b>${v.to}</b>:<br>"${v.message}"`, `praise_messages/${k}`);
+                }
             });
-            document.getElementById('monitor-praise').innerHTML = praiseHtml || 'Zero.';
+            document.getElementById('monitor-praise').innerHTML = praiseHtml || 'Nenhum elogio neste mês.';
             
-            // Carregando Jogos
+            // --- 6. JOGOS (Data formato BR: 06/01/2026) ---
             let gamesHtml = '';
             if(db.games) {
                 for (const [gameName, gameData] of Object.entries(db.games)) {
                     if(gameData.scores) {
-                        gamesHtml += `<div style="margin:10px 0 5px; font-weight:bold; color:var(--primary);">${gameName}</div>`;
+                        let hasScore = false;
+                        let innerHtml = `<div style="margin:10px 0 5px; font-weight:bold; color:var(--primary); border-bottom:1px solid #eee;">${gameName}</div>`;
+                        
                         Object.entries(gameData.scores).forEach(([key, s]) => {
-                            let show = true;
+                            let show = false;
                             if(s.data) {
+                                // Tenta converter "06/01/2026, 14:40:11" para verificar o mês
+                                // Split por "/" -> [06, 01, 2026...]
                                 const parts = s.data.split('/');
                                 if(parts.length >= 3) {
-                                    const gameMonth = parts[1];
-                                    const gameYear = parts[2].split(',')[0].trim();
-                                    if(`${gameYear}-${gameMonth}` !== filterDate) show = false;
+                                    const mes = parts[1];
+                                    const anoFull = parts[2].split(',')[0].trim(); // Pega "2026"
+                                    
+                                    // Compara Ano-Mes com o filtro
+                                    if(`${anoFull}-${mes}` === filterDate) {
+                                        show = true;
+                                    }
                                 }
                             }
-                            if(show) gamesHtml += makeItem(`Rank: <b>${s.pontos}</b> - ${s.nome} <small>${s.data}</small>`, `games/${gameName}/scores/${key}`);
+                            
+                            if(show) {
+                                hasScore = true;
+                                innerHtml += makeItem(`Rank: <b>${s.pontos}</b> - ${s.nome} <br><small>${s.data}</small>`, `games/${gameName}/scores/${key}`);
+                            }
                         });
+                        if(hasScore) gamesHtml += innerHtml;
                     }
                 }
             }
             document.getElementById('monitor-games').innerHTML = gamesHtml || 'Sem jogos no período.';
 
-            // Sugestões
+            // --- 7. SUGESTÕES (Hobby, Game, Receita) ---
             let suggHtml = '';
             const processSugg = (nodeName, label, formatFn) => {
                 if(db[nodeName]) Object.entries(db[nodeName]).forEach(([key, s]) => {
+                    // Filtra data ISO
                     if(s.date && !s.date.startsWith(filterDate)) return;
-                    suggHtml += makeItem(`<strong style="color:#DAA520">${label}</strong> ${formatFn(s)} <small>${new Date(s.date).toLocaleString()}</small>`, `${nodeName}/${key}`);
+                    
+                    suggHtml += makeItem(
+                        `<strong style="color:#DAA520">${label}</strong> ${formatFn(s)} <br><small>${new Date(s.date).toLocaleDateString()}</small>`, 
+                        `${nodeName}/${key}`
+                    );
                 });
             };
-            processSugg('hobby_suggestions', 'Hobby', s => `De ${s.from} indicando <b>${s.target}</b>: "${s.reason}"`);
-            processSugg('game_suggestions', 'Game', s => `<b>${s.name}</b>: "${s.text}"`);
-            processSugg('recipe_suggestions', 'Receita', s => `<b>${s.author}</b>: Prato "${s.dish}"`);
-            document.getElementById('monitor-suggestions').innerHTML = suggHtml || 'Sem sugestões.';
+            
+            processSugg('hobby_suggestions', 'Indicação Hobby', s => `De ${s.from} indicando <b>${s.target}</b>: <i>"${s.reason}"</i>`);
+            processSugg('game_suggestions', 'Sugestão Jogo', s => `<b>${s.name}</b>: "${s.text}"`);
+            processSugg('recipe_suggestions', 'Sugestão Receita', s => `<b>${s.author}</b>: Prato "${s.dish}"`);
+            
+            document.getElementById('monitor-suggestions').innerHTML = suggHtml || 'Sem sugestões neste mês.';
 
-            // Ratings
+            // --- 8. AVALIAÇÕES (Ratings - Agora no History) ---
             let rateHtml = '';
-            if(db.ratings_v2) for(const [itemId, votes] of Object.entries(db.ratings_v2)) {
-                rateHtml += `<div style="margin:10px 0 5px; font-weight:bold; color:var(--primary);">${itemId}</div>`;
-                Object.entries(votes).forEach(([userId, stars]) => {
-                    rateHtml += makeItem(`<span class="id-badge">${userId}</span> : ${stars} ⭐`, `ratings_v2/${itemId}/${userId}`);
+            // Acessa ratings_history -> [2026-01]
+            const ratingsMonth = db.ratings_history?.[filterDate];
+
+            if(ratingsMonth) {
+                for(const [itemId, votes] of Object.entries(ratingsMonth)) {
+                    rateHtml += `<div style="margin:10px 0 5px; font-weight:bold; color:var(--primary);">${itemId}</div>`;
+                    Object.entries(votes).forEach(([userId, stars]) => {
+                        rateHtml += makeItem(`<span class="id-badge">${userId}</span> : ${stars} ⭐`, `ratings_history/${filterDate}/${itemId}/${userId}`);
+                    });
+                }
+            }
+            document.getElementById('monitor-ratings').innerHTML = rateHtml || 'Sem avaliações neste mês.';
+
+            // --- 9. COMUNICADOS (Chaves com dois pontos :) ---
+            let commHtmlText = '';
+            if(db.Comunicado) {
+                // Nota: O JSON mostra array para Comunicado, mas o Firebase geralmente retorna objeto com chaves numéricas ou IDs
+                // Vamos iterar independente se for Array ou Objeto
+                Object.entries(db.Comunicado).forEach(([k, c]) => {
+                    // O JSON mostra a chave "data:" com dois pontos
+                    const dataCom = c["data:"] || c.data || ""; 
+                    
+                    if(dataCom.startsWith(filterDate)) {
+                        const autor = c["autor:"] || "RH";
+                        const texto = c["comunicado:"] || "";
+                        commHtmlText += makeItem(`<b>${autor}</b> "${texto}"`, `Comunicado/${k}`);
+                    }
                 });
             }
-            document.getElementById('monitor-ratings').innerHTML = rateHtml || 'Sem avaliações.';
-
-            // Comunicados
-            let commHtmlText = '';
-            if(db.Comunicado) Object.entries(db.Comunicado).forEach(([k, c]) => commHtmlText += makeItem(`<b>${c["autor:"]}</b>: "${c["comunicado:"]}"`, `Comunicado/${k}`));
+            
             if(db.Leituras_Confirmadas && db.Leituras_Confirmadas[0]) {
-                commHtmlText += `<div style="margin-top:10px;"><strong>Leituras Confirmadas (IDs):</strong></div>`;
-                Object.keys(db.Leituras_Confirmadas[0]).forEach(uid => commHtmlText += makeItem(`<span class="id-badge">${uid}</span> Leu.`, `Leituras_Confirmadas/0/${uid}`));
+                // Leituras confirmadas parecem não ter data no JSON, então exibe fixo ou adapta se tiver data
+                commHtmlText += `<div style="margin-top:10px; border-top:1px dashed #ccc; padding-top:5px;"><strong>Leituras Confirmadas (Geral):</strong></div>`;
+                Object.keys(db.Leituras_Confirmadas[0]).forEach(uid => {
+                    commHtmlText += makeItem(`<span class="id-badge">${uid}</span> confirmou leitura.`, `Leituras_Confirmadas/0/${uid}`);
+                });
             }
-            document.getElementById('monitor-comms').innerHTML = commHtmlText || 'Sem dados.';
+            document.getElementById('monitor-comms').innerHTML = commHtmlText || 'Sem comunicados neste mês.';
              
-        } catch(e) { console.error(e); }
+        } catch(e) { 
+            console.error("Erro ao carregar interações:", e);
+            document.getElementById('toast').innerText = "Erro ao carregar dados";
+            document.getElementById('toast').className = "error";
+            document.getElementById('toast').style.display = "block";
+        }
     }
 
     function clearAllFields() {
