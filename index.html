@@ -15,8 +15,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     <style>
-        /* BLINDAGEM 2: CSS Reset & Namespacing
-           Usamos o prefixo "psr-" em tudo para evitar conflitos com outros CSS da página. */
+        /* BLINDAGEM 2: CSS Isolado (Namespacing)
+           Todas as classes usam o prefixo "psr-" para garantir que este estilo 
+           nunca afete outros elementos se um dia este código for copiado para outro lugar. */
         
         :root {
             --psr-primary: #2563eb;
@@ -26,7 +27,7 @@
             --psr-text-sec: #6b7280;
         }
 
-        /* Reset específico para garantir visual consistente */
+        /* Reset exclusivo para este arquivo */
         body {
             margin: 0;
             padding: 20px;
@@ -41,19 +42,19 @@
             min-height: 100vh;
         }
 
-        /* --- Overlay de Login Blindado --- */
+        /* --- Overlay de Login --- */
         #psr-login-overlay {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
+            width: 100vw; /* Garante cobertura total da viewport */
             height: 100vh;
             background: rgba(243, 244, 246, 1);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 2147483647; /* Valor máximo de z-index para ficar acima de tudo */
+            z-index: 99999; /* Z-index alto para ficar sobre tudo */
         }
 
         .psr-login-box {
@@ -142,7 +143,6 @@
             max-width: 900px;
         }
 
-        /* Cards Blindados */
         .psr-card {
             background-color: var(--psr-card-bg);
             border-radius: 12px;
@@ -151,14 +151,13 @@
             text-decoration: none;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
-            border: 2px solid transparent; /* Borda transparente para evitar pulo no hover */
+            border: 2px solid transparent;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 220px;
             position: relative;
-            overflow: hidden;
         }
 
         .psr-card.active {
@@ -204,7 +203,6 @@
             color: #9ca3af;
         }
 
-        /* Animação Shake */
         @keyframes psr-shake {
             0% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
@@ -262,32 +260,32 @@
     </div>
 
     <script>
-    // BLINDAGEM 3: IIFE (Immediately Invoked Function Expression)
-    // Isso garante que nenhuma variável aqui vaze ou seja alterada por scripts externos.
+    // BLINDAGEM 3: IIFE (Escopo Fechado)
+    // Garante que nenhuma variável vaze para o escopo global (Window),
+    // impedindo conflito com scripts de outras páginas.
     (function() {
         
-        // --- FUNÇÃO DE HASH INTERNA (SHA-256) ---
-        // Implementada manualmente para não depender de bibliotecas externas
-        // Fonte: Implementação compacta padrão de SHA256 para JS
+        // --- FUNÇÃO DE CRIPTOGRAFIA (SHA-256) PURA ---
+        // Implementada internamente para não depender de arquivos externos.
+        // Isso permite validar a senha "M@rket" sem expor o texto original.
         async function sha256(message) {
-            // Codifica a mensagem como um array de bytes
             const msgBuffer = new TextEncoder().encode(message);
-            // Hash the message
             const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            // Converte ArrayBuffer para Array de bytes
             const hashArray = Array.from(new Uint8Array(hashBuffer));
-            // Converte bytes para string hex
             const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
             return hashHex;
         }
 
         // --- CONFIGURAÇÃO ---
-        // Hash da senha "M@rket"
-        const HASH_ALVO = "513035b806d203529344485590521639f7833075678401340798e35181180766";
+        const HASH_ALVO = "513035b806d203529344485590521639f7833075678401340798e35181180766"; // Hash de M@rket
         const DIAS_EXPIRACAO = 30;
-        const STORAGE_KEY = "psr_secure_access_ts";
+        
+        // BLINDAGEM 4: Chave de Storage Única
+        // Usamos um nome muito específico para salvar o login.
+        // Assim, este arquivo nunca vai sobrescrever ou ler o login de outro painel.
+        const STORAGE_KEY = "psr_mkt_unique_auth_token_v882";
 
-        // Elementos DOM
+        // Referências DOM
         const overlay = document.getElementById('psr-login-overlay');
         const mainContent = document.getElementById('psr-main-content');
         const input = document.getElementById('psrPasswordInput');
@@ -301,19 +299,16 @@
             const validTime = DIAS_EXPIRACAO * 24 * 60 * 60 * 1000;
 
             if (lastLogin && (now - lastLogin < validTime)) {
-                liberarAcesso(false); // False = sem animação de entrada pois já estava logado
+                liberarAcesso(false); 
             } else {
-                // Foca no input automaticamente
                 setTimeout(() => input.focus(), 100);
             }
         }
 
-        // Lógica de Verificação
+        // Verificação de Senha
         async function tentarLogin() {
-            const senhaDigitada = input.value.trim(); // Remove espaços extras
-            
-            // Debug de segurança (Remova em produção se quiser extrema discrição)
-            // console.log("Tentando validar..."); 
+            // Remove espaços antes e depois para evitar erros de copiar/colar
+            const senhaDigitada = input.value.trim(); 
 
             try {
                 const hashGerado = await sha256(senhaDigitada);
@@ -325,7 +320,7 @@
                     bloquearAcesso();
                 }
             } catch (e) {
-                console.error("Erro no ambiente seguro:", e);
+                console.error("Erro de validação interna", e);
                 bloquearAcesso();
             }
         }
@@ -335,7 +330,6 @@
             mainContent.style.display = 'flex';
             
             if(animar) {
-                // Pequeno delay para permitir o display flex renderizar antes da opacidade
                 setTimeout(() => {
                     mainContent.style.opacity = '1';
                 }, 10);
@@ -346,31 +340,28 @@
 
         function bloquearAcesso() {
             errorMsg.style.display = "block";
-            errorMsg.innerText = "Senha incorreta";
             const box = document.querySelector('.psr-login-box');
             
-            // Reinicia animação
+            // Reinicia animação de erro
             box.style.animation = 'none';
             box.offsetHeight; /* trigger reflow */
             box.style.animation = "psr-shake 0.4s";
             
-            input.value = "";
+            input.value = ""; // Limpa campo
             input.focus();
         }
 
         // Event Listeners
         btn.addEventListener('click', tentarLogin);
-        
         input.addEventListener('keyup', (event) => {
             if (event.key === 'Enter') {
                 tentarLogin();
             }
         });
 
-        // Inicia
         document.addEventListener("DOMContentLoaded", init);
 
-    })(); // Fim da IIFE
+    })(); 
     </script>
 </body>
 </html>
