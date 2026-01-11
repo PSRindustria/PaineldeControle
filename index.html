@@ -30,6 +30,8 @@
     <link rel="stylesheet" href="style.css?v=2" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
     <style>
         :root {
             --primary-color: #2563eb;
@@ -43,7 +45,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Poppins', 'Segoe UI', sans-serif; /* Atualizado para Poppins conforme seu link */
+            font-family: 'Poppins', 'Segoe UI', sans-serif;
         }
 
         body {
@@ -147,7 +149,6 @@
             max-width: 900px;
         }
 
-        /* Estilo Geral dos Cards */
         .card {
             background-color: var(--card-bg);
             border-radius: 12px;
@@ -164,7 +165,6 @@
             height: 220px;
         }
 
-        /* Card Ativo (Linkado) */
         .card.active {
             color: var(--text-color);
             cursor: pointer;
@@ -193,7 +193,6 @@
             color: var(--text-secondary);
         }
 
-        /* Card Vazio */
         .card.empty {
             border: 2px dashed #d1d5db;
             background-color: transparent;
@@ -219,7 +218,8 @@
         </div>
     </div>
 
-    <div id="main-content" style="display: none;"> <header>
+    <div id="main-content">
+        <header>
             <h1>Painel de Controle Marketing</h1>
             <p class="subtitle">Selecione o módulo desejado</p>
         </header>
@@ -254,21 +254,21 @@
     </div>
 
     <script>
-        // --- CONFIGURAÇÃO DA SENHA ---
-        const SENHA_CORRETA = "M@rket"; // <--- ALTERE A SENHA AQUI
-        const DIAS_PARA_EXPIRAR = 30; // Frequência da senha (em dias)
+        // --- CONFIGURAÇÃO DE SEGURANÇA ---
         
-        // Lógica de Autenticação
+        // Hash SHA-256 para a senha "M@rket"
+        const HASH_CORRETO = "513035b806d203529344485590521639f7833075678401340798e35181180766"; 
+        
+        const DIAS_PARA_EXPIRAR = 30; // Lembrar por 30 dias
+
         document.addEventListener("DOMContentLoaded", function() {
             const lastLogin = localStorage.getItem("psr_auth_time");
             const now = new Date().getTime();
             const validTime = DIAS_PARA_EXPIRAR * 24 * 60 * 60 * 1000;
 
-            // Se existe registro e ainda é válido (menor que 30 dias)
             if (lastLogin && (now - lastLogin < validTime)) {
                 mostrarPainel();
             } else {
-                // Caso contrário, mantem o overlay de login visível
                 document.getElementById('login-overlay').style.display = 'flex';
             }
         });
@@ -276,14 +276,16 @@
         function verificarSenha() {
             const input = document.getElementById("passwordInput").value;
             const errorMsg = document.getElementById("errorMsg");
+            
+            // Calcula o Hash do que o usuário digitou
+            const hashDigitado = CryptoJS.SHA256(input).toString();
 
-            if (input === SENHA_CORRETA) {
-                // Salva o timestamp atual
+            // Compara o hash digitado com o hash guardado
+            if (hashDigitado === HASH_CORRETO) {
                 localStorage.setItem("psr_auth_time", new Date().getTime());
                 mostrarPainel();
             } else {
                 errorMsg.style.display = "block";
-                // Treme o input para feedback visual
                 const box = document.querySelector('.login-box');
                 box.style.animation = "shake 0.5s";
                 setTimeout(() => box.style.animation = "none", 500);
@@ -292,14 +294,10 @@
 
         function mostrarPainel() {
             document.getElementById('login-overlay').style.display = 'none';
-            const mainContent = document.getElementById('main-content');
-            
-            // Remove o style inline 'none' para exibir
-            mainContent.style.display = 'flex'; 
+            document.getElementById('main-content').style.display = 'flex'; 
         }
 
-        // Adicionando animação de erro no CSS via JS se necessário, 
-        // ou apenas uma classe simples
+        // Animação de erro
         const styleSheet = document.createElement("style");
         styleSheet.innerText = `
             @keyframes shake {
