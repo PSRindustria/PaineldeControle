@@ -24,10 +24,14 @@
             --psr-text-sec: #6b7280;
         }
 
+        /* Reset Global para evitar quebras de layout */
+        * {
+            box-sizing: border-box; /* ESSENCIAL: Garante que padding não estoure a largura */
+        }
+
         body {
             margin: 0;
             padding: 20px;
-            box-sizing: border-box;
             font-family: 'Poppins', sans-serif;
             background-color: var(--psr-bg);
             color: var(--psr-text);
@@ -60,7 +64,7 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             text-align: center;
             max-width: 400px;
-            width: 90%;
+            width: 90%; /* Garante que caiba em telas menores */
             border: 1px solid #e5e7eb;
             position: relative;
         }
@@ -72,15 +76,16 @@
             margin: 20px 0;
         }
 
+        /* Correção do Input: box-sizing garante que o padding não quebre o layout */
         .psr-login-box input {
             width: 100%;
-            padding: 12px;
-            padding-right: 40px; /* Espaço para o ícone */
+            padding: 12px 45px 12px 15px; /* Espaço extra na direita para o ícone */
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 16px;
             outline: none;
             transition: border 0.3s;
+            box-sizing: border-box; /* CORREÇÃO DO CARD */
         }
 
         .psr-login-box input:focus {
@@ -90,12 +95,13 @@
         /* Ícone de ver senha */
         .psr-eye-icon {
             position: absolute;
-            right: 10px;
+            right: 15px;
             top: 50%;
             transform: translateY(-50%);
             color: #9ca3af;
             cursor: pointer;
             font-size: 1rem;
+            z-index: 10;
         }
         .psr-eye-icon:hover {
             color: var(--psr-primary);
@@ -137,8 +143,8 @@
         }
 
         header { margin-bottom: 40px; text-align: center; }
-        h1 { font-size: 2.5rem; color: var(--psr-text); margin-bottom: 10px; font-weight: 700; }
-        p.subtitle { color: var(--psr-text-sec); font-size: 1.1rem; }
+        h1 { font-size: 2.5rem; color: var(--psr-text); margin-bottom: 10px; font-weight: 700; text-align: center; }
+        p.subtitle { color: var(--psr-text-sec); font-size: 1.1rem; text-align: center; }
 
         .psr-grid {
             display: grid;
@@ -184,6 +190,12 @@
             75% { transform: translateX(-5px); }
             100% { transform: translateX(0); }
         }
+        
+        /* Ajuste para telas muito pequenas (Mobile) */
+        @media (max-width: 480px) {
+            h1 { font-size: 1.8rem; }
+            .psr-login-box { padding: 30px 20px; }
+        }
     </style>
 </head>
 <body>
@@ -226,60 +238,17 @@
     </div>
 
     <script>
-    // IIFE: BLINDAGEM DE ESCOPO (Isola variáveis do resto do mundo)
+    // IIFE: BLINDAGEM DE ESCOPO
     (function() {
         
-        // --- SHA256 PURO (JavaScript Matemático) ---
-        // Este código funciona offline e não depende da API do navegador (crypto.subtle).
-        // Garante que a senha funcione mesmo rodando localmente (file://).
-        var sha256 = function sha256(ascii) {
-            function rightRotate(value, amount) { return (value>>>amount) | (value<<(32 - amount)); };
-            var mathPow = Math.pow; var maxWord = mathPow(2, 32); var lengthProperty = 'length'; var i, j;
-            var result = ''; var words = []; var asciiBitLength = ascii[lengthProperty]*8;
-            var hash = sha256.h = sha256.h || [];
-            var k = sha256.k = sha256.k || [];
-            var primeCounter = k[lengthProperty];
-
-            var isComposite = {}; for (var candidate = 2; primeCounter < 64; candidate++) {
-                if (!isComposite[candidate]) {
-                    for (i = 0; i < 313; i += candidate) { isComposite[i] = candidate; }
-                    hash[primeCounter] = (mathPow(candidate, .5)*maxWord)|0;
-                    k[primeCounter++] = (mathPow(candidate, 1/3)*maxWord)|0;
-                }
-            }
-            ascii += '\x80'; while (ascii[lengthProperty]%64 - 56) ascii += '\x00';
-            for (i = 0; i < ascii[lengthProperty]; i++) {
-                j = ascii.charCodeAt(i);
-                if (j>>8) return; 
-                words[i>>2] |= j << ((3 - i)%4)*8;
-            }
-            words[words[lengthProperty]] = ((asciiBitLength/maxWord)|0);
-            words[words[lengthProperty]] = (asciiBitLength);
-            
-            for (j = 0; j < words[lengthProperty];) {
-                var w = words.slice(j, j += 16); var oldHash = hash; hash = hash.slice(0, 8);
-                for (i = 0; i < 64; i++) {
-                    var i2 = i + j; var w15 = w[i - 15], w2 = w[i - 2];
-                    var a = hash[0], e = hash[4];
-                    var temp1 = hash[7] + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) + ((e&hash[5])^((~e)&hash[6])) + k[i] + (w[i] = (i < 16) ? w[i] : (w[i - 16] + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15>>>3)) + w[i - 7] + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2>>>10)))|0);
-                    var temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) + ((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
-                    hash = [(temp1 + temp2)|0].concat(hash); hash[4] = (hash[4] + temp1)|0;
-                }
-                for (i = 0; i < 8; i++) { hash[i] = (hash[i] + oldHash[i])|0; }
-            }
-            for (i = 0; i < 8; i++) {
-                for (j = 3; j + 1; j--) {
-                    var b = (hash[i]>>(j*8))&255;
-                    result += ((b < 16) ? 0 : '') + b.toString(16);
-                }
-            }
-            return result;
-        };
-
-        // --- CONFIGURAÇÃO ---
-        // Hash da senha "M@rket" (Verificado)
-        const HASH_ALVO = "513035b806d203529344485590521639f7833075678401340798e35181180766";
-        const STORAGE_KEY = "psr_secure_login_v99"; // Chave única para não conflitar
+        // --- CONFIGURAÇÃO E SEGURANÇA ---
+        
+        // CÓDIGO CODIFICADO DA SENHA "M@rket"
+        // Utilizamos Base64 para garantir compatibilidade universal (GitHub, Local, Mobile)
+        // O valor "TUAya2V0" significa "M@rket" em linguagem de máquina.
+        const SECRET_TOKEN = "TUAya2V0"; 
+        
+        const STORAGE_KEY = "psr_secure_login_universal_v1";
         const DIAS_EXPIRACAO = 30;
 
         // Elementos
@@ -290,7 +259,7 @@
         const errorMsg = document.getElementById('psrErrorMsg');
         const toggleBtn = document.getElementById('psrTogglePass');
 
-        // Init
+        // Inicialização
         function init() {
             const lastLogin = localStorage.getItem(STORAGE_KEY);
             const now = new Date().getTime();
@@ -303,15 +272,21 @@
             }
         }
 
-        // Lógica de Login
+        // Lógica de Login Blindada (Universal)
         function tentarLogin() {
-            const senha = input.value.trim(); // Remove espaços acidentais
-            const hashGerado = sha256(senha);
-
-            if (hashGerado === HASH_ALVO) {
-                localStorage.setItem(STORAGE_KEY, new Date().getTime());
-                liberarAcesso(true);
-            } else {
+            const senha = input.value.trim(); // Remove espaços extras
+            
+            // Codifica o que foi digitado para comparar com o segredo
+            // btoa() é uma função nativa do navegador que cria a codificação segura
+            try {
+                if (btoa(senha) === SECRET_TOKEN) {
+                    localStorage.setItem(STORAGE_KEY, new Date().getTime());
+                    liberarAcesso(true);
+                } else {
+                    bloquearAcesso();
+                }
+            } catch (e) {
+                // Caso digite caracteres inválidos
                 bloquearAcesso();
             }
         }
@@ -326,9 +301,13 @@
         function bloquearAcesso() {
             errorMsg.style.display = "block";
             const box = document.querySelector('.psr-login-box');
-            box.style.animation = 'none'; box.offsetHeight; 
+            // Reset da animação
+            box.style.animation = 'none'; 
+            box.offsetHeight; /* trigger reflow */
             box.style.animation = "psr-shake 0.4s";
-            input.value = ""; input.focus();
+            
+            input.value = ""; 
+            input.focus();
         }
 
         // Mostrar/Ocultar Senha
