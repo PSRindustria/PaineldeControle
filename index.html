@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     <style>
-        /* --- BLINDAGEM CSS (Namespacing) --- */
+        /* --- BLINDAGEM CSS --- */
         :root {
             --psr-primary: #2563eb;
             --psr-bg: #f3f4f6;
@@ -24,10 +24,8 @@
             --psr-text-sec: #6b7280;
         }
 
-        /* Reset Global para evitar quebras de layout */
-        * {
-            box-sizing: border-box; /* ESSENCIAL: Garante que padding não estoure a largura */
-        }
+        /* Reset Global */
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
@@ -64,35 +62,33 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             text-align: center;
             max-width: 400px;
-            width: 90%; /* Garante que caiba em telas menores */
+            width: 90%;
             border: 1px solid #e5e7eb;
             position: relative;
         }
 
-        /* Container do input para posicionar o olho */
+        /* Container do input */
         .psr-input-wrapper {
             position: relative;
             width: 100%;
             margin: 20px 0;
         }
 
-        /* Correção do Input: box-sizing garante que o padding não quebre o layout */
         .psr-login-box input {
             width: 100%;
-            padding: 12px 45px 12px 15px; /* Espaço extra na direita para o ícone */
+            padding: 12px 45px 12px 15px; /* Espaço para o ícone */
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 16px;
             outline: none;
             transition: border 0.3s;
-            box-sizing: border-box; /* CORREÇÃO DO CARD */
         }
 
         .psr-login-box input:focus {
             border-color: var(--psr-primary);
         }
 
-        /* Ícone de ver senha */
+        /* Ícone de olho */
         .psr-eye-icon {
             position: absolute;
             right: 15px;
@@ -103,9 +99,7 @@
             font-size: 1rem;
             z-index: 10;
         }
-        .psr-eye-icon:hover {
-            color: var(--psr-primary);
-        }
+        .psr-eye-icon:hover { color: var(--psr-primary); }
 
         .psr-login-box button {
             background-color: var(--psr-primary);
@@ -120,9 +114,7 @@
             font-weight: 600;
         }
 
-        .psr-login-box button:hover {
-            background-color: #1d4ed8;
-        }
+        .psr-login-box button:hover { background-color: #1d4ed8; }
 
         .psr-error-msg {
             color: #ef4444;
@@ -132,7 +124,7 @@
             font-weight: 500;
         }
 
-        /* Main Content */
+        /* Conteúdo Principal */
         #psr-main-content {
             display: none;
             width: 100%;
@@ -190,8 +182,7 @@
             75% { transform: translateX(-5px); }
             100% { transform: translateX(0); }
         }
-        
-        /* Ajuste para telas muito pequenas (Mobile) */
+
         @media (max-width: 480px) {
             h1 { font-size: 1.8rem; }
             .psr-login-box { padding: 30px 20px; }
@@ -206,7 +197,7 @@
             <p style="margin-top: 10px; color: #666;">Acesso Restrito</p>
             
             <div class="psr-input-wrapper">
-                <input type="password" id="psrPasswordInput" placeholder="Digite a senha" autocomplete="off">
+                <input type="password" id="psrPasswordInput" placeholder="Senha" autocomplete="off">
                 <i class="fa-solid fa-eye psr-eye-icon" id="psrTogglePass"></i>
             </div>
 
@@ -238,17 +229,15 @@
     </div>
 
     <script>
-    // IIFE: BLINDAGEM DE ESCOPO
     (function() {
+        // --- CONFIGURAÇÃO ---
         
-        // --- CONFIGURAÇÃO E SEGURANÇA ---
+        // SENHA: "tirohpsr"
+        // Codificada em Base64 ("dGlyb2hwc3I=") para não ficar legível no código
+        const TOKEN_CORRETO = "dGlyb2hwc3I="; 
         
-        // CÓDIGO CODIFICADO DA SENHA "M@rket"
-        // Utilizamos Base64 para garantir compatibilidade universal (GitHub, Local, Mobile)
-        // O valor "TUAya2V0" significa "M@rket" em linguagem de máquina.
-        const SECRET_TOKEN = "TUAya2V0"; 
-        
-        const STORAGE_KEY = "psr_secure_login_universal_v1";
+        // Nome único para salvar o login e não conflitar com nada
+        const STORAGE_KEY = "psr_login_tiroh_v3";
         const DIAS_EXPIRACAO = 30;
 
         // Elementos
@@ -259,7 +248,7 @@
         const errorMsg = document.getElementById('psrErrorMsg');
         const toggleBtn = document.getElementById('psrTogglePass');
 
-        // Inicialização
+        // Verifica se já logou antes
         function init() {
             const lastLogin = localStorage.getItem(STORAGE_KEY);
             const now = new Date().getTime();
@@ -272,21 +261,19 @@
             }
         }
 
-        // Lógica de Login Blindada (Universal)
+        // Validação
         function tentarLogin() {
-            const senha = input.value.trim(); // Remove espaços extras
+            const senha = input.value.trim(); // Remove espaços antes/depois
             
-            // Codifica o que foi digitado para comparar com o segredo
-            // btoa() é uma função nativa do navegador que cria a codificação segura
+            // Codifica o que foi digitado e compara com o token
             try {
-                if (btoa(senha) === SECRET_TOKEN) {
+                if (btoa(senha) === TOKEN_CORRETO) {
                     localStorage.setItem(STORAGE_KEY, new Date().getTime());
                     liberarAcesso(true);
                 } else {
                     bloquearAcesso();
                 }
             } catch (e) {
-                // Caso digite caracteres inválidos
                 bloquearAcesso();
             }
         }
@@ -301,16 +288,14 @@
         function bloquearAcesso() {
             errorMsg.style.display = "block";
             const box = document.querySelector('.psr-login-box');
-            // Reset da animação
             box.style.animation = 'none'; 
-            box.offsetHeight; /* trigger reflow */
+            box.offsetHeight; 
             box.style.animation = "psr-shake 0.4s";
-            
             input.value = ""; 
             input.focus();
         }
 
-        // Mostrar/Ocultar Senha
+        // Ver/Ocultar Senha
         toggleBtn.addEventListener('click', () => {
             if(input.type === "password") {
                 input.type = "text";
