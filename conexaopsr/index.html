@@ -1380,7 +1380,7 @@
                 </div>
             </div>
             <div class="card" style="grid-column: span 3;">
-                <div class="card-header"><h2><i class="fas fa-hand-point-up"></i> Top Interações (Botões mais clicados)</h2></div>
+                <div class="card-header"><h2><i class="fas fa-hand-point-up"></i> Top Interações (Botões clicados por Visitante Único)</h2></div>
                 <div class="chart-container">
                     <canvas id="chartEvents"></canvas>
                 </div>
@@ -1748,23 +1748,48 @@ async function loadTrafficData() {
             renderDeviceChart(mobile, desktop);
 
             // Gráfico de Top Interações (Também aplicamos o filtro "x" aqui para consistência)
-            const eventCounts = {};
-            if(data.events) {
+const eventCounts = {}; // Onde vamos guardar a soma total
+
+            if (data.events) {
+                // Aqui está o segredo: percorremos CADA DIA separadamente
                 Object.values(data.events).forEach(dayEvents => {
+                    
+                    // Criamos uma lista de verificação EXCLUSIVA para este dia
+                    // Amanhã essa lista zera e as pessoas podem contar de novo
+                    const dailyInteractionMap = {}; 
+
                     Object.values(dayEvents).forEach(ev => {
                         const labelRaw = ev.txt || ev.id || "";
-                        const labelLower = labelRaw.toLowerCase().trim();
+                        const labelParaFiltro = labelRaw.trim(); 
                         
-                        // Ignora se for 'x'
-                        if (labelLower !== 'x' && labelLower !== 'fechar') {
-                            // Usa o label original para o gráfico ficar bonito
-                            const label = labelRaw; 
-                            eventCounts[label] = (eventCounts[label] || 0) + 1;
+                        // Pega o ID correto usando 'u'
+                        const userId = ev.u || ev.user || ev.uid || "anonimo"; 
+                        
+                        // Filtra o 'x'
+                        if (labelParaFiltro !== 'x' && labelParaFiltro !== 'X' && labelParaFiltro !== '×' && labelParaFiltro !== '') {
+                            
+                            if (!dailyInteractionMap[labelRaw]) {
+                                dailyInteractionMap[labelRaw] = new Set();
+                            }
+                            
+                            // Adiciona o usuário na lista deste dia
+                            dailyInteractionMap[labelRaw].add(userId);
                         }
                     });
+
+                    // Agora somamos os únicos DESTE DIA ao total geral do gráfico
+                    for (const [label, userSet] of Object.entries(dailyInteractionMap)) {
+                        // Se já tem contagem, soma + (visitantes únicos de hoje). Se não, começa do zero.
+                        eventCounts[label] = (eventCounts[label] || 0) + userSet.size; 
+                    }
                 });
             }
-            const sortedEvents = Object.entries(eventCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+
+            // Ordena do maior para o menor e pega os top 5
+            const sortedEvents = Object.entries(eventCounts)
+                .sort((a,b) => b[1] - a[1])
+                .slice(0, 5);
+
             renderEventsChart(sortedEvents.map(e=>e[0]), sortedEvents.map(e=>e[1]));
 
         } catch(e) { console.error("Erro analytics:", e); }
