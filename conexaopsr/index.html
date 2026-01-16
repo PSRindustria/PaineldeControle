@@ -1380,7 +1380,7 @@
                 </div>
             </div>
             <div class="card" style="grid-column: span 3;">
-                <div class="card-header"><h2><i class="fas fa-hand-point-up"></i> Top Interações (Botões clicados por Visitante Único)</h2></div>
+                <div class="card-header"><h2><i class="fas fa-hand-point-up"></i> Top Interações (Visitantes Únicos/Dia - Mês Vigente)</h2></div>
                 <div class="chart-container">
                     <canvas id="chartEvents"></canvas>
                 </div>
@@ -1747,40 +1747,46 @@ async function loadTrafficData() {
             }
             renderDeviceChart(mobile, desktop);
 
-            // Gráfico de Top Interações (Também aplicamos o filtro "x" aqui para consistência)
-const eventCounts = {}; // Onde vamos guardar a soma total
+// Gráfico de Top Interações (Visitantes Únicos Diários - Acumulado do Mês Vigente)
+            const eventCounts = {}; 
+
+            // Pega o mês atual no formato YYYY-MM (ex: "2026-01") para filtrar
+            const hojeData = new Date();
+            const mesAtualStr = hojeData.toISOString().slice(0, 7); 
 
             if (data.events) {
-                // Aqui está o segredo: percorremos CADA DIA separadamente
-                Object.values(data.events).forEach(dayEvents => {
+                // Percorre cada dia que existe no banco de dados (chave = "YYYY-MM-DD")
+                Object.keys(data.events).forEach(dateKey => {
                     
-                    // Criamos uma lista de verificação EXCLUSIVA para este dia
-                    // Amanhã essa lista zera e as pessoas podem contar de novo
-                    const dailyInteractionMap = {}; 
+                    // FILTRO DE MÊS: Só processa se o dia pertencer ao mês atual
+                    if (dateKey.startsWith(mesAtualStr)) {
+                        
+                        const dayEvents = data.events[dateKey];
+                        const dailyInteractionMap = {}; // Lista VIP deste dia específico
 
-                    Object.values(dayEvents).forEach(ev => {
-                        const labelRaw = ev.txt || ev.id || "";
-                        const labelParaFiltro = labelRaw.trim(); 
-                        
-                        // Pega o ID correto usando 'u'
-                        const userId = ev.u || ev.user || ev.uid || "anonimo"; 
-                        
-                        // Filtra o 'x'
-                        if (labelParaFiltro !== 'x' && labelParaFiltro !== 'X' && labelParaFiltro !== '×' && labelParaFiltro !== '') {
+                        Object.values(dayEvents).forEach(ev => {
+                            const labelRaw = ev.txt || ev.id || "";
+                            const labelParaFiltro = labelRaw.trim(); 
                             
-                            if (!dailyInteractionMap[labelRaw]) {
-                                dailyInteractionMap[labelRaw] = new Set();
+                            // Pega o ID correto usando 'u' (conforme sua estrutura)
+                            const userId = ev.u || ev.user || ev.uid || "anonimo"; 
+                            
+                            // Filtra o 'x', 'X' e o símbolo '×'
+                            if (labelParaFiltro !== 'x' && labelParaFiltro !== 'X' && labelParaFiltro !== '×' && labelParaFiltro !== '') {
+                                
+                                if (!dailyInteractionMap[labelRaw]) {
+                                    dailyInteractionMap[labelRaw] = new Set();
+                                }
+                                
+                                // Adiciona na lista do dia (remove duplicatas do mesmo dia)
+                                dailyInteractionMap[labelRaw].add(userId);
                             }
-                            
-                            // Adiciona o usuário na lista deste dia
-                            dailyInteractionMap[labelRaw].add(userId);
-                        }
-                    });
+                        });
 
-                    // Agora somamos os únicos DESTE DIA ao total geral do gráfico
-                    for (const [label, userSet] of Object.entries(dailyInteractionMap)) {
-                        // Se já tem contagem, soma + (visitantes únicos de hoje). Se não, começa do zero.
-                        eventCounts[label] = (eventCounts[label] || 0) + userSet.size; 
+                        // Soma os únicos DESTE DIA ao total do mês
+                        for (const [label, userSet] of Object.entries(dailyInteractionMap)) {
+                            eventCounts[label] = (eventCounts[label] || 0) + userSet.size; 
+                        }
                     }
                 });
             }
