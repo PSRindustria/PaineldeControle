@@ -176,7 +176,7 @@
             <div class="card">
                 <div class="card-header"><h2><i class="fas fa-heartbeat"></i> Bem-Estar</h2></div>
                 <div class="form-group"><label>Subtítulo:</label><input type="text" id="saude-subtitulo"></div>
-                <div class="form-group"><label>Resumo:</label><textarea id="saude-resumo" rows="3"></textarea></div>
+                <div class="form-group"><label>Imagem Fundo:</label><input type="text" id="saude-bg"></div> <div class="form-group"><label>Ícone (Emoji):</label><input type="text" id="saude-icon"></div> <div class="form-group"><label>Resumo:</label><textarea id="saude-resumo" rows="3"></textarea></div>
                 <div class="form-group"><label>Conteúdo HTML:</label><textarea id="saude-conteudo" rows="6"></textarea></div>
                 <div class="form-group"><label>Link:</label><input type="text" id="saude-link"></div>
             </div>
@@ -352,6 +352,8 @@
             setVal('pp-fonte', data.partiuPensar?.fonte);
 
             setVal('saude-subtitulo', data.saudeFisica?.subtitulo);
+            setVal('saude-bg', data.saudeFisica?.imagemFundo); // NOVO
+            setVal('saude-icon', data.saudeFisica?.icon); // NOVO
             setVal('saude-resumo', data.saudeFisica?.resumo);
             setVal('saude-conteudo', data.saudeFisica?.conteudoCompleto);
             setVal('saude-link', data.saudeFisica?.fonte?.link);
@@ -428,6 +430,8 @@
             },
             saudeFisica: {
                 subtitulo: getVal('saude-subtitulo'),
+                imagemFundo: getVal('saude-bg'), // NOVO
+                icon: getVal('saude-icon'), // NOVO
                 resumo: getVal('saude-resumo'),
                 conteudoCompleto: getVal('saude-conteudo'),
                 fonte: { link: getVal('saude-link'), texto: "Fonte" }
