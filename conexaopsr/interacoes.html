@@ -136,6 +136,7 @@
     <div class="card"><h2><i class="fas fa-heart"></i> Elogios</h2><div id="m-praise" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
     <div class="card"><h2><i class="fas fa-gamepad"></i> Ranking Jogos</h2><div id="m-games" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
     <div class="card"><h2><i class="fas fa-lightbulb"></i> Sugestões</h2><div id="m-sugg" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-film"></i> Sugestões Filmes</h2><div id="m-movies" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
     <div class="card"><h2><i class="fas fa-bullhorn"></i> Comunicados</h2><div id="m-comm" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
     <div class="card"><h2><i class="fas fa-star"></i> Avaliações</h2><div id="m-rate" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
 </div>
@@ -233,6 +234,16 @@
                 if(isInMonth(v.date)) sugH += item(`<b>Receita:</b> ${v.dish} (De: ${v.author})`, `recipe_suggestions/${k}`);
             });
             document.getElementById('m-sugg').innerHTML = sugH || 'Sem sugestões neste mês.';
+
+            // --- FILMES (NOVO: Não usa filtro de mês para mostrar todas as pendentes) ---
+            let movH = '';
+            if(db.suggestions) Object.entries(db.suggestions).forEach(([k,v]) => {
+                // Tenta extrair texto caso seja objeto ou string
+                let txt = (typeof v === 'object') ? (v.sugestao || v.filme || v.text || JSON.stringify(v)) : v;
+                movH += item(`<b>Filme:</b> ${txt}`, `suggestions/${k}`);
+            });
+            document.getElementById('m-movies').innerHTML = movH || 'Sem filmes sugeridos.';
+
 
             // --- ELOGIOS (Filtro Estrito de Mês Vigente) ---
             let praH = '';
