@@ -24,8 +24,19 @@
             padding: 20px; color: #333; margin: 0; padding-bottom: 120px;
         }
 
+        /* SEGURANÇA VISUAL: Esconde tudo até logar */
+        #app-content { display: none; }
+
+        /* TELA DE ACESSO NEGADO */
+        #access-denied {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; color: #fff; z-index: 10000;
+            flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
+        #access-denied h1 { color: #dc3545; font-size: 3em; margin-bottom: 10px; }
+        #access-denied p { font-size: 1.2em; color: #aaa; }
+
         .header { text-align: center; margin-bottom: 40px; }
-        
         .header h1 { 
             color: var(--primary); margin: 0 0 20px 0; font-size: 2.5em;
             background: linear-gradient(135deg, var(--primary) 0%, #004d99 100%);
@@ -150,7 +161,7 @@
         /* Loading Overlay */
         #loading { 
             position: fixed; top:0; left:0; width:100%; height:100%; 
-            background:rgba(255,255,255,0.95); z-index:9999; 
+            background:rgba(255,255,255,1); z-index:9999; 
             display:flex; justify-content:center; align-items:center; flex-direction:column;
             backdrop-filter: blur(5px);
         }
@@ -160,117 +171,126 @@
 </head>
 <body>
 
-<div class="header">
-    <h1>Painel PSR</h1>
-    <div class="view-switcher">
-        <a href="editor.html" class="view-btn active"><i class="fas fa-edit"></i> Editor</a>
-        <a href="interacoes.html" class="view-btn"><i class="fas fa-chart-line"></i> Interações</a>
-        <a href="trafego_interno.html" class="view-btn"><i class="fas fa-network-wired"></i> Tráfego ConexãoPSR</a>
-        <a href="trafego_portal.html" class="view-btn"><i class="fas fa-globe"></i> Tráfego Portal</a>
-    </div>
+<div id="access-denied">
+    <h1><i class="fas fa-lock"></i> Acesso Negado</h1>
+    <p>Você não tem permissão para acessar este sistema.</p>
+    <p style="font-size:0.9em; margin-top:20px;">IP e Tentativa Registrados.</p>
+    <button onclick="logoutAndReload()" style="margin-top:20px; padding:10px 20px; cursor:pointer;">Tentar outra conta</button>
 </div>
 
-<form id="dashboardForm" onsubmit="event.preventDefault(); confirmSave();">
-    <div class="dashboard-grid">
-        <div class="card">
-            <div class="card-header"><h2><i class="fas fa-calendar-alt"></i> Tema do Mês</h2></div>
-            <div class="form-group"><label>Título:</label><input type="text" id="tema-titulo" placeholder="Ex: Janeiro Branco"></div>
-            <div class="form-group"><label>Subtítulo:</label><input type="text" id="tema-subtitulo" placeholder="Ex: Quem cuida da mente, cuida da vida!"></div>
-            <div class="form-group"><label>CAPA URL (Fundo):</label><input type="text" id="tema-capa" placeholder="Link da imagem de fundo"></div>
-            <div class="form-group"><label>Resumo (Capa):</label><textarea id="tema-resumo" rows="3" placeholder="Texto curto que aparece no topo..."></textarea></div>
-            <div class="form-group"><label>Conteúdo HTML:</label><textarea id="tema-conteudo" rows="6" placeholder="<p>Texto completo...</p>"></textarea></div>
-            <div class="cols-2">
-                <div class="form-group"><label>Fonte Nome:</label><input type="text" id="tema-fonte-nome"></div>
-                <div class="form-group"><label>Fonte Link:</label><input type="text" id="tema-fonte-link"></div>
-            </div>
-        </div>
+<div id="loading"><div><i class="fas fa-shield-alt fa-3x" style="color:var(--primary)"></i></div><h3 style="color:var(--primary); margin-top:15px;">Verificando Credenciais...</h3></div>
 
-        <div class="card">
-            <div class="card-header"><h2><i class="fas fa-lightbulb"></i> Partiu Pensar</h2></div>
-            <div class="form-group"><label>Título:</label><input type="text" id="pp-titulo" placeholder="Ex: Partiu Pensar"></div>
-            <div class="form-group"><label>Subtítulo (Categoria):</label><input type="text" id="pp-subtitulo" placeholder="Ex: Filosofia"></div>
-            <div class="form-group"><label>Imagem de Fundo URL:</label><input type="text" id="pp-bg" placeholder="Link da imagem (opcional)"></div>
-            <div class="form-group"><label>Resumo (Chamada):</label><textarea id="pp-resumo" rows="2" placeholder="Frase curta de impacto..."></textarea></div>
-            <div class="form-group"><label>Conteúdo Completo (HTML):</label><textarea id="pp-conteudo" rows="5" placeholder="<p>Texto da reflexão...</p>"></textarea></div>
-            <div class="form-group"><label>Fonte / Autor:</label><input type="text" id="pp-fonte" placeholder="Ex: Mario Sergio Cortella"></div>
-        </div>
-
-        <div class="card">
-            <div class="card-header"><h2><i class="fas fa-heartbeat"></i> Bem-Estar</h2></div>
-            <div class="form-group"><label>Subtítulo:</label><input type="text" id="saude-subtitulo" placeholder="Ex: Dicas de Ergonomia"></div>
-            <div class="form-group"><label>Resumo:</label><textarea id="saude-resumo" rows="3"></textarea></div>
-            <div class="form-group"><label>Conteúdo HTML:</label><textarea id="saude-conteudo" rows="6"></textarea></div>
-            <div class="form-group"><label>Link Fonte:</label><input type="text" id="saude-link"></div>
-        </div>
-
-        <div class="card">
-            <div class="card-header"><h2><i class="fas fa-film"></i> Indica Aí (Cultura)</h2></div>
-            
-            <div class="tab-nav">
-                <button type="button" class="tab-btn active" onclick="switchTab('cultura-video', this)">🎥 Vídeo/Filme</button>
-                <button type="button" class="tab-btn" onclick="switchTab('cultura-livro', this)">📚 Livro</button>
-            </div>
-
-            <div id="cultura-video" class="tab-content active">
-                <div style="background:#f8f9fa; padding:15px; border-radius:10px; border:1px solid #eee;">
-                    <div class="form-group"><label>Título:</label><input type="text" id="cultura-0-titulo"></div>
-                    <div class="form-group"><label>Link:</label><input type="text" id="cultura-0-link"></div>
-                    <div class="form-group"><label>Capa URL:</label><input type="text" id="cultura-0-img"></div>
-                    <div class="form-group"><label>Indicado Por:</label><input type="text" id="cultura-0-indicado"></div>
-                    <div class="form-group"><label>Sinopse:</label><textarea id="cultura-0-sinopse"></textarea></div>
-                </div>
-            </div>
-
-            <div id="cultura-livro" class="tab-content">
-                <div style="background:#f8f9fa; padding:15px; border-radius:10px; border:1px solid #eee;">
-                    <div class="form-group"><label>Título:</label><input type="text" id="cultura-1-titulo"></div>
-                    <div class="form-group"><label>Link:</label><input type="text" id="cultura-1-link"></div>
-                    <div class="form-group"><label>Capa URL:</label><input type="text" id="cultura-1-img"></div>
-                    <div class="form-group"><label>Indicado Por:</label><input type="text" id="cultura-1-indicado"></div>
-                    <div class="form-group"><label>Sinopse:</label><textarea id="cultura-1-sinopse"></textarea></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header"><h2><i class="fas fa-user-circle"></i> Além do Crachá</h2></div>
-            <div class="form-group"><label>Nome:</label><input type="text" id="hobby-nome"></div>
-            <div class="form-group"><label>Setor/Cargo:</label><input type="text" id="hobby-cargo"></div>
-            <div class="form-group"><label>Foto URL:</label><input type="text" id="hobby-foto"></div>
-            <div class="form-group"><label>Texto:</label><textarea id="hobby-texto" rows="4"></textarea></div>
-            
-            <div class="form-group">
-                <label>Tags (3 principais):</label>
-                <div class="tags-grid">
-                    <input type="text" id="tag-1" placeholder="Tag 1 (Ex: Café)">
-                    <input type="text" id="tag-2" placeholder="Tag 2 (Ex: Cães)">
-                    <input type="text" id="tag-3" placeholder="Tag 3 (Ex: Viagem)">
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <h2><i class="fas fa-briefcase"></i> Novos Clientes</h2>
-                <button type="button" class="client-remove" onclick="document.getElementById('clientes-list').innerHTML=''; addNewClientRow();" title="Limpar Lista"><i class="fas fa-trash"></i></button>
-            </div>
-            <div class="cols-2">
-                <div class="form-group"><label>Qtd Resumo:</label><input type="text" id="clientes-qtd"></div>
-                <div class="form-group"><label>Período:</label><input type="text" id="clientes-periodo"></div>
-            </div>
-            <label style="font-size:0.8em; color:#666; margin-top:10px; display:block;">LISTA (Copie e cole do Excel na caixa de texto):</label>
-            <div id="clientes-list" style="margin-top:10px;"></div>
-            <button type="button" class="btn-add-client" onclick="addNewClientRow()">+ Adicionar Linha</button>
+<div id="app-content">
+    <div class="header">
+        <h1>Painel PSR</h1>
+        <div class="view-switcher">
+            <a href="editor.html" class="view-btn active"><i class="fas fa-edit"></i> Editor</a>
+            <a href="interacoes.html" class="view-btn"><i class="fas fa-chart-line"></i> Interações</a>
+            <a href="trafego_interno.html" class="view-btn"><i class="fas fa-network-wired"></i> Tráfego ConexãoPSR</a>
+            <a href="trafego_portal.html" class="view-btn"><i class="fas fa-globe"></i> Tráfego Portal</a>
         </div>
     </div>
-</form>
 
-<div class="actions-bar">
-    <button class="btn-action btn-clear" onclick="clearForm()"><i class="fas fa-eraser"></i> Limpar Formulário</button>
-    <button class="btn-action btn-save" onclick="confirmSave()"><i class="fas fa-save"></i> PUBLICAR NO SITE</button>
+    <form id="dashboardForm" onsubmit="event.preventDefault(); confirmSave();">
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header"><h2><i class="fas fa-calendar-alt"></i> Tema do Mês</h2></div>
+                <div class="form-group"><label>Título:</label><input type="text" id="tema-titulo" placeholder="Ex: Janeiro Branco"></div>
+                <div class="form-group"><label>Subtítulo:</label><input type="text" id="tema-subtitulo" placeholder="Ex: Quem cuida da mente, cuida da vida!"></div>
+                <div class="form-group"><label>CAPA URL (Fundo):</label><input type="text" id="tema-capa" placeholder="Link da imagem de fundo"></div>
+                <div class="form-group"><label>Resumo (Capa):</label><textarea id="tema-resumo" rows="3" placeholder="Texto curto que aparece no topo..."></textarea></div>
+                <div class="form-group"><label>Conteúdo HTML:</label><textarea id="tema-conteudo" rows="6" placeholder="<p>Texto completo...</p>"></textarea></div>
+                <div class="cols-2">
+                    <div class="form-group"><label>Fonte Nome:</label><input type="text" id="tema-fonte-nome"></div>
+                    <div class="form-group"><label>Fonte Link:</label><input type="text" id="tema-fonte-link"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h2><i class="fas fa-lightbulb"></i> Partiu Pensar</h2></div>
+                <div class="form-group"><label>Título:</label><input type="text" id="pp-titulo" placeholder="Ex: Partiu Pensar"></div>
+                <div class="form-group"><label>Subtítulo (Categoria):</label><input type="text" id="pp-subtitulo" placeholder="Ex: Filosofia"></div>
+                <div class="form-group"><label>Imagem de Fundo URL:</label><input type="text" id="pp-bg" placeholder="Link da imagem (opcional)"></div>
+                <div class="form-group"><label>Resumo (Chamada):</label><textarea id="pp-resumo" rows="2" placeholder="Frase curta de impacto..."></textarea></div>
+                <div class="form-group"><label>Conteúdo Completo (HTML):</label><textarea id="pp-conteudo" rows="5" placeholder="<p>Texto da reflexão...</p>"></textarea></div>
+                <div class="form-group"><label>Fonte / Autor:</label><input type="text" id="pp-fonte" placeholder="Ex: Mario Sergio Cortella"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h2><i class="fas fa-heartbeat"></i> Bem-Estar</h2></div>
+                <div class="form-group"><label>Subtítulo:</label><input type="text" id="saude-subtitulo" placeholder="Ex: Dicas de Ergonomia"></div>
+                <div class="form-group"><label>Resumo:</label><textarea id="saude-resumo" rows="3"></textarea></div>
+                <div class="form-group"><label>Conteúdo HTML:</label><textarea id="saude-conteudo" rows="6"></textarea></div>
+                <div class="form-group"><label>Link Fonte:</label><input type="text" id="saude-link"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h2><i class="fas fa-film"></i> Indica Aí (Cultura)</h2></div>
+                
+                <div class="tab-nav">
+                    <button type="button" class="tab-btn active" onclick="switchTab('cultura-video', this)">🎥 Vídeo/Filme</button>
+                    <button type="button" class="tab-btn" onclick="switchTab('cultura-livro', this)">📚 Livro</button>
+                </div>
+
+                <div id="cultura-video" class="tab-content active">
+                    <div style="background:#f8f9fa; padding:15px; border-radius:10px; border:1px solid #eee;">
+                        <div class="form-group"><label>Título:</label><input type="text" id="cultura-0-titulo"></div>
+                        <div class="form-group"><label>Link:</label><input type="text" id="cultura-0-link"></div>
+                        <div class="form-group"><label>Capa URL:</label><input type="text" id="cultura-0-img"></div>
+                        <div class="form-group"><label>Indicado Por:</label><input type="text" id="cultura-0-indicado"></div>
+                        <div class="form-group"><label>Sinopse:</label><textarea id="cultura-0-sinopse"></textarea></div>
+                    </div>
+                </div>
+
+                <div id="cultura-livro" class="tab-content">
+                    <div style="background:#f8f9fa; padding:15px; border-radius:10px; border:1px solid #eee;">
+                        <div class="form-group"><label>Título:</label><input type="text" id="cultura-1-titulo"></div>
+                        <div class="form-group"><label>Link:</label><input type="text" id="cultura-1-link"></div>
+                        <div class="form-group"><label>Capa URL:</label><input type="text" id="cultura-1-img"></div>
+                        <div class="form-group"><label>Indicado Por:</label><input type="text" id="cultura-1-indicado"></div>
+                        <div class="form-group"><label>Sinopse:</label><textarea id="cultura-1-sinopse"></textarea></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h2><i class="fas fa-user-circle"></i> Além do Crachá</h2></div>
+                <div class="form-group"><label>Nome:</label><input type="text" id="hobby-nome"></div>
+                <div class="form-group"><label>Setor/Cargo:</label><input type="text" id="hobby-cargo"></div>
+                <div class="form-group"><label>Foto URL:</label><input type="text" id="hobby-foto"></div>
+                <div class="form-group"><label>Texto:</label><textarea id="hobby-texto" rows="4"></textarea></div>
+                
+                <div class="form-group">
+                    <label>Tags (3 principais):</label>
+                    <div class="tags-grid">
+                        <input type="text" id="tag-1" placeholder="Tag 1 (Ex: Café)">
+                        <input type="text" id="tag-2" placeholder="Tag 2 (Ex: Cães)">
+                        <input type="text" id="tag-3" placeholder="Tag 3 (Ex: Viagem)">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-briefcase"></i> Novos Clientes</h2>
+                    <button type="button" class="client-remove" onclick="document.getElementById('clientes-list').innerHTML=''; addNewClientRow();" title="Limpar Lista"><i class="fas fa-trash"></i></button>
+                </div>
+                <div class="cols-2">
+                    <div class="form-group"><label>Qtd Resumo:</label><input type="text" id="clientes-qtd"></div>
+                    <div class="form-group"><label>Período:</label><input type="text" id="clientes-periodo"></div>
+                </div>
+                <label style="font-size:0.8em; color:#666; margin-top:10px; display:block;">LISTA (Copie e cole do Excel na caixa de texto):</label>
+                <div id="clientes-list" style="margin-top:10px;"></div>
+                <button type="button" class="btn-add-client" onclick="addNewClientRow()">+ Adicionar Linha</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="actions-bar">
+        <button class="btn-action btn-clear" onclick="clearForm()"><i class="fas fa-eraser"></i> Limpar Formulário</button>
+        <button class="btn-action btn-save" onclick="confirmSave()"><i class="fas fa-save"></i> PUBLICAR NO SITE</button>
+    </div>
 </div>
-
-<div id="loading"><div><i class="fas fa-spinner fa-spin fa-3x" style="color:var(--primary)"></i></div><h3 style="color:var(--primary); margin-top:15px;">Carregando dados...</h3></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -281,35 +301,97 @@
     let AUTH_TOKEN = null;
     const CONTENT_URL = "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com/content.json";
     const CATEGORIES_MAP = { "Açougues": "🥩", "Restaurantes": "🍽️", "Indústria": "🏭", "Transporte": "🚚", "Comércio": "🏪", "Serviços": "💼", "Outros": "🏢", "Farmácias": "💊", "E-commerce": "📦", "Automotivo": "🚗", "Têxtil": "👕" };
+    
+    // ==========================================
+    // CONFIGURAÇÃO DE SEGURANÇA MÁXIMA
+    // ==========================================
+    const ALLOWED_EMAILS = ["marketingpsrimpressao@gmail.com", "rohsantos1@gmail.com"];
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias em milissegundos
 
-    firebase.auth().onAuthStateChanged(user => {
+    firebase.auth().onAuthStateChanged(async user => {
         if (user) {
-            user.getIdToken().then(token => { AUTH_TOKEN = token; loadContent(); });
+            // 1. Verifica se o email está na lista branca
+            if (ALLOWED_EMAILS.includes(user.email)) {
+                
+                // 2. Verifica Periodicidade (Força Tarefa de Login Semanal)
+                const lastVerified = localStorage.getItem('secure_last_login_ts');
+                const now = Date.now();
+
+                // Se não tem registro ou se passou de 7 dias
+                if (!lastVerified || (now - parseInt(lastVerified) > ONE_WEEK_MS)) {
+                    // Sessão expirada para verificação de segurança
+                    console.log("Sessão de segurança de 7 dias expirada. Revalidando...");
+                    await firebase.auth().signOut();
+                    // O reload vai forçar o popup de login novamente
+                    window.location.reload();
+                    return;
+                }
+
+                // Se passou nas checagens:
+                // Atualiza o timestamp apenas se estiver perto de vencer? 
+                // Não, mantemos o original para forçar a re-validação exata em 7 dias a partir do login inicial.
+                // Mas precisamos salvar o timestamp na PRIMEIRA vez que loga (feito no else abaixo).
+                
+                user.getIdToken().then(token => { 
+                    AUTH_TOKEN = token;
+                    // Mostra o app e esconde o loading
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('app-content').style.display = 'block';
+                    loadContent(); 
+                });
+
+            } else {
+                // E-mail não autorizado (Hacker ou curioso)
+                forceLockdown();
+            }
         } else {
-            firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+            // Não logado, inicia fluxo de login
+            firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
+                .then((result) => {
+                    const email = result.user.email;
+                    if (ALLOWED_EMAILS.includes(email)) {
+                        // Login bem sucedido e autorizado: Seta o timer de 7 dias
+                        localStorage.setItem('secure_last_login_ts', Date.now());
+                        window.location.reload(); // Recarrega para aplicar o fluxo limpo
+                    } else {
+                        forceLockdown();
+                    }
+                })
+                .catch((error) => {
+                    console.error(error);
+                    alert("Erro na autenticação.");
+                });
         }
     });
 
+    function forceLockdown() {
+        firebase.auth().signOut();
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('app-content').style.display = 'none'; // Garante que está oculto
+        document.getElementById('access-denied').style.display = 'flex'; // Mostra tela de bloqueio
+    }
+
+    function logoutAndReload() {
+        firebase.auth().signOut().then(() => {
+            window.location.reload();
+        });
+    }
+
+    // ==========================================
+    // FIM DA CONFIGURAÇÃO DE SEGURANÇA
+    // ==========================================
+
     // Função para alternar as abas
     function switchTab(tabId, btn) {
-        // Esconde todos os conteúdos
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        // Remove active dos botões
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        
-        // Ativa o alvo
         document.getElementById(tabId).classList.add('active');
         btn.classList.add('active');
     }
 
-    // Função para limpar o formulário
     function clearForm() {
         if(!confirm("Tem certeza que deseja limpar todo o formulário? Você perderá o que não foi salvo.")) return;
-        
-        // Limpa inputs e textareas comuns
         document.querySelectorAll('input, textarea').forEach(el => el.value = '');
-        
-        // Reseta lista de clientes
         document.getElementById('clientes-list').innerHTML = '';
         addNewClientRow();
     }
@@ -318,10 +400,8 @@
         try {
             const resp = await fetch(CONTENT_URL + "?auth=" + AUTH_TOKEN);
             const data = await resp.json();
-            document.getElementById('loading').style.display = 'none';
             if(!data) return;
 
-            // Tema do Mês
             setVal('tema-titulo', data.temaMes?.titulo);
             setVal('tema-subtitulo', data.temaMes?.subtitulo);
             setVal('tema-resumo', data.temaMes?.resumo);
@@ -330,7 +410,6 @@
             setVal('tema-fonte-link', data.temaMes?.fonte?.link);
             setVal('tema-capa', data.temaMes?.capaUrl);
 
-            // Partiu Pensar
             setVal('pp-titulo', data.partiuPensar?.titulo);
             setVal('pp-subtitulo', data.partiuPensar?.subtitulo);
             setVal('pp-bg', data.partiuPensar?.imagemFundo);
@@ -338,13 +417,11 @@
             setVal('pp-conteudo', data.partiuPensar?.conteudoCompleto);
             setVal('pp-fonte', data.partiuPensar?.fonte);
 
-            // Bem Estar
             setVal('saude-subtitulo', data.saudeFisica?.subtitulo);
             setVal('saude-resumo', data.saudeFisica?.resumo);
             setVal('saude-conteudo', data.saudeFisica?.conteudoCompleto);
             setVal('saude-link', data.saudeFisica?.fonte?.link);
 
-            // Cultura
             if(data.cultura) {
                 data.cultura.forEach((item, i) => {
                     if(i>1) return;
@@ -356,24 +433,18 @@
                 });
             }
 
-            // Hobby (Agora com tags divididas)
             if(data.hobby) {
                 setVal('hobby-nome', data.hobby.nome);
                 setVal('hobby-cargo', data.hobby.cargo);
                 setVal('hobby-foto', data.hobby.foto);
                 setVal('hobby-texto', data.hobby.texto);
-                
-                // Divide as tags do backend (array ou string) para os 3 inputs
                 let tags = data.hobby.tags || [];
-                // Garante que é array se vier como string antiga
                 if (typeof tags === 'string') tags = tags.split(',').map(t=>t.trim());
-                
                 setVal('tag-1', tags[0] || '');
                 setVal('tag-2', tags[1] || '');
                 setVal('tag-3', tags[2] || '');
             }
 
-            // Novos Clientes
             if(data.novos_clientes) {
                 setVal('clientes-qtd', data.novos_clientes.resumo?.quantidade);
                 setVal('clientes-periodo', data.novos_clientes.resumo?.periodo);
@@ -388,7 +459,6 @@
                     addNewClientRow();
                 }
             }
-
         } catch(e) { console.error(e); alert("Erro ao carregar dados."); }
     }
 
@@ -401,12 +471,7 @@
             currentData = await resp.json() || {};
         } catch(e) {}
 
-        // Coleta as 3 tags e junta num array/string
-        const tagsArray = [
-            getVal('tag-1'),
-            getVal('tag-2'),
-            getVal('tag-3')
-        ].filter(t => t.trim() !== ""); // Remove vazios
+        const tagsArray = [getVal('tag-1'), getVal('tag-2'), getVal('tag-3')].filter(t => t.trim() !== "");
 
         const data = {
             temaMes: {
@@ -440,7 +505,7 @@
                 cargo: getVal('hobby-cargo'),
                 foto: getVal('hobby-foto'),
                 texto: getVal('hobby-texto'),
-                tags: tagsArray // Envia como array
+                tags: tagsArray
             },
             receitas: currentData.receitas || [], 
             
