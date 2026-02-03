@@ -221,6 +221,37 @@
             </div>
 
             <div class="card">
+                <div class="card-header"><h2><i class="fas fa-dumbbell"></i> Desafios do Mês</h2></div>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e0e0e0;">
+                    <h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 0.9em; text-transform: uppercase;"><i class="fas fa-tint"></i> Slot 1 (Padrão: Hidratação)</h4>
+                    <div class="cols-2">
+                        <div class="form-group"><label>Emoji:</label><input type="text" id="desafio-0-emoji" placeholder="💧"></div>
+                        <div class="form-group"><label>Título:</label><input type="text" id="desafio-0-titulo" placeholder="Hidratação"></div>
+                    </div>
+                    <div class="form-group"><label>Descrição (Meta):</label><input type="text" id="desafio-0-desc" placeholder="Ex: Beba 2 litros de água"></div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e0e0e0;">
+                    <h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 0.9em; text-transform: uppercase;"><i class="fas fa-walking"></i> Slot 2 (Padrão: Passos)</h4>
+                    <div class="cols-2">
+                        <div class="form-group"><label>Emoji:</label><input type="text" id="desafio-1-emoji" placeholder="🚶"></div>
+                        <div class="form-group"><label>Título:</label><input type="text" id="desafio-1-titulo" placeholder="10 Mil Passos"></div>
+                    </div>
+                    <div class="form-group"><label>Descrição (Meta):</label><input type="text" id="desafio-1-desc" placeholder="Ex: Caminhe 10 mil passos diários"></div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e0e0e0;">
+                    <h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 0.9em; text-transform: uppercase;"><i class="fas fa-bed"></i> Slot 3 (Padrão: Sono)</h4>
+                    <div class="cols-2">
+                        <div class="form-group"><label>Emoji:</label><input type="text" id="desafio-2-emoji" placeholder="😴"></div>
+                        <div class="form-group"><label>Título:</label><input type="text" id="desafio-2-titulo" placeholder="Sono de Qualidade"></div>
+                    </div>
+                    <div class="form-group"><label>Descrição (Meta):</label><input type="text" id="desafio-2-desc" placeholder="Ex: Tente dormir 8 horas por noite"></div>
+                </div>
+            </div>
+
+            <div class="card">
                 <div class="card-header">
                     <h2><i class="fas fa-briefcase"></i> Novos Clientes</h2>
                     <button type="button" class="client-remove" onclick="document.getElementById('clientes-list').innerHTML=''; addNewClientRow();"><i class="fas fa-trash"></i></button>
@@ -382,6 +413,20 @@
                 setVal('tag-3', tags[2] || '');
             }
 
+            // Carregar Desafios (NOVO)
+            if(data.desafios) {
+                data.desafios.forEach((d, i) => {
+                    if(i > 2) return;
+                    setVal(`desafio-${i}-emoji`, d.emoji);
+                    setVal(`desafio-${i}-titulo`, d.titulo);
+                    setVal(`desafio-${i}-desc`, d.desc);
+                });
+            } else {
+                setVal('desafio-0-emoji', '💧'); setVal('desafio-0-titulo', 'Hidratação'); setVal('desafio-0-desc', 'Beba 2 litros de água por dia.');
+                setVal('desafio-1-emoji', '🚶'); setVal('desafio-1-titulo', '10 Mil Passos'); setVal('desafio-1-desc', 'Caminhe 10 mil passos diários.');
+                setVal('desafio-2-emoji', '😴'); setVal('desafio-2-titulo', 'Sono de Qualidade'); setVal('desafio-2-desc', 'Tente dormir 8 horas por noite.');
+            }
+
             if(data.novos_clientes) {
                 setVal('clientes-qtd', data.novos_clientes.resumo?.quantidade);
                 setVal('clientes-periodo', data.novos_clientes.resumo?.periodo);
@@ -457,11 +502,29 @@
                     destaque: false, data: ""
                 })).filter(c => c.nome)
             },
-            desafios: currentData.desafios || [ 
-                {id: "hidratacao", emoji: "💧", titulo: "Hidratação", desc: "Beba 2L de água"},
-                {id: "passos", emoji: "🚶", titulo: "10k Passos", desc: "Caminhe todo dia"},
-                {id: "sono", emoji: "😴", titulo: "Sono", desc: "Durma 8h"}
+            
+            // DESAFIOS (ATUALIZADO)
+            desafios: [
+                {
+                    id: "hidratacao",
+                    emoji: getVal('desafio-0-emoji') || "💧",
+                    titulo: getVal('desafio-0-titulo') || "Hidratação",
+                    desc: getVal('desafio-0-desc') || "Beba água"
+                },
+                {
+                    id: "passos",
+                    emoji: getVal('desafio-1-emoji') || "🚶",
+                    titulo: getVal('desafio-1-titulo') || "Caminhada",
+                    desc: getVal('desafio-1-desc') || "Caminhe todo dia"
+                },
+                {
+                    id: "sono",
+                    emoji: getVal('desafio-2-emoji') || "😴",
+                    titulo: getVal('desafio-2-titulo') || "Sono",
+                    desc: getVal('desafio-2-desc') || "Durma bem"
+                }
             ],
+
             sustentabilidade: currentData.sustentabilidade || {}
         };
 
