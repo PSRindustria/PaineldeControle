@@ -7,29 +7,102 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { var(--primary: #003366; --accent: #DAA520; --bg: #f4f7f9; --success: #28a745; --danger: #dc3545; --shadow-sm: 0 2px 8px rgba(0,0,0,0.06); --transition: all 0.3s ease; }
-        body { font-family: 'Poppins', sans-serif; background: #f5f7fa; padding: 20px; color: #333; margin: 0; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .header h1 { color: var(--primary); margin: 0 0 10px 0; }
+        :root { 
+            --primary: #003366; --accent: #DAA520; --bg: #f4f7f9; --success: #28a745; --danger: #dc3545;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06); --transition: all 0.3s ease;
+        }
+        body { 
+            font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+            padding: 20px; color: #333; margin: 0;
+        }
         
-        .view-switcher { display: flex; justify-content: center; gap: 12px; margin-bottom: 35px; background: white; padding: 8px; border-radius: 50px; width: fit-content; margin-left: auto; margin-right: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .view-btn { text-decoration: none; padding: 12px 28px; border-radius: 25px; color: #777; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: var(--transition); font-size: 0.9em; }
-        .view-btn.active { background: var(--primary); color: white; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { 
+            color: var(--primary); margin: 0 0 20px 0; font-size: 2.5em;
+            background: linear-gradient(135deg, var(--primary) 0%, #004d99 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        
+        /* MENU */
+        .view-switcher { 
+            display: flex; justify-content: center; gap: 12px; margin-bottom: 35px;
+            background: white; padding: 10px; border-radius: 50px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: fit-content; margin: 0 auto 30px;
+        }
+        .view-btn { 
+            text-decoration: none; padding: 12px 24px; border-radius: 25px; 
+            color: #777; font-weight: 600; display: flex; align-items: center; 
+            gap: 8px; transition: var(--transition); font-size: 0.9em;
+        }
+        .view-btn.active { 
+            background: var(--primary); color: white; 
+            box-shadow: 0 6px 16px rgba(0,51,102,0.25);
+        }
         .view-btn:hover:not(.active) { background: #eef2f5; }
 
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; max-width: 1400px; margin: 0 auto; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: var(--shadow-sm); border-top: 4px solid var(--accent); }
-        .card h2 { color: #444; font-size: 1.1em; margin-top: 0; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        /* GRID */
+        .dashboard-grid { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
+            gap: 20px; max-width: 1400px; margin: 0 auto; 
+        }
+        .card { 
+            background: white; padding: 20px; border-radius: 12px; 
+            box-shadow: var(--shadow-sm); border-top: 4px solid var(--accent); 
+            transition: var(--transition);
+        }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
         
-        .monitor-list { max-height: 300px; overflow-y: auto; }
-        .monitor-item { background: #f9f9f9; padding: 10px; margin-bottom: 8px; border-radius: 6px; font-size: 0.85em; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; border-left: 3px solid #ddd; }
-        .monitor-item:hover { border-left-color: var(--accent); background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .btn-trash { color: var(--danger); background: none; border: none; cursor: pointer; opacity: 0.6; transition: 0.2s; }
-        .btn-trash:hover { opacity: 1; transform: scale(1.1); }
+        .card h2 { 
+            color: #444; font-size: 1.1em; margin-top: 0; 
+            display: flex; align-items: center; gap: 10px; 
+            border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; 
+        }
+        .card h2 i { color: var(--primary); }
         
-        .filter-bar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; max-width: 1400px; margin: 0 auto 20px; }
-        .date-input { padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
-        .btn-refresh { background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        /* LISTA DE ITENS */
+        .monitor-list { max-height: 300px; overflow-y: auto; padding-right: 5px; }
+        .monitor-list::-webkit-scrollbar { width: 5px; }
+        .monitor-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 5px; }
+        
+        .monitor-item { 
+            background: #f8f9fa; padding: 12px; margin-bottom: 8px; 
+            border-radius: 8px; font-size: 0.85em; display: flex; 
+            justify-content: space-between; align-items: flex-start; gap: 10px; 
+            border-left: 3px solid #ddd; transition: 0.2s;
+        }
+        .monitor-item:hover { 
+            border-left-color: var(--accent); background: white; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); transform: translateX(2px);
+        }
+        
+        .btn-trash { 
+            color: var(--danger); background: white; border: 1px solid #f8d7da; 
+            width: 25px; height: 25px; border-radius: 50%; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s; flex-shrink: 0;
+        }
+        .btn-trash:hover { background: var(--danger); color: white; transform: rotate(10deg); }
+        
+        .filter-bar { 
+            display: flex; justify-content: flex-end; align-items: center; gap: 10px; 
+            max-width: 1400px; margin: 0 auto 20px; background: white; 
+            padding: 10px 20px; border-radius: 10px; box-shadow: var(--shadow-sm);
+        }
+        .date-input { 
+            padding: 8px 12px; border: 1px solid #ccc; border-radius: 5px; 
+            font-family: inherit;
+        }
+        .btn-refresh { 
+            background: var(--success); color: white; border: none; 
+            padding: 8px 15px; border-radius: 5px; cursor: pointer; 
+            display: flex; align-items: center; gap: 5px; font-weight: 600;
+        }
+        .btn-refresh:hover { background: #218838; }
+        
+        .id-badge {
+            background: #e9ecef; padding: 2px 6px; border-radius: 4px; 
+            font-family: monospace; font-size: 0.9em; color: #555;
+        }
     </style>
 </head>
 <body>
@@ -45,19 +118,20 @@
 </div>
 
 <div class="filter-bar">
+    <label>Filtrar mês:</label>
     <input type="month" id="filter-date" class="date-input" onchange="loadInteractions()">
     <button class="btn-refresh" onclick="loadInteractions()"><i class="fas fa-sync-alt"></i> Atualizar</button>
 </div>
 
 <div class="dashboard-grid">
-    <div class="card"><h2><i class="fas fa-shield-alt"></i> Quiz - Participantes</h2><div id="m-quiz" class="monitor-list">...</div></div>
-    <div class="card"><h2><i class="fas fa-user-circle"></i> Hobby - Interações</h2><div id="m-hobby" class="monitor-list">...</div></div>
-    <div class="card"><h2><i class="fas fa-dumbbell"></i> Desafios</h2><div id="m-chal" class="monitor-list">...</div></div>
-    <div class="card"><h2><i class="fas fa-heart"></i> Elogios</h2><div id="m-praise" class="monitor-list">...</div></div>
-    <div class="card"><h2><i class="fas fa-gamepad"></i> Ranking Jogos</h2><div id="m-games" class="monitor-list">...</div></div>
-    <div class="card"><h2><i class="fas fa-lightbulb"></i> Sugestões</h2><div id="m-sugg" class="monitor-list">...</div></div>
-    <div class="card"><h2><i class="fas fa-bullhorn"></i> Comunicados</h2><div id="m-comm" class="monitor-list">...</div></div>
-    <div class="card"><h2><i class="fas fa-star"></i> Avaliações</h2><div id="m-rate" class="monitor-list">...</div></div>
+    <div class="card"><h2><i class="fas fa-shield-alt"></i> Quiz - Participantes</h2><div id="m-quiz" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-user-circle"></i> Hobby - Interações</h2><div id="m-hobby" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-dumbbell"></i> Desafios</h2><div id="m-chal" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-heart"></i> Elogios</h2><div id="m-praise" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-gamepad"></i> Ranking Jogos</h2><div id="m-games" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-lightbulb"></i> Sugestões</h2><div id="m-sugg" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-bullhorn"></i> Comunicados</h2><div id="m-comm" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-star"></i> Avaliações</h2><div id="m-rate" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -69,7 +143,6 @@
     let AUTH_TOKEN = null;
     const DB_URL = "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com/";
 
-    // Definir data padrão
     const now = new Date();
     document.getElementById('filter-date').value = now.toISOString().slice(0, 7);
 
@@ -85,32 +158,31 @@
             const db = await resp.json();
             if(!db) return;
 
-            // Quiz
             let quizH = '';
             if(db.safety_quiz) {
-                for(let q in db.safety_quiz) {
-                    for(let u in db.safety_quiz[q]) {
-                        quizH += item(`Q: ${q} - User: ${u} - Resp: ${db.safety_quiz[q][u]}`, `safety_quiz/${q}/${u}`);
-                    }
+                let stats = {};
+                for(let q in db.safety_quiz) for(let u in db.safety_quiz[q]) {
+                    if(!stats[u]) stats[u] = {t:0, c:0};
+                    stats[u].t++; if(db.safety_quiz[q][u]) stats[u].c++;
                 }
+                for(let u in stats) quizH += item(`<b>${u}</b><br>Acertos: ${stats[u].c}/${stats[u].t}`, `safety_quiz`);
             }
             document.getElementById('m-quiz').innerHTML = quizH || 'Sem dados.';
 
-            // Hobby
             let hobH = '';
             if(db.hobby_interactions_history?.[date]?.likes) {
-                Object.keys(db.hobby_interactions_history[date].likes).forEach(u => hobH += item(`Like: ${u}`, `hobby_interactions_history/${date}/likes/${u}`));
+                Object.keys(db.hobby_interactions_history[date].likes).forEach(u => hobH += item(`Curtiu: <span class="id-badge">${u}</span>`, `hobby_interactions_history/${date}/likes/${u}`));
             }
             document.getElementById('m-hobby').innerHTML = hobH || 'Sem dados.';
 
-            // Games
             let gameH = '';
             if(db.games) {
                 for(let g in db.games) {
                     if(db.games[g].scores) {
+                        gameH += `<div style="margin:5px 0;font-weight:bold;color:#003366">${g}</div>`;
                         Object.entries(db.games[g].scores).forEach(([k, s]) => {
-                            if(s.data && s.data.includes(date.split('-')[1])) { // Filtro simples de mês
-                                gameH += item(`<b>${g}</b>: ${s.nome} (${s.pontos})`, `games/${g}/scores/${k}`);
+                            if(s.data && s.data.includes(date.split('-')[1])) { 
+                                gameH += item(`<b>${s.pontos}</b> - ${s.nome} <small>(${s.data})</small>`, `games/${g}/scores/${k}`);
                             }
                         });
                     }
@@ -118,39 +190,36 @@
             }
             document.getElementById('m-games').innerHTML = gameH || 'Sem dados.';
 
-            // Desafios
             let chalH = '';
             if(db.challenges_history?.[date]) {
                 for(let c in db.challenges_history[date]) {
-                    Object.entries(db.challenges_history[date][c]).forEach(([u, r]) => chalH += item(`${c}: ${u} (${r})`, `challenges_history/${date}/${c}/${u}`));
+                    chalH += `<div style="margin:5px 0;font-weight:bold;color:#DAA520">${c}</div>`;
+                    Object.entries(db.challenges_history[date][c]).forEach(([u, r]) => chalH += item(`<span class="id-badge">${u}</span>: ${r}`, `challenges_history/${date}/${c}/${u}`));
                 }
             }
             document.getElementById('m-chal').innerHTML = chalH || 'Sem dados.';
 
-            // Sugestões
             let sugH = '';
-            if(db.hobby_suggestions) Object.entries(db.hobby_suggestions).forEach(([k,v]) => sugH += item(`Hobby: ${v.target} (de ${v.from})`, `hobby_suggestions/${k}`));
-            if(db.game_suggestions) Object.entries(db.game_suggestions).forEach(([k,v]) => sugH += item(`Game: ${v.name} - ${v.text}`, `game_suggestions/${k}`));
+            if(db.hobby_suggestions) Object.entries(db.hobby_suggestions).forEach(([k,v]) => sugH += item(`<b>Hobby:</b> Indicado: ${v.target} <br><small>De: ${v.from}</small>`, `hobby_suggestions/${k}`));
+            if(db.game_suggestions) Object.entries(db.game_suggestions).forEach(([k,v]) => sugH += item(`<b>Game:</b> ${v.name}: "${v.text}"`, `game_suggestions/${k}`));
             document.getElementById('m-sugg').innerHTML = sugH || 'Sem dados.';
 
-            // Elogios
             let praH = '';
-            if(db.praise_messages) Object.entries(db.praise_messages).forEach(([k,v]) => praH += item(`De ${v.from} para ${v.to}: ${v.message}`, `praise_messages/${k}`));
+            if(db.praise_messages) Object.entries(db.praise_messages).forEach(([k,v]) => praH += item(`De <b>${v.from}</b> para <b>${v.to}</b>:<br><i>"${v.message}"</i>`, `praise_messages/${k}`));
             document.getElementById('m-praise').innerHTML = praH || 'Sem dados.';
 
-            // Avaliações
             let rateH = '';
             if(db.ratings_history?.[date]) {
                 for(let i in db.ratings_history[date]) {
-                    Object.entries(db.ratings_history[date][i]).forEach(([u, s]) => rateH += item(`${i}: ${u} (${s} estrelas)`, `ratings_history/${date}/${i}/${u}`));
+                    rateH += `<div style="margin:5px 0;font-weight:bold;">${i}</div>`;
+                    Object.entries(db.ratings_history[date][i]).forEach(([u, s]) => rateH += item(`<span class="id-badge">${u}</span>: ${s} ⭐`, `ratings_history/${date}/${i}/${u}`));
                 }
             }
             document.getElementById('m-rate').innerHTML = rateH || 'Sem dados.';
 
-            // Comunicados
             let commH = '';
             if(db.Leituras_Confirmadas && db.Leituras_Confirmadas[0]) {
-                Object.keys(db.Leituras_Confirmadas[0]).forEach(u => commH += item(`Leitura confirmada: ${u}`, `Leituras_Confirmadas/0/${u}`));
+                Object.keys(db.Leituras_Confirmadas[0]).forEach(u => commH += item(`Leu: <span class="id-badge">${u}</span>`, `Leituras_Confirmadas/0/${u}`));
             }
             document.getElementById('m-comm').innerHTML = commH || 'Sem dados.';
 
@@ -158,11 +227,11 @@
     }
 
     function item(txt, path) {
-        return `<div class="monitor-item"><span>${txt}</span><button class="btn-trash" onclick="del('${path}')"><i class="fas fa-trash"></i></button></div>`;
+        return `<div class="monitor-item"><div>${txt}</div><button class="btn-trash" onclick="del('${path}')" title="Excluir"><i class="fas fa-trash"></i></button></div>`;
     }
 
     async function del(path) {
-        if(confirm("Excluir?")) {
+        if(confirm("Tem certeza que deseja excluir este registro?")) {
             await fetch(DB_URL + path + ".json?auth=" + AUTH_TOKEN, { method: 'DELETE' });
             loadInteractions();
         }
