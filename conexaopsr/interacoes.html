@@ -136,7 +136,9 @@
     <div class="card"><h2><i class="fas fa-heart"></i> Elogios</h2><div id="m-praise" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
     <div class="card"><h2><i class="fas fa-gamepad"></i> Ranking Jogos</h2><div id="m-games" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
     <div class="card"><h2><i class="fas fa-lightbulb"></i> Sugestões</h2><div id="m-sugg" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
-    <div class="card"><h2><i class="fas fa-film"></i> Sugestões Filmes</h2><div id="m-movies" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    
+    <div class="card"><h2><i class="fas fa-film"></i> Sugestões de Filmes</h2><div id="m-movies" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    
     <div class="card"><h2><i class="fas fa-bullhorn"></i> Comunicados</h2><div id="m-comm" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
     <div class="card"><h2><i class="fas fa-star"></i> Avaliações</h2><div id="m-rate" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
 </div>
@@ -165,7 +167,7 @@
             const db = await resp.json();
             if(!db) return;
 
-            // --- QUIZ (Mantido lógica original) ---
+            // --- QUIZ ---
             let quizH = '';
             if(db.safety_quiz) {
                 let stats = {};
@@ -177,26 +179,22 @@
             }
             document.getElementById('m-quiz').innerHTML = quizH || 'Sem dados.';
 
-            // --- HOBBY (Filtro por Chave de Data) ---
+            // --- HOBBY ---
             let hobH = '';
             if(db.hobby_interactions_history?.[filterDate]?.likes) {
                 Object.keys(db.hobby_interactions_history[filterDate].likes).forEach(u => hobH += item(`Curtiu: <span class="id-badge">${u}</span>`, `hobby_interactions_history/${filterDate}/likes/${u}`));
             }
             document.getElementById('m-hobby').innerHTML = hobH || 'Sem dados.';
 
-            // --- GAMES (Filtro dentro do objeto) ---
+            // --- GAMES ---
             let gameH = '';
             if(db.games) {
                 for(let g in db.games) {
                     if(db.games[g].scores) {
                         let gameContent = '';
                         Object.entries(db.games[g].scores).forEach(([k, s]) => {
-                            // Verifica se a data do jogo contém o mês filtrado (ex: "02/2026")
-                            // A data vem como "DD/MM/YYYY, HH:MM:SS" ou ISO. Vamos tentar bater pelo string
-                            const parts = filterDate.split('-'); // [2026, 02]
-                            const searchStr = `/${parts[1]}/${parts[0]}`; // "/02/2026"
-                            
-                            // Se for formato ISO
+                            const parts = filterDate.split('-'); 
+                            const searchStr = `/${parts[1]}/${parts[0]}`; 
                             if(s.data && (s.data.includes(searchStr) || s.data.startsWith(filterDate))) { 
                                 gameContent += item(`<b>${s.pontos}</b> - ${s.nome} <small>(${s.data})</small>`, `games/${g}/scores/${k}`);
                             }
@@ -209,7 +207,7 @@
             }
             document.getElementById('m-games').innerHTML = gameH || 'Sem jogos neste mês.';
 
-            // --- DESAFIOS (Filtro por Chave de Data) ---
+            // --- DESAFIOS ---
             let chalH = '';
             if(db.challenges_history?.[filterDate]) {
                 for(let c in db.challenges_history[filterDate]) {
@@ -219,9 +217,8 @@
             }
             document.getElementById('m-chal').innerHTML = chalH || 'Sem dados.';
 
-            // --- SUGESTÕES (Filtro Estrito de Mês Vigente) ---
+            // --- SUGESTÕES ---
             let sugH = '';
-            // Helper para checar data ISO YYYY-MM
             const isInMonth = (dateStr) => dateStr && dateStr.startsWith(filterDate);
 
             if(db.hobby_suggestions) Object.entries(db.hobby_suggestions).forEach(([k,v]) => {
@@ -235,24 +232,39 @@
             });
             document.getElementById('m-sugg').innerHTML = sugH || 'Sem sugestões neste mês.';
 
-            // --- FILMES (NOVO: Não usa filtro de mês para mostrar todas as pendentes) ---
+            // --- FILMES (AJUSTADO PARA FICAR BONITO) ---
             let movH = '';
             if(db.suggestions) Object.entries(db.suggestions).forEach(([k,v]) => {
-                // Tenta extrair texto caso seja objeto ou string
-                let txt = (typeof v === 'object') ? (v.sugestao || v.filme || v.text || JSON.stringify(v)) : v;
-                movH += item(`<b>Filme:</b> ${txt}`, `suggestions/${k}`);
+                // Tenta pegar o nome do filme e o autor de forma inteligente
+                let filme = "Indefinido";
+                let autor = "Anônimo";
+
+                if (typeof v === 'object') {
+                    // Procura campos prováveis de nome do filme
+                    filme = v.sugestao || v.filme || v.nome || v.text || "Sem título";
+                    // Procura campos prováveis de autor
+                    autor = v.autor || v.from || v.quem || "Anônimo";
+                } else {
+                    // Se for só texto direto
+                    filme = v;
+                }
+
+                // Formatação bonita: Filme em negrito, autor em pequeno embaixo (estilo card)
+                const content = `<b>${filme}</b> <br><small style="color:#666">De: ${autor}</small>`;
+                
+                movH += item(content, `suggestions/${k}`);
             });
-            document.getElementById('m-movies').innerHTML = movH || 'Sem filmes sugeridos.';
+            document.getElementById('m-movies').innerHTML = movH || '<div style="padding:5px; color:#888; font-style:italic">Nenhuma sugestão de filme.</div>';
 
 
-            // --- ELOGIOS (Filtro Estrito de Mês Vigente) ---
+            // --- ELOGIOS ---
             let praH = '';
             if(db.praise_messages) Object.entries(db.praise_messages).forEach(([k,v]) => {
                 if(isInMonth(v.date)) praH += item(`De <b>${v.from}</b> para <b>${v.to}</b>:<br><i>"${v.message}"</i>`, `praise_messages/${k}`);
             });
             document.getElementById('m-praise').innerHTML = praH || 'Sem elogios neste mês.';
 
-            // --- AVALIAÇÕES (Filtro por Chave de Data) ---
+            // --- AVALIAÇÕES ---
             let rateH = '';
             if(db.ratings_history?.[filterDate]) {
                 for(let i in db.ratings_history[filterDate]) {
@@ -262,29 +274,26 @@
             }
             document.getElementById('m-rate').innerHTML = rateH || 'Sem avaliações.';
 
-            // --- COMUNICADOS (Lógica do Mais Recente + Leituras Associadas) ---
+            // --- COMUNICADOS ---
             let commH = '';
             if(db.Comunicado) {
-                // 1. Encontrar o comunicado mais recente (baseado na data ou maior ID)
                 let latestId = null;
                 let latestData = null;
                 let maxTime = 0;
 
                 Object.entries(db.Comunicado).forEach(([key, val]) => {
-                    // Nota: As chaves do JSON têm dois pontos no final (ex: "data:")
                     const dataStr = val["data:"]; 
                     if(dataStr) {
                         const time = new Date(dataStr).getTime();
                         if(time > maxTime) {
                             maxTime = time;
-                            latestId = key; // ex: "0"
+                            latestId = key;
                             latestData = val;
                         }
                     }
                 });
 
                 if(latestData) {
-                    // Exibir o conteúdo do comunicado
                     const dataFormatada = new Date(latestData["data:"]).toLocaleDateString('pt-BR');
                     commH += `<div class="comunicado-box">
                         <strong>📢 Último Comunicado (${dataFormatada})</strong><br>
@@ -292,7 +301,6 @@
                         "${latestData["comunicado:"]}"
                     </div>`;
 
-                    // 2. Buscar leituras APENAS para este ID (latestId)
                     if(db.Leituras_Confirmadas && db.Leituras_Confirmadas[latestId]) {
                         const leituras = db.Leituras_Confirmadas[latestId];
                         const totalLidos = Object.keys(leituras).length;
@@ -305,7 +313,7 @@
                             commH += item(`Lido por: <span class="id-badge">${uid}</span>`, `Leituras_Confirmadas/${latestId}/${uid}`);
                         });
                     } else {
-                        commH += `<div style="color:#666; font-style:italic; margin-top:5px;">Nenhuma leitura confirmada para este comunicado ainda.</div>`;
+                        commH += `<div style="color:#666; font-style:italic; margin-top:5px;">Nenhuma leitura confirmada.</div>`;
                     }
                 } else {
                     commH = 'Nenhum comunicado encontrado.';
