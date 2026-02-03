@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* === ESTILO IDÊNTICO AO PORTAL (ROXO) === */
+        /* === ESTILO GERAL (ROXO - PORTAL) === */
         :root { --primary: #4a148c; --accent: #7c43bd; --bg: #f3e5f5; }
         body { font-family: 'Poppins', sans-serif; background: #f3e5f5; padding: 20px; color: #333; margin: 0; }
         
@@ -33,15 +33,21 @@
 
         /* Gráficos */
         .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; max-width: 1400px; margin: 0 auto; }
-        .chart-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-direction: column; }
+        
+        /* FIX DO BUG: Chart Card é block, não flex */
+        .chart-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: block; }
+        
         .chart-header { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 10px; }
         
-        /* CORREÇÃO DO BUG DE TAMANHO INFINITO */
+        /* FIX DO BUG: Altura fixa e overflow hidden para cortar o crescimento infinito */
         .chart-container {
             position: relative;
-            height: 300px; /* Altura fixa para evitar crescimento infinito */
+            height: 300px; 
             width: 100%;
+            overflow: hidden; 
         }
+        /* Tamanho específico para o gráfico de linha (mais baixo) se desejar */
+        .h-250 { height: 250px; }
     </style>
 </head>
 <body>
@@ -77,16 +83,18 @@
 <div class="charts-grid">
     <div class="chart-card" style="grid-column: span 2">
         <div class="chart-header"><i class="fas fa-chart-line"></i> Fluxo de Visitas (Mês Vigente)</div>
-        <div class="chart-container">
+        <div class="chart-container h-250">
             <canvas id="chartVisits"></canvas>
         </div>
     </div>
+    
     <div class="chart-card">
         <div class="chart-header"><i class="fas fa-mobile-alt"></i> Dispositivos</div>
         <div class="chart-container">
             <canvas id="chartDevices"></canvas>
         </div>
     </div>
+    
     <div class="chart-card" style="grid-column: span 3">
         <div class="chart-header"><i class="fas fa-hand-point-up"></i> Top Interações (Visitantes Únicos/Dia)</div>
         <div class="chart-container">
@@ -194,7 +202,7 @@
                 },
                 options: { 
                     responsive: true, 
-                    maintainAspectRatio: false, // ESSENCIAL PARA CORRIGIR O BUG
+                    maintainAspectRatio: false, // O container .h-250 segura a altura
                 }
             });
 
