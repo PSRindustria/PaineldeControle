@@ -11,8 +11,7 @@
     
     <style>
         :root { 
-            --primary: #003366; --accent: #DAA520; --bg: #f4f7f9; --success: #28a745; --danger: #dc3545;
-            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06); --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+            --primary: #003366; --bg: #f4f7f9; --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
@@ -24,18 +23,34 @@
             padding: 20px; color: #333; margin: 0; padding-bottom: 120px;
         }
 
-        /* SEGURANÇA VISUAL: Esconde tudo até logar */
-        #app-content { display: none; }
-
+        /* ESTADOS DE VISUALIZAÇÃO */
+        #app-content { display: none; } /* Oculto por padrão */
+        
+        /* TELA DE LOGIN (NOVO) */
+        #login-screen {
+            display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95); z-index: 9999;
+            flex-direction: column; justify-content: center; align-items: center; text-align: center;
+            backdrop-filter: blur(5px);
+        }
+        
         /* TELA DE ACESSO NEGADO */
         #access-denied {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; color: #fff; z-index: 10000;
+            background: #1a1a1a; color: #fff; z-index: 10000;
             flex-direction: column; justify-content: center; align-items: center; text-align: center;
         }
-        #access-denied h1 { color: #dc3545; font-size: 3em; margin-bottom: 10px; }
-        #access-denied p { font-size: 1.2em; color: #aaa; }
 
+        .btn-login-google {
+            background: white; color: #444; border: 1px solid #ddd;
+            padding: 15px 30px; font-size: 1.1em; font-weight: 600;
+            border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.2s;
+        }
+        .btn-login-google:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+        .btn-login-google img { width: 24px; height: 24px; }
+
+        /* REAPROVEITAMENTO DO ESTILO ANTERIOR PARA O EDITOR */
         .header { text-align: center; margin-bottom: 40px; }
         .header h1 { 
             color: var(--primary); margin: 0 0 20px 0; font-size: 2.5em;
@@ -43,7 +58,6 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
-        /* MENU DE NAVEGAÇÃO */
         .view-switcher { 
             display: flex; justify-content: center; gap: 12px; margin-bottom: 35px;
             background: white; padding: 10px; border-radius: 50px;
@@ -60,125 +74,67 @@
             background: var(--primary); color: white; 
             box-shadow: 0 6px 16px rgba(0,51,102,0.25); transform: translateY(-2px);
         }
-        .view-btn:hover:not(.active) { background: rgba(0,51,102,0.05); }
-
-        /* GRID E CARDS */
+        
         .dashboard-grid { 
             display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
             gap: 25px; max-width: 1400px; margin: 0 auto; 
         }
         .card { 
             background: white; padding: 28px; border-radius: 16px; 
-            box-shadow: var(--shadow-sm); display: flex; flex-direction: column; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-direction: column; 
             position: relative; border-top: 4px solid var(--primary);
             transition: var(--transition);
         }
-        .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
-        
         .card-header { 
             display: flex; align-items: center; justify-content: space-between; 
             border-bottom: 2px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 22px; 
         }
-        .card h2 { 
-            margin: 0; color: var(--primary); font-size: 1.2em; 
-            display: flex; align-items: center; gap: 10px; 
-        }
+        .card h2 { margin: 0; color: var(--primary); font-size: 1.2em; display: flex; align-items: center; gap: 10px; }
         
-        /* FORMULÁRIOS */
         .form-group { margin-bottom: 18px; width: 100%; }
-        .form-group label { 
-            display: block; font-weight: 600; margin-bottom: 7px; 
-            font-size: 0.85em; color: #555; text-transform: uppercase; 
-        }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 7px; font-size: 0.85em; color: #555; text-transform: uppercase; }
         .form-group input, .form-group textarea, .form-group select { 
             width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; 
-            border-radius: 8px; font-family: inherit; font-size: 0.9em; 
-            background: #fafafa; transition: 0.3s;
-        }
-        .form-group input:focus, .form-group textarea:focus { 
-            border-color: var(--primary); outline: none; background: white; 
-            box-shadow: 0 0 0 3px rgba(0,51,102,0.1);
+            border-radius: 8px; font-family: inherit; font-size: 0.9em; background: #fafafa;
         }
         
-        /* ABAS (TABS) PARA CULTURA */
-        .tab-nav {
-            display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 2px solid #eee;
-        }
-        .tab-btn {
-            padding: 10px 20px; background: none; border: none; font-weight: 600;
-            color: #777; cursor: pointer; border-bottom: 3px solid transparent;
-            transition: all 0.2s;
-        }
-        .tab-btn:hover { color: var(--primary); background: #f8f9fa; }
+        .tab-nav { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 2px solid #eee; }
+        .tab-btn { padding: 10px 20px; background: none; border: none; font-weight: 600; color: #777; cursor: pointer; border-bottom: 3px solid transparent; }
         .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
-        
-        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content { display: none; }
         .tab-content.active { display: block; }
+        .tags-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 
-        /* TAGS EM 3 COLUNAS */
-        .tags-grid {
-            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
-        }
-
-        /* ACTIONS BAR (BOTOES FLUTUANTES) */
-        .actions-bar {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 15px; z-index: 100;
-        }
-
-        .btn-action { 
-            padding: 16px 40px; border-radius: 50px; border: none;
-            font-size: 1.1em; font-weight: bold; cursor: pointer; 
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); 
-            transition: transform 0.3s; display: flex; align-items: center; gap: 10px;
-            color: white;
-        }
-        .btn-action:hover { transform: translateY(-5px); }
-        
+        .actions-bar { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; z-index: 100; }
+        .btn-action { padding: 16px 40px; border-radius: 50px; border: none; font-size: 1.1em; font-weight: bold; cursor: pointer; color: white; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); }
         .btn-save { background: linear-gradient(135deg, var(--primary) 0%, #004d99 100%); }
-        .btn-clear { background: #dc3545; font-size: 1em; padding: 16px 30px; }
+        .btn-clear { background: #dc3545; }
 
-        /* UTILITÁRIOS */
         .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .client-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; align-items: center; }
-        
-        .client-remove { 
-            background: #ffe5e5; border: 1px solid #ffcccc; color: #dc3545; 
-            width: 34px; height: 34px; border-radius: 50%; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; 
-            transition: 0.2s;
-        }
-        .client-remove:hover { background: #dc3545; color: white; }
-
-        .btn-add-client { 
-            width: 100%; padding: 12px; background: #f0f4f8; 
-            border: 2px dashed #cedae6; color: var(--primary); 
-            cursor: pointer; border-radius: 8px; font-weight: 600; margin-top: 10px;
-            transition: 0.2s;
-        }
-        .btn-add-client:hover { background: #e1e8ef; border-color: var(--primary); }
-        
-        /* Loading Overlay */
-        #loading { 
-            position: fixed; top:0; left:0; width:100%; height:100%; 
-            background:rgba(255,255,255,1); z-index:9999; 
-            display:flex; justify-content:center; align-items:center; flex-direction:column;
-            backdrop-filter: blur(5px);
-        }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .client-remove { background: #ffe5e5; border: 1px solid #ffcccc; color: #dc3545; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-add-client { width: 100%; padding: 12px; background: #f0f4f8; border: 2px dashed #cedae6; color: var(--primary); cursor: pointer; border-radius: 8px; font-weight: 600; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div id="access-denied">
-    <h1><i class="fas fa-lock"></i> Acesso Negado</h1>
-    <p>Você não tem permissão para acessar este sistema.</p>
-    <p style="font-size:0.9em; margin-top:20px;">IP e Tentativa Registrados.</p>
-    <button onclick="logoutAndReload()" style="margin-top:20px; padding:10px 20px; cursor:pointer;">Tentar outra conta</button>
+<div id="login-screen">
+    <div style="margin-bottom: 30px;">
+        <i class="fas fa-lock fa-3x" style="color:var(--primary); margin-bottom: 20px;"></i>
+        <h2 style="color:var(--primary); margin:0;">Área Restrita</h2>
+        <p style="color:#666;">Faça login para gerenciar o conteúdo</p>
+    </div>
+    <button class="btn-login-google" onclick="performLogin()">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="G">
+        Entrar com Google
+    </button>
 </div>
 
-<div id="loading"><div><i class="fas fa-shield-alt fa-3x" style="color:var(--primary)"></i></div><h3 style="color:var(--primary); margin-top:15px;">Verificando Credenciais...</h3></div>
+<div id="access-denied">
+    <h1><i class="fas fa-ban"></i> Acesso Negado</h1>
+    <p>Este e-mail não tem permissão para acessar o painel.</p>
+    <button onclick="performLogout()" style="margin-top:30px; padding:10px 20px; cursor:pointer; background:transparent; border:1px solid #666; color:#aaa; border-radius:5px;">Voltar / Trocar Conta</button>
+</div>
 
 <div id="app-content">
     <div class="header">
@@ -195,11 +151,11 @@
         <div class="dashboard-grid">
             <div class="card">
                 <div class="card-header"><h2><i class="fas fa-calendar-alt"></i> Tema do Mês</h2></div>
-                <div class="form-group"><label>Título:</label><input type="text" id="tema-titulo" placeholder="Ex: Janeiro Branco"></div>
-                <div class="form-group"><label>Subtítulo:</label><input type="text" id="tema-subtitulo" placeholder="Ex: Quem cuida da mente, cuida da vida!"></div>
-                <div class="form-group"><label>CAPA URL (Fundo):</label><input type="text" id="tema-capa" placeholder="Link da imagem de fundo"></div>
-                <div class="form-group"><label>Resumo (Capa):</label><textarea id="tema-resumo" rows="3" placeholder="Texto curto que aparece no topo..."></textarea></div>
-                <div class="form-group"><label>Conteúdo HTML:</label><textarea id="tema-conteudo" rows="6" placeholder="<p>Texto completo...</p>"></textarea></div>
+                <div class="form-group"><label>Título:</label><input type="text" id="tema-titulo"></div>
+                <div class="form-group"><label>Subtítulo:</label><input type="text" id="tema-subtitulo"></div>
+                <div class="form-group"><label>CAPA URL:</label><input type="text" id="tema-capa"></div>
+                <div class="form-group"><label>Resumo:</label><textarea id="tema-resumo" rows="3"></textarea></div>
+                <div class="form-group"><label>Conteúdo HTML:</label><textarea id="tema-conteudo" rows="6"></textarea></div>
                 <div class="cols-2">
                     <div class="form-group"><label>Fonte Nome:</label><input type="text" id="tema-fonte-nome"></div>
                     <div class="form-group"><label>Fonte Link:</label><input type="text" id="tema-fonte-link"></div>
@@ -208,64 +164,55 @@
 
             <div class="card">
                 <div class="card-header"><h2><i class="fas fa-lightbulb"></i> Partiu Pensar</h2></div>
-                <div class="form-group"><label>Título:</label><input type="text" id="pp-titulo" placeholder="Ex: Partiu Pensar"></div>
-                <div class="form-group"><label>Subtítulo (Categoria):</label><input type="text" id="pp-subtitulo" placeholder="Ex: Filosofia"></div>
-                <div class="form-group"><label>Imagem de Fundo URL:</label><input type="text" id="pp-bg" placeholder="Link da imagem (opcional)"></div>
-                <div class="form-group"><label>Resumo (Chamada):</label><textarea id="pp-resumo" rows="2" placeholder="Frase curta de impacto..."></textarea></div>
-                <div class="form-group"><label>Conteúdo Completo (HTML):</label><textarea id="pp-conteudo" rows="5" placeholder="<p>Texto da reflexão...</p>"></textarea></div>
-                <div class="form-group"><label>Fonte / Autor:</label><input type="text" id="pp-fonte" placeholder="Ex: Mario Sergio Cortella"></div>
+                <div class="form-group"><label>Título:</label><input type="text" id="pp-titulo"></div>
+                <div class="form-group"><label>Subtítulo:</label><input type="text" id="pp-subtitulo"></div>
+                <div class="form-group"><label>Imagem Fundo:</label><input type="text" id="pp-bg"></div>
+                <div class="form-group"><label>Resumo:</label><textarea id="pp-resumo" rows="2"></textarea></div>
+                <div class="form-group"><label>Conteúdo HTML:</label><textarea id="pp-conteudo" rows="5"></textarea></div>
+                <div class="form-group"><label>Autor:</label><input type="text" id="pp-fonte"></div>
             </div>
 
             <div class="card">
                 <div class="card-header"><h2><i class="fas fa-heartbeat"></i> Bem-Estar</h2></div>
-                <div class="form-group"><label>Subtítulo:</label><input type="text" id="saude-subtitulo" placeholder="Ex: Dicas de Ergonomia"></div>
+                <div class="form-group"><label>Subtítulo:</label><input type="text" id="saude-subtitulo"></div>
                 <div class="form-group"><label>Resumo:</label><textarea id="saude-resumo" rows="3"></textarea></div>
                 <div class="form-group"><label>Conteúdo HTML:</label><textarea id="saude-conteudo" rows="6"></textarea></div>
-                <div class="form-group"><label>Link Fonte:</label><input type="text" id="saude-link"></div>
+                <div class="form-group"><label>Link:</label><input type="text" id="saude-link"></div>
             </div>
 
             <div class="card">
-                <div class="card-header"><h2><i class="fas fa-film"></i> Indica Aí (Cultura)</h2></div>
-                
+                <div class="card-header"><h2><i class="fas fa-film"></i> Indica Aí</h2></div>
                 <div class="tab-nav">
-                    <button type="button" class="tab-btn active" onclick="switchTab('cultura-video', this)">🎥 Vídeo/Filme</button>
+                    <button type="button" class="tab-btn active" onclick="switchTab('cultura-video', this)">🎥 Vídeo</button>
                     <button type="button" class="tab-btn" onclick="switchTab('cultura-livro', this)">📚 Livro</button>
                 </div>
-
                 <div id="cultura-video" class="tab-content active">
-                    <div style="background:#f8f9fa; padding:15px; border-radius:10px; border:1px solid #eee;">
-                        <div class="form-group"><label>Título:</label><input type="text" id="cultura-0-titulo"></div>
-                        <div class="form-group"><label>Link:</label><input type="text" id="cultura-0-link"></div>
-                        <div class="form-group"><label>Capa URL:</label><input type="text" id="cultura-0-img"></div>
-                        <div class="form-group"><label>Indicado Por:</label><input type="text" id="cultura-0-indicado"></div>
-                        <div class="form-group"><label>Sinopse:</label><textarea id="cultura-0-sinopse"></textarea></div>
-                    </div>
+                    <div class="form-group"><label>Título:</label><input type="text" id="cultura-0-titulo"></div>
+                    <div class="form-group"><label>Link:</label><input type="text" id="cultura-0-link"></div>
+                    <div class="form-group"><label>Capa URL:</label><input type="text" id="cultura-0-img"></div>
+                    <div class="form-group"><label>Indicado Por:</label><input type="text" id="cultura-0-indicado"></div>
+                    <div class="form-group"><label>Sinopse:</label><textarea id="cultura-0-sinopse"></textarea></div>
                 </div>
-
                 <div id="cultura-livro" class="tab-content">
-                    <div style="background:#f8f9fa; padding:15px; border-radius:10px; border:1px solid #eee;">
-                        <div class="form-group"><label>Título:</label><input type="text" id="cultura-1-titulo"></div>
-                        <div class="form-group"><label>Link:</label><input type="text" id="cultura-1-link"></div>
-                        <div class="form-group"><label>Capa URL:</label><input type="text" id="cultura-1-img"></div>
-                        <div class="form-group"><label>Indicado Por:</label><input type="text" id="cultura-1-indicado"></div>
-                        <div class="form-group"><label>Sinopse:</label><textarea id="cultura-1-sinopse"></textarea></div>
-                    </div>
+                    <div class="form-group"><label>Título:</label><input type="text" id="cultura-1-titulo"></div>
+                    <div class="form-group"><label>Link:</label><input type="text" id="cultura-1-link"></div>
+                    <div class="form-group"><label>Capa URL:</label><input type="text" id="cultura-1-img"></div>
+                    <div class="form-group"><label>Indicado Por:</label><input type="text" id="cultura-1-indicado"></div>
+                    <div class="form-group"><label>Sinopse:</label><textarea id="cultura-1-sinopse"></textarea></div>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-header"><h2><i class="fas fa-user-circle"></i> Além do Crachá</h2></div>
+                <div class="card-header"><h2><i class="fas fa-user-circle"></i> Hobby</h2></div>
                 <div class="form-group"><label>Nome:</label><input type="text" id="hobby-nome"></div>
-                <div class="form-group"><label>Setor/Cargo:</label><input type="text" id="hobby-cargo"></div>
+                <div class="form-group"><label>Cargo:</label><input type="text" id="hobby-cargo"></div>
                 <div class="form-group"><label>Foto URL:</label><input type="text" id="hobby-foto"></div>
                 <div class="form-group"><label>Texto:</label><textarea id="hobby-texto" rows="4"></textarea></div>
-                
-                <div class="form-group">
-                    <label>Tags (3 principais):</label>
+                <div class="form-group"><label>Tags:</label>
                     <div class="tags-grid">
-                        <input type="text" id="tag-1" placeholder="Tag 1 (Ex: Café)">
-                        <input type="text" id="tag-2" placeholder="Tag 2 (Ex: Cães)">
-                        <input type="text" id="tag-3" placeholder="Tag 3 (Ex: Viagem)">
+                        <input type="text" id="tag-1" placeholder="Tag 1">
+                        <input type="text" id="tag-2" placeholder="Tag 2">
+                        <input type="text" id="tag-3" placeholder="Tag 3">
                     </div>
                 </div>
             </div>
@@ -273,22 +220,21 @@
             <div class="card">
                 <div class="card-header">
                     <h2><i class="fas fa-briefcase"></i> Novos Clientes</h2>
-                    <button type="button" class="client-remove" onclick="document.getElementById('clientes-list').innerHTML=''; addNewClientRow();" title="Limpar Lista"><i class="fas fa-trash"></i></button>
+                    <button type="button" class="client-remove" onclick="document.getElementById('clientes-list').innerHTML=''; addNewClientRow();"><i class="fas fa-trash"></i></button>
                 </div>
                 <div class="cols-2">
-                    <div class="form-group"><label>Qtd Resumo:</label><input type="text" id="clientes-qtd"></div>
+                    <div class="form-group"><label>Qtd:</label><input type="text" id="clientes-qtd"></div>
                     <div class="form-group"><label>Período:</label><input type="text" id="clientes-periodo"></div>
                 </div>
-                <label style="font-size:0.8em; color:#666; margin-top:10px; display:block;">LISTA (Copie e cole do Excel na caixa de texto):</label>
                 <div id="clientes-list" style="margin-top:10px;"></div>
-                <button type="button" class="btn-add-client" onclick="addNewClientRow()">+ Adicionar Linha</button>
+                <button type="button" class="btn-add-client" onclick="addNewClientRow()">+ Linha</button>
             </div>
         </div>
     </form>
 
     <div class="actions-bar">
-        <button class="btn-action btn-clear" onclick="clearForm()"><i class="fas fa-eraser"></i> Limpar Formulário</button>
-        <button class="btn-action btn-save" onclick="confirmSave()"><i class="fas fa-save"></i> PUBLICAR NO SITE</button>
+        <button class="btn-action btn-clear" onclick="clearForm()"><i class="fas fa-eraser"></i> Limpar</button>
+        <button class="btn-action btn-save" onclick="confirmSave()"><i class="fas fa-save"></i> PUBLICAR</button>
     </div>
 </div>
 
@@ -302,86 +248,76 @@
     const CONTENT_URL = "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com/content.json";
     const CATEGORIES_MAP = { "Açougues": "🥩", "Restaurantes": "🍽️", "Indústria": "🏭", "Transporte": "🚚", "Comércio": "🏪", "Serviços": "💼", "Outros": "🏢", "Farmácias": "💊", "E-commerce": "📦", "Automotivo": "🚗", "Têxtil": "👕" };
     
-    // ==========================================
-    // CONFIGURAÇÃO DE SEGURANÇA MÁXIMA
-    // ==========================================
+    // --- SEGURANÇA ---
     const ALLOWED_EMAILS = ["marketingpsrimpressao@gmail.com", "rohsantos1@gmail.com"];
-    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias em milissegundos
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
+    // Monitora estado (Login/Logout)
     firebase.auth().onAuthStateChanged(async user => {
         if (user) {
-            // 1. Verifica se o email está na lista branca
+            // USUÁRIO LOGADO
             if (ALLOWED_EMAILS.includes(user.email)) {
-                
-                // 2. Verifica Periodicidade (Força Tarefa de Login Semanal)
+                // E-mail PERMITIDO
                 const lastVerified = localStorage.getItem('secure_last_login_ts');
                 const now = Date.now();
 
-                // Se não tem registro ou se passou de 7 dias
+                // Checa 7 dias
                 if (!lastVerified || (now - parseInt(lastVerified) > ONE_WEEK_MS)) {
-                    // Sessão expirada para verificação de segurança
-                    console.log("Sessão de segurança de 7 dias expirada. Revalidando...");
-                    await firebase.auth().signOut();
-                    // O reload vai forçar o popup de login novamente
-                    window.location.reload();
-                    return;
+                    console.log("Sessão expirada (7 dias).");
+                    await firebase.auth().signOut(); // Força logout para pedir senha
+                    // A tela de login aparecerá automaticamente via 'else' abaixo
+                    return; 
                 }
 
-                // Se passou nas checagens:
-                // Atualiza o timestamp apenas se estiver perto de vencer? 
-                // Não, mantemos o original para forçar a re-validação exata em 7 dias a partir do login inicial.
-                // Mas precisamos salvar o timestamp na PRIMEIRA vez que loga (feito no else abaixo).
-                
+                // Tudo OK: Esconde Login, Mostra App
                 user.getIdToken().then(token => { 
                     AUTH_TOKEN = token;
-                    // Mostra o app e esconde o loading
-                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('access-denied').style.display = 'none';
                     document.getElementById('app-content').style.display = 'block';
                     loadContent(); 
                 });
 
             } else {
-                // E-mail não autorizado (Hacker ou curioso)
-                forceLockdown();
+                // E-mail NÃO PERMITIDO
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-content').style.display = 'none';
+                document.getElementById('access-denied').style.display = 'flex';
+                firebase.auth().signOut(); // Desloga o intruso
             }
         } else {
-            // Não logado, inicia fluxo de login
-            firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
-                .then((result) => {
-                    const email = result.user.email;
-                    if (ALLOWED_EMAILS.includes(email)) {
-                        // Login bem sucedido e autorizado: Seta o timer de 7 dias
-                        localStorage.setItem('secure_last_login_ts', Date.now());
-                        window.location.reload(); // Recarrega para aplicar o fluxo limpo
-                    } else {
-                        forceLockdown();
-                    }
-                })
-                .catch((error) => {
-                    console.error(error);
-                    alert("Erro na autenticação.");
-                });
+            // USUÁRIO NÃO LOGADO
+            document.getElementById('app-content').style.display = 'none';
+            document.getElementById('access-denied').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex'; // Mostra botão de login
         }
     });
 
-    function forceLockdown() {
-        firebase.auth().signOut();
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('app-content').style.display = 'none'; // Garante que está oculto
-        document.getElementById('access-denied').style.display = 'flex'; // Mostra tela de bloqueio
+    // Função manual chamada pelo botão (EVITA BLOQUEIO DE POPUP)
+    function performLogin() {
+        firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
+            .then((result) => {
+                const email = result.user.email;
+                if (ALLOWED_EMAILS.includes(email)) {
+                    // Login novo com sucesso: Renova timer de 7 dias
+                    localStorage.setItem('secure_last_login_ts', Date.now());
+                }
+                // O onAuthStateChanged vai lidar com o resto
+            })
+            .catch((error) => {
+                console.error(error);
+                alert("Erro ao logar: " + error.message);
+            });
     }
 
-    function logoutAndReload() {
+    function performLogout() {
         firebase.auth().signOut().then(() => {
             window.location.reload();
         });
     }
+    // -----------------
 
-    // ==========================================
-    // FIM DA CONFIGURAÇÃO DE SEGURANÇA
-    // ==========================================
-
-    // Função para alternar as abas
+    // --- FUNÇÕES DO EDITOR ---
     function switchTab(tabId, btn) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -390,7 +326,7 @@
     }
 
     function clearForm() {
-        if(!confirm("Tem certeza que deseja limpar todo o formulário? Você perderá o que não foi salvo.")) return;
+        if(!confirm("Tem certeza?")) return;
         document.querySelectorAll('input, textarea').forEach(el => el.value = '');
         document.getElementById('clientes-list').innerHTML = '';
         addNewClientRow();
@@ -402,6 +338,7 @@
             const data = await resp.json();
             if(!data) return;
 
+            // Preenchimento
             setVal('tema-titulo', data.temaMes?.titulo);
             setVal('tema-subtitulo', data.temaMes?.subtitulo);
             setVal('tema-resumo', data.temaMes?.resumo);
@@ -459,11 +396,11 @@
                     addNewClientRow();
                 }
             }
-        } catch(e) { console.error(e); alert("Erro ao carregar dados."); }
+        } catch(e) { console.error(e); }
     }
 
     async function confirmSave() {
-        if(!confirm("Tem certeza que deseja publicar as alterações?")) return;
+        if(!confirm("Publicar alterações?")) return;
         
         let currentData = {};
         try {
@@ -527,8 +464,8 @@
 
         try {
             await fetch(CONTENT_URL + "?auth=" + AUTH_TOKEN, { method: 'PUT', body: JSON.stringify(data) });
-            alert("Conteúdo publicado com sucesso!");
-        } catch(e) { alert("Erro ao salvar: " + e.message); }
+            alert("Sucesso!");
+        } catch(e) { alert("Erro: " + e.message); }
     }
 
     function addNewClientRow(cat="", name="") {
