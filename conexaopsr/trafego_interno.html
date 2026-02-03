@@ -7,69 +7,171 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        :root { var(--primary: #003366; --accent: #DAA520; --bg: #f4f7f9; }
-        body { 
-            font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
-            padding: 20px; color: #333; margin: 0; 
+        :root { 
+            --primary: #003366; 
+            --accent: #DAA520; 
+            --bg: #f4f7f9; 
+            --success: #28a745; 
+            --danger: #dc3545;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        .header { text-align: center; margin-bottom: 30px; }
+        * { box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+            padding: 20px; 
+            color: #333; 
+            margin: 0;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animação de Fundo Original */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 20% 50%, rgba(0, 51, 102, 0.03) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(218, 165, 32, 0.03) 0%, transparent 50%);
+            pointer-events: none; z-index: 0;
+            animation: floatBg 20s ease-in-out infinite;
+        }
+
+        @keyframes floatBg {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, 20px); }
+        }
+        
+        .header { 
+            text-align: center; margin-bottom: 40px; position: relative; z-index: 1;
+        }
+        
         .header h1 { 
-            color: var(--primary); margin: 0 0 20px 0; font-size: 2.5em;
+            color: var(--primary); margin: 0 0 20px 0; font-size: 2.5em; font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.05);
             background: linear-gradient(135deg, var(--primary) 0%, #004d99 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
-        /* MENU */
-        .view-switcher { 
+        /* Menu de Navegação (Estilo Original Adaptado para Links) */
+        .view-switcher {
             display: flex; justify-content: center; gap: 12px; margin-bottom: 35px;
-            background: white; padding: 10px; border-radius: 50px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: fit-content; margin: 0 auto 30px;
+            background: white; padding: 8px; border-radius: 50px;
+            box-shadow: var(--shadow-md); width: fit-content; margin-left: auto; margin-right: auto;
+            position: relative; z-index: 2;
         }
-        .view-btn { 
-            text-decoration: none; padding: 12px 24px; border-radius: 25px; 
-            color: #777; font-weight: 600; display: flex; align-items: center; 
-            gap: 8px; transition: 0.3s; font-size: 0.9em;
-        }
-        .view-btn.active { 
-            background: var(--primary); color: white; 
-            box-shadow: 0 6px 16px rgba(0,51,102,0.25);
-        }
-        .view-btn:hover:not(.active) { background: #eef2f5; }
 
-        /* KPI CARDS */
-        .kpi-row { 
-            display: flex; gap: 20px; margin-bottom: 25px; flex-wrap: wrap; 
-            justify-content: center; max-width: 1400px; margin: 0 auto 25px; 
+        .view-btn {
+            text-decoration: none; border: none; background: transparent; 
+            padding: 12px 28px; border-radius: 25px; cursor: pointer; 
+            font-weight: 600; color: #777; transition: var(--transition);
+            display: flex; align-items: center; gap: 8px; position: relative; font-size: 0.9em;
         }
+
+        .view-btn.active { 
+            color: white; background: var(--primary);
+            box-shadow: 0 6px 16px rgba(0,51,102,0.25); transform: translateY(-2px);
+        }
+
+        .view-btn:hover:not(.active) { 
+            background: rgba(0,51,102,0.05); transform: translateY(-1px); 
+        }
+
+        /* Grid e Cards */
+        .dashboard-grid { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
+            gap: 25px; max-width: 1400px; margin: 0 auto; position: relative; z-index: 1;
+        }
+
+        .card { 
+            background: white; padding: 28px; border-radius: 16px; 
+            box-shadow: var(--shadow-sm); display: flex; flex-direction: column;
+            overflow: hidden; position: relative; border: 1px solid rgba(0,0,0,0.04);
+            transition: var(--transition); animation: cardSlideIn 0.5s ease backwards;
+        }
+
+        .card::before { 
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; 
+            background: linear-gradient(90deg, var(--primary), var(--accent)); transition: height 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg); transform: translateY(-4px); border-color: rgba(0,51,102,0.1);
+        }
+        .card:hover::before { height: 6px; }
+
+        .card-header { 
+            display: flex; align-items: center; justify-content: space-between; 
+            border-bottom: 2px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 22px; position: relative;
+        }
+        .card-header::after {
+            content: ''; position: absolute; bottom: -2px; left: 0; width: 60px; height: 2px;
+            background: var(--accent); transition: width 0.3s ease;
+        }
+        .card:hover .card-header::after { width: 120px; }
+
+        .card h2 { 
+            margin: 0; color: var(--primary); font-size: 1.2em; display: flex; align-items: center; gap: 10px; 
+        }
+        .card h2 i {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        /* Botões e Filtros */
+        .filter-bar {
+            display: flex; justify-content: flex-end; align-items: center; gap: 12px;
+            max-width: 1400px; margin: 0 auto 25px; background: white; padding: 14px 24px;
+            border-radius: 12px; box-shadow: var(--shadow-sm); animation: slideDown 0.5s ease;
+        }
+
+        .btn-refresh { 
+            background: linear-gradient(135deg, var(--success) 0%, #239f3d 100%);
+            color: white; border: none; padding: 10px 18px; border-radius: 8px; 
+            cursor: pointer; font-size: 0.9em; display: inline-flex; align-items: center; 
+            gap: 6px; transition: var(--transition); box-shadow: 0 4px 12px rgba(40,167,69,0.2);
+        }
+        .btn-refresh:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(40,167,69,0.3); }
+        .btn-refresh:hover i { transform: rotate(180deg); }
+
+        /* KPIs */
+        .kpi-row { display: flex; gap: 20px; margin-bottom: 25px; flex-wrap: wrap; justify-content: center; max-width: 1400px; margin: 0 auto; }
+        
         .kpi-card { 
-            flex: 1; min-width: 250px; background: white; padding: 24px; 
+            flex: 1; min-width: 200px; background: white; padding: 24px; 
             border-radius: 16px; border-left: 5px solid var(--primary); 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; 
-            transition: 0.3s;
+            box-shadow: var(--shadow-sm); display: flex; flex-direction: column; 
+            justify-content: center; position: relative; overflow: hidden;
+            transition: var(--transition); animation: cardSlideIn 0.5s ease backwards;
         }
-        .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .kpi-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
         
         .kpi-card h3 { 
-            color: #888; font-size: 0.85em; margin: 0 0 10px; 
-            text-transform: uppercase; letter-spacing: 1px;
+            color: #888; font-size: 0.85em; margin: 0 0 8px 0; 
+            font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
         }
-        .kpi-card .value { font-size: 3em; font-weight: 700; color: var(--primary); }
+        .kpi-card .value { 
+            font-size: 2.5em; font-weight: 700; color: var(--primary); 
+            position: relative; z-index: 1; animation: countUp 1s ease;
+        }
+        .kpi-card .icon { 
+            float: right; font-size: 2em; opacity: 0.15; position: absolute; 
+            right: 20px; top: 50%; transform: translateY(-50%); transition: var(--transition);
+        }
+        .kpi-card:hover .icon { opacity: 0.25; transform: translateY(-50%) scale(1.1); }
 
-        /* CHARTS */
-        .charts-grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); 
-            gap: 25px; max-width: 1400px; margin: 0 auto; 
-        }
-        .chart-card { 
-            background: white; padding: 25px; border-radius: 16px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
-        }
-        .chart-header { 
-            border-bottom: 2px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 20px; 
-            font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 10px; font-size: 1.1em;
-        }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+
+        @keyframes cardSlideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes countUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -84,95 +186,243 @@
     </div>
 </div>
 
-<div class="kpi-row">
-    <div class="kpi-card" style="border-color:#003366"><h3>Visitantes (Hoje)</h3><div class="value" id="kpi-visits">0</div></div>
-    <div class="kpi-card" style="border-color:#DAA520"><h3>Ações (Hoje)</h3><div class="value" id="kpi-events">0</div></div>
-    <div class="kpi-card" style="border-color:#28a745"><h3>Usuários Totais</h3><div class="value" id="kpi-users">0</div></div>
-</div>
+<div style="max-width: 1400px; margin: 0 auto; padding-bottom: 50px;">
+    
+    <div class="filter-bar">
+        <button class="btn-refresh" onclick="loadTrafficData()"><i class="fas fa-sync-alt"></i> Atualizar Dados</button>
+    </div>
 
-<div class="charts-grid">
-    <div class="chart-card" style="grid-column: span 2">
-        <div class="chart-header"><i class="fas fa-chart-line"></i> Fluxo de Visitas (Mês Vigente)</div>
-        <canvas id="chartVisits" height="100"></canvas>
+    <div class="kpi-row">
+        <div class="kpi-card" style="border-color: #003366;">
+            <h3>Visitantes Únicos (Hoje)</h3>
+            <div class="value" id="kpi-visits">0</div>
+            <i class="fas fa-user-friends icon"></i>
+        </div>
+        <div class="kpi-card" style="border-color: #DAA520;">
+            <h3>Ações / Cliques (Hoje)</h3>
+            <div class="value" id="kpi-events">0</div>
+            <i class="fas fa-mouse-pointer icon"></i>
+        </div>
+        <div class="kpi-card" style="border-color: #28a745;">
+            <h3>Novos Cadastros (Total)</h3>
+            <div class="value" id="kpi-total-users">0</div>
+            <i class="fas fa-id-card icon"></i>
+        </div>
     </div>
-    <div class="chart-card">
-        <div class="chart-header"><i class="fas fa-mobile-alt"></i> Dispositivos</div>
-        <canvas id="chartDevices" height="200"></canvas>
-    </div>
-    <div class="chart-card" style="grid-column: span 3">
-        <div class="chart-header"><i class="fas fa-mouse-pointer"></i> Top Interações (Mês Vigente)</div>
-        <canvas id="chartEvents" height="100"></canvas>
+
+    <div class="dashboard-grid">
+        <div class="card" style="grid-column: span 2;">
+            <div class="card-header"><h2><i class="fas fa-chart-line"></i> Fluxo de Visitas (Mês Vigente)</h2></div>
+            <div class="chart-container">
+                <canvas id="chartVisits"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><h2><i class="fas fa-mobile-alt"></i> Dispositivos</h2></div>
+            <div class="chart-container">
+                <canvas id="chartDevices"></canvas>
+            </div>
+        </div>
+        <div class="card" style="grid-column: span 3;">
+            <div class="card-header"><h2><i class="fas fa-hand-point-up"></i> Top Interações (Visitantes Únicos/Dia - Mês Vigente)</h2></div>
+            <div class="chart-container">
+                <canvas id="chartEvents"></canvas>
+            </div>
+        </div>
     </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script>
-    const firebaseConfig = { apiKey: "AIzaSyBzMvAw9ahEyd-tSYY08HxcMzo9RKf3IFY", authDomain: "jornalpsr-1b8c6.firebaseapp.com", databaseURL: "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com", projectId: "jornalpsr-1b8c6" };
-    firebase.initializeApp(firebaseConfig);
-    
-    const DATA_URL = "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com/monitor_interno.json";
-    let AUTH_TOKEN = null;
 
-    firebase.auth().onAuthStateChanged(user => {
-        if(user) user.getIdToken().then(t => { AUTH_TOKEN = t; loadData(); });
-        else firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyBzMvAw9ahEyd-tSYY08HxcMzo9RKf3IFY",
+        authDomain: "jornalpsr-1b8c6.firebaseapp.com",
+        databaseURL: "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com",
+        projectId: "jornalpsr-1b8c6",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    let AUTH_TOKEN = null;
+    const DB_ROOT_URL = "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com/";
+
+    // Variáveis globais para os gráficos
+    let visitsChartInstance = null;
+    let deviceChartInstance = null;
+    let eventsChartInstance = null;
+
+    async function secureFetch(url, options = {}) {
+        const separator = url.includes('?') ? '&' : '?';
+        const finalUrl = AUTH_TOKEN ? `${url}${separator}auth=${AUTH_TOKEN}` : url;
+        return fetch(finalUrl, options);
+    }
+
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            user.getIdToken().then(token => {
+                AUTH_TOKEN = token;
+                loadTrafficData();
+            });
+        } else {
+            firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        }
     });
 
-    async function loadData() {
-        const resp = await fetch(DATA_URL + "?auth=" + AUTH_TOKEN);
-        const data = await resp.json() || {};
-        const today = new Date().toISOString().slice(0,10);
-        const currentMonth = today.slice(0,7);
+    async function loadTrafficData() {
+        if(!AUTH_TOKEN) return;
+        
+        try {
+            const resp = await secureFetch(DB_ROOT_URL + "monitor_interno.json");
+            const data = await resp.json() || {};
+            
+            // Data de hoje para os KPIs
+            const hoje = new Date();
+            const anoHoje = hoje.getFullYear();
+            const mesHoje = String(hoje.getMonth() + 1).padStart(2, '0');
+            const diaHoje = String(hoje.getDate()).padStart(2, '0');
+            const hojeStr = `${anoHoje}-${mesHoje}-${diaHoje}`; // Formato YYYY-MM-DD
+            
+            // 1. KPI Visitas
+            const visitsToday = data.daily_visits && data.daily_visits[hojeStr] ? Object.keys(data.daily_visits[hojeStr]).length : 0;
+            
+            // 2. KPI Eventos (Ignora cliques em "x")
+            let eventsToday = 0;
+            if (data.events && data.events[hojeStr]) {
+                eventsToday = Object.values(data.events[hojeStr]).filter(ev => {
+                    const txt = (ev.txt || ev.id || "").toLowerCase().trim();
+                    return txt !== 'x' && txt !== 'fechar' && txt !== 'close'; 
+                }).length;
+            }
 
-        const visitsToday = data.daily_visits?.[today] ? Object.keys(data.daily_visits[today]).length : 0;
-        let eventsToday = 0;
-        if(data.events?.[today]) {
-            eventsToday = Object.values(data.events[today]).filter(e => !['x','X','fechar'].includes((e.txt||"").trim())).length;
-        }
-        document.getElementById('kpi-visits').innerText = visitsToday;
-        document.getElementById('kpi-events').innerText = eventsToday;
-        document.getElementById('kpi-users').innerText = data.users ? Object.keys(data.users).length : 0;
+            // 3. KPI Total Usuários
+            const totalUsers = data.users ? Object.keys(data.users).length : 0;
 
-        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
-        const labels = [], values = [];
-        for(let i=1; i<=daysInMonth; i++) {
-            const d = `${currentMonth}-${String(i).padStart(2,'0')}`;
-            labels.push(String(i).padStart(2,'0'));
-            values.push(data.daily_visits?.[d] ? Object.keys(data.daily_visits[d]).length : 0);
-        }
-        new Chart(document.getElementById('chartVisits'), {
-            type: 'line',
-            data: { labels, datasets: [{ label: 'Visitas', data: values, borderColor: '#003366', tension: 0.3, fill: true, backgroundColor: 'rgba(0,51,102,0.1)' }] }
-        });
+            document.getElementById('kpi-visits').innerText = visitsToday;
+            document.getElementById('kpi-events').innerText = eventsToday;
+            document.getElementById('kpi-total-users').innerText = totalUsers;
 
-        let mob=0, desk=0;
-        if(data.users) Object.values(data.users).forEach(u => (u.device_info||"").toLowerCase().includes('mobile') ? mob++ : desk++);
-        new Chart(document.getElementById('chartDevices'), {
-            type: 'doughnut',
-            data: { labels: ['Mobile', 'Desktop'], datasets: [{ data: [mob, desk], backgroundColor: ['#DAA520', '#003366'] }] }
-        });
+            // --- LÓGICA DO GRÁFICO (Mês Vigente 01 a 30/31) ---
+            const dates = [];
+            const visitCounts = [];
+            
+            const currentYear = hoje.getFullYear();
+            const currentMonth = hoje.getMonth(); 
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
-        const evCounts = {};
-        if(data.events) {
-            Object.keys(data.events).forEach(date => {
-                if(date.startsWith(currentMonth)) {
-                    Object.values(data.events[date]).forEach(ev => {
-                        const txt = (ev.txt || ev.id || "").trim();
-                        if(!['x','X','fechar','sem_texto'].includes(txt) && txt !== '') {
-                            evCounts[txt] = (evCounts[txt] || 0) + 1;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dStr = String(day).padStart(2, '0');
+                const mStr = String(currentMonth + 1).padStart(2, '0');
+                const dbDateKey = `${currentYear}-${mStr}-${dStr}`;
+
+                dates.push(`${dStr}/${mStr}`);
+                const count = data.daily_visits && data.daily_visits[dbDateKey] ? Object.keys(data.daily_visits[dbDateKey]).length : 0;
+                visitCounts.push(count);
+            }
+            
+            renderVisitsChart(dates, visitCounts);
+
+            // Gráfico de Dispositivos
+            let mobile = 0, desktop = 0;
+            if(data.users) {
+                Object.values(data.users).forEach(u => {
+                    const info = (u.device_info || "").toLowerCase() + (u.platform || "").toLowerCase();
+                    if(info.includes('mobile') || info.includes('android') || info.includes('iphone')) mobile++;
+                    else desktop++;
+                });
+            }
+            renderDeviceChart(mobile, desktop);
+
+            // Gráfico de Top Interações (Mês Vigente)
+            const eventCounts = {}; 
+            const mesAtualStr = hoje.toISOString().slice(0, 7); 
+
+            if (data.events) {
+                Object.keys(data.events).forEach(dateKey => {
+                    if (dateKey.startsWith(mesAtualStr)) {
+                        const dayEvents = data.events[dateKey];
+                        const dailyInteractionMap = {}; 
+
+                        Object.values(dayEvents).forEach(ev => {
+                            const labelRaw = ev.txt || ev.id || "";
+                            const labelParaFiltro = labelRaw.trim(); 
+                            const userId = ev.u || ev.user || ev.uid || "anonimo"; 
+                            
+                            if (labelParaFiltro !== 'x' && labelParaFiltro !== 'X' && labelParaFiltro !== '×' && labelParaFiltro !== '') {
+                                if (!dailyInteractionMap[labelRaw]) {
+                                    dailyInteractionMap[labelRaw] = new Set();
+                                }
+                                dailyInteractionMap[labelRaw].add(userId);
+                            }
+                        });
+
+                        for (const [label, userSet] of Object.entries(dailyInteractionMap)) {
+                            eventCounts[label] = (eventCounts[label] || 0) + userSet.size; 
                         }
-                    });
-                }
-            });
-        }
-        const sortedEv = Object.entries(evCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
-        new Chart(document.getElementById('chartEvents'), {
+                    }
+                });
+            }
+
+            const sortedEvents = Object.entries(eventCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            renderEventsChart(sortedEvents.map(e=>e[0]), sortedEvents.map(e=>e[1]));
+
+        } catch(e) { console.error("Erro analytics:", e); }
+    }
+
+    function renderVisitsChart(labels, data) {
+        const ctx = document.getElementById('chartVisits').getContext('2d');
+        if(visitsChartInstance) visitsChartInstance.destroy();
+        visitsChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Visitantes Únicos',
+                    data: data,
+                    borderColor: '#003366',
+                    backgroundColor: 'rgba(0, 51, 102, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    function renderDeviceChart(mob, desk) {
+        const ctx = document.getElementById('chartDevices').getContext('2d');
+        if(deviceChartInstance) deviceChartInstance.destroy();
+        deviceChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Mobile/Tablet', 'Desktop'],
+                datasets: [{
+                    data: [mob, desk],
+                    backgroundColor: ['#DAA520', '#003366']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    function renderEventsChart(labels, data) {
+        const ctx = document.getElementById('chartEvents').getContext('2d');
+        if(eventsChartInstance) eventsChartInstance.destroy();
+        eventsChartInstance = new Chart(ctx, {
             type: 'bar',
-            data: { labels: sortedEv.map(e=>e[0]), datasets: [{ label: 'Cliques', data: sortedEv.map(e=>e[1]), backgroundColor: '#28a745' }] },
-            options: { indexAxis: 'y' }
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Cliques',
+                    data: data,
+                    backgroundColor: '#28a745',
+                    borderRadius: 5
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' }
         });
     }
 </script>
+
 </body>
 </html>
