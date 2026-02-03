@@ -6,192 +6,114 @@
     <title>Monitor de Interações - Portal PSR</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <style>
         :root { 
-            --primary: #003366; 
-            --accent: #DAA520; 
-            --bg: #f4f7f9; 
-            --success: #28a745; 
-            --danger: #dc3545;
-            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
-            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
-            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --primary: #003366; --accent: #DAA520; --bg: #f4f7f9; --success: #28a745; --danger: #dc3545;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06); --transition: all 0.3s ease;
         }
-        
-        * { box-sizing: border-box; }
-        
         body { 
-            font-family: 'Poppins', sans-serif; 
-            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
-            padding: 20px; 
-            color: #333; 
-            margin: 0;
-            position: relative;
-            overflow-x: hidden;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 20% 50%, rgba(0, 51, 102, 0.03) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 80%, rgba(218, 165, 32, 0.03) 0%, transparent 50%);
-            pointer-events: none; z-index: 0; animation: floatBg 20s ease-in-out infinite;
-        }
-
-        @keyframes floatBg {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(20px, 20px); }
+            font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+            padding: 20px; color: #333; margin: 0;
         }
         
-        .header { text-align: center; margin-bottom: 40px; position: relative; z-index: 1; }
-        
+        .header { text-align: center; margin-bottom: 30px; }
         .header h1 { 
-            color: var(--primary); margin: 0 0 20px 0; font-size: 2.5em; font-weight: 700;
+            color: var(--primary); margin: 0 0 20px 0; font-size: 2.5em;
             background: linear-gradient(135deg, var(--primary) 0%, #004d99 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-
-        /* MENU DE NAVEGAÇÃO (Visual Idêntico ao Switcher Original) */
-        .view-switcher {
+        
+        /* MENU */
+        .view-switcher { 
             display: flex; justify-content: center; gap: 12px; margin-bottom: 35px;
-            background: white; padding: 8px; border-radius: 50px;
-            box-shadow: var(--shadow-md); width: fit-content; margin-left: auto; margin-right: auto;
-            position: relative; z-index: 2;
+            background: white; padding: 10px; border-radius: 50px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: fit-content; margin: 0 auto 30px;
         }
-
-        .view-btn {
-            text-decoration: none; border: none; background: transparent; 
-            padding: 12px 28px; border-radius: 25px; cursor: pointer; 
-            font-weight: 600; color: #777; transition: var(--transition);
-            display: flex; align-items: center; gap: 8px; position: relative; font-size: 0.9em;
+        .view-btn { 
+            text-decoration: none; padding: 12px 24px; border-radius: 25px; 
+            color: #777; font-weight: 600; display: flex; align-items: center; 
+            gap: 8px; transition: var(--transition); font-size: 0.9em;
         }
-
         .view-btn.active { 
             background: var(--primary); color: white; 
-            box-shadow: 0 6px 16px rgba(0,51,102,0.25); transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,51,102,0.25);
         }
+        .view-btn:hover:not(.active) { background: #eef2f5; }
 
-        .view-btn:hover:not(.active) { 
-            background: rgba(0,51,102,0.05); transform: translateY(-1px); 
-        }
-
-        /* GRID E CARDS */
+        /* GRID */
         .dashboard-grid { 
             display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
-            gap: 25px; max-width: 1400px; margin: 0 auto; position: relative; z-index: 1;
+            gap: 20px; max-width: 1400px; margin: 0 auto; 
         }
-
         .card { 
-            background: white; padding: 28px; border-radius: 16px; 
-            box-shadow: var(--shadow-sm); display: flex; flex-direction: column;
-            overflow: hidden; position: relative; border: 1px solid rgba(0,0,0,0.04);
+            background: white; padding: 20px; border-radius: 12px; 
+            box-shadow: var(--shadow-sm); border-top: 4px solid var(--accent); 
             transition: var(--transition);
         }
-
-        /* Estilo Específico de Interação (Borda Dourada/Amarela) */
-        .card-interaction { border-top: 4px solid var(--accent) !important; }
-        .card-interaction::before { background: linear-gradient(90deg, var(--accent), #f4d03f); content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
         
-        .card:hover {
-            box-shadow: var(--shadow-lg); transform: translateY(-4px); border-color: rgba(0,51,102,0.1);
-        }
-
-        .card-header { 
-            display: flex; align-items: center; justify-content: space-between; 
-            border-bottom: 2px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 22px; position: relative;
-        }
-
         .card h2 { 
-            margin: 0; color: var(--primary); font-size: 1.2em; display: flex; align-items: center; gap: 10px; 
+            color: #444; font-size: 1.1em; margin-top: 0; 
+            display: flex; align-items: center; gap: 10px; 
+            border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; 
+        }
+        .card h2 i { color: var(--primary); }
+        
+        /* LISTA DE ITENS */
+        .monitor-list { max-height: 300px; overflow-y: auto; padding-right: 5px; }
+        .monitor-list::-webkit-scrollbar { width: 5px; }
+        .monitor-list::-webkit-scrollbar-thumb { background: #ccc; border-radius: 5px; }
+        
+        .monitor-item { 
+            background: #f8f9fa; padding: 12px; margin-bottom: 8px; 
+            border-radius: 8px; font-size: 0.85em; display: flex; 
+            justify-content: space-between; align-items: flex-start; gap: 10px; 
+            border-left: 3px solid #ddd; transition: 0.2s;
+        }
+        .monitor-item:hover { 
+            border-left-color: var(--accent); background: white; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); transform: translateX(2px);
         }
         
-        .card-interaction .card-header h2 { font-size: 1.1em; color: #444; }
-
-        /* LISTAS DE MONITORAMENTO */
-        .monitor-list { 
-            max-height: 300px; overflow-y: auto; padding-right: 5px;
+        .btn-trash { 
+            color: var(--danger); background: white; border: 1px solid #f8d7da; 
+            width: 25px; height: 25px; border-radius: 50%; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s; flex-shrink: 0;
         }
-        .monitor-list::-webkit-scrollbar { width: 6px; }
-        .monitor-list::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-        .monitor-list::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
-        .monitor-list::-webkit-scrollbar-thumb:hover { background: var(--primary); }
-
-        .monitor-item {
-            background: linear-gradient(135deg, #f9f9f9 0%, #ffffff 100%);
-            border-left: 3px solid var(--accent); border-bottom: 1px solid #eee; 
-            padding: 12px; margin-bottom: 8px; border-radius: 8px; font-size: 0.85em; 
-            position: relative; display: flex; justify-content: space-between; 
-            align-items: flex-start; gap: 10px; transition: var(--transition);
-        }
-
-        .monitor-item:hover {
-            background: linear-gradient(135deg, #fff 0%, #f0f4f8 100%);
-            box-shadow: var(--shadow-sm); border-left-width: 4px; transform: translateX(4px);
-        }
-
-        .monitor-content { flex: 1; word-break: break-word; }
+        .btn-trash:hover { background: var(--danger); color: white; transform: rotate(10deg); }
         
-        /* BOTÕES DE AÇÃO (LIXEIRA) */
-        .btn-trash {
-            background: linear-gradient(135deg, #fff0f0 0%, #ffe5e5 100%);
-            border: 1px solid #ffcccc; color: var(--danger);
-            width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; 
-            flex-shrink: 0; transition: var(--transition); position: relative; overflow: hidden;
+        .filter-bar { 
+            display: flex; justify-content: flex-end; align-items: center; gap: 10px; 
+            max-width: 1400px; margin: 0 auto 20px; background: white; 
+            padding: 10px 20px; border-radius: 10px; box-shadow: var(--shadow-sm);
         }
-        .btn-trash:hover { 
-            color: white; border-color: var(--danger); transform: rotate(10deg) scale(1.1);
+        .date-input { 
+            padding: 8px 12px; border: 1px solid #ccc; border-radius: 5px; 
+            font-family: inherit;
         }
-        .btn-trash:hover::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--danger); z-index: -1;
-        }
-
-        /* BARRA DE FILTRO */
-        .filter-bar {
-            display: flex; justify-content: flex-end; align-items: center; gap: 12px;
-            max-width: 1400px; margin: 0 auto 25px; background: white; padding: 14px 24px;
-            border-radius: 12px; box-shadow: var(--shadow-sm); z-index: 2; position: relative;
-        }
-
-        .date-input {
-            padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 8px; 
-            font-family: inherit; color: #555; transition: var(--transition); background: #fafafa;
-        }
-        .date-input:focus { outline: none; border-color: var(--primary); background: white; }
-
         .btn-refresh { 
-            background: linear-gradient(135deg, var(--success) 0%, #239f3d 100%);
-            color: white; border: none; padding: 10px 18px; border-radius: 8px; 
-            cursor: pointer; font-size: 0.9em; display: inline-flex; align-items: center; 
-            gap: 6px; transition: var(--transition); box-shadow: 0 4px 12px rgba(40,167,69,0.2);
+            background: var(--success); color: white; border: none; 
+            padding: 8px 15px; border-radius: 5px; cursor: pointer; 
+            display: flex; align-items: center; gap: 5px; font-weight: 600;
         }
-        .btn-refresh:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(40,167,69,0.3); }
-        .btn-refresh:hover i { transform: rotate(180deg); }
-
+        .btn-refresh:hover { background: #218838; }
+        
         .id-badge {
-            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
-            color: #495057; padding: 3px 8px; border-radius: 6px;
-            font-family: monospace; font-size: 0.8em; border: 1px solid #ced4da;
+            background: #e9ecef; padding: 2px 6px; border-radius: 4px; 
+            font-family: monospace; font-size: 0.9em; color: #555;
         }
 
-        /* TOAST */
-        #toast { 
-            position: fixed; bottom: 30px; right: 30px; padding: 16px 28px; 
-            border-radius: 12px; color: white; display: none; z-index: 101; 
-            font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+        .comunicado-box {
+            background: #fffbeb; border: 1px solid #ffeeba; padding: 10px; 
+            border-radius: 6px; margin-bottom: 10px; font-size: 0.9em; color: #856404;
         }
-        .success { background: linear-gradient(135deg, #28a745 0%, #20893a 100%); }
-        .error { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); }
     </style>
 </head>
 <body>
 
 <div class="header">
     <h1>Painel PSR</h1>
-    
     <div class="view-switcher">
         <a href="editor.html" class="view-btn"><i class="fas fa-edit"></i> Editor</a>
         <a href="interacoes.html" class="view-btn active"><i class="fas fa-chart-line"></i> Interações</a>
@@ -201,251 +123,197 @@
 </div>
 
 <div class="filter-bar">
-    <div>
-        <label style="font-size:0.85em; font-weight:600; color:#666; margin-right:5px;">Histórico:</label>
-        <input type="month" id="monitor-filter-date" class="date-input" onchange="loadInteractions()">
-    </div>
-    <button class="btn-refresh" onclick="loadInteractions()"><i class="fas fa-sync-alt"></i></button>
+    <label>Filtrar mês:</label>
+    <input type="month" id="filter-date" class="date-input" onchange="loadInteractions()">
+    <button class="btn-refresh" onclick="loadInteractions()"><i class="fas fa-sync-alt"></i> Atualizar</button>
 </div>
 
 <div class="dashboard-grid">
-    
-    <div class="card card-interaction">
-        <div class="card-header"><h2><i class="fas fa-shield-alt"></i> Quiz - Participantes</h2></div>
-        <div class="monitor-list" id="monitor-quiz">Carregando...</div>
-    </div>
-
-    <div class="card card-interaction">
-        <div class="card-header"><h2><i class="fas fa-user-circle"></i> Hobby - Curtidas (IDs)</h2></div>
-        <div class="monitor-list" id="monitor-hobby-likes">Carregando...</div>
-        <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #eee;">
-            <strong>Comentários:</strong>
-            <div class="monitor-list" id="monitor-hobby-comments" style="margin-top:5px;">Carregando...</div>
-        </div>
-    </div>
-
-    <div class="card card-interaction">
-        <div class="card-header"><h2><i class="fas fa-dumbbell"></i> Desafios (IDs Detalhados)</h2></div>
-        <div class="monitor-list" id="monitor-challenges">Carregando...</div>
-    </div>
-
-    <div class="card card-interaction">
-        <div class="card-header"><h2><i class="fas fa-heart"></i> Elogios Enviados</h2></div>
-        <div class="monitor-list" id="monitor-praise">Carregando...</div>
-    </div>
-
-    <div class="card card-interaction">
-        <div class="card-header"><h2><i class="fas fa-gamepad"></i> Ranking Jogos</h2></div>
-        <div class="monitor-list" id="monitor-games">Carregando...</div>
-    </div>
-
-    <div class="card card-interaction">
-        <div class="card-header"><h2><i class="fas fa-lightbulb"></i> Sugestões Recebidas</h2></div>
-        <div class="monitor-list" id="monitor-suggestions">Carregando...</div>
-    </div>
-
-    <div class="card card-interaction">
-        <div class="card-header"><h2><i class="fas fa-bullhorn"></i> Comunicados</h2></div>
-        <div class="monitor-list" id="monitor-comms">Carregando...</div>
-    </div>
-
-    <div class="card card-interaction">
-        <div class="card-header"><h2><i class="fas fa-star"></i> Avaliações (IDs)</h2></div>
-        <div class="monitor-list" id="monitor-ratings">Carregando...</div>
-    </div>
-
+    <div class="card"><h2><i class="fas fa-shield-alt"></i> Quiz - Participantes</h2><div id="m-quiz" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-user-circle"></i> Hobby - Interações</h2><div id="m-hobby" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-dumbbell"></i> Desafios</h2><div id="m-chal" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-heart"></i> Elogios</h2><div id="m-praise" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-gamepad"></i> Ranking Jogos</h2><div id="m-games" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-lightbulb"></i> Sugestões</h2><div id="m-sugg" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-bullhorn"></i> Comunicados</h2><div id="m-comm" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    <div class="card"><h2><i class="fas fa-star"></i> Avaliações</h2><div id="m-rate" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
 </div>
-
-<div id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyBzMvAw9ahEyd-tSYY08HxcMzo9RKf3IFY",
-        authDomain: "jornalpsr-1b8c6.firebaseapp.com",
-        databaseURL: "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com",
-        projectId: "jornalpsr-1b8c6",
-    };
-
+    const firebaseConfig = { apiKey: "AIzaSyBzMvAw9ahEyd-tSYY08HxcMzo9RKf3IFY", authDomain: "jornalpsr-1b8c6.firebaseapp.com", databaseURL: "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com", projectId: "jornalpsr-1b8c6" };
     firebase.initializeApp(firebaseConfig);
+    
     let AUTH_TOKEN = null;
-    const DB_ROOT_URL = "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com/";
+    const DB_URL = "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com/";
 
-    // Definir data atual no filtro ao carregar
     const now = new Date();
-    document.getElementById('monitor-filter-date').value = now.toISOString().slice(0, 7);
+    document.getElementById('filter-date').value = now.toISOString().slice(0, 7);
 
-    firebase.auth().onAuthStateChanged((user) => {
-        if (user) {
-            user.getIdToken().then(token => {
-                AUTH_TOKEN = token;
-                loadInteractions();
-            });
-        } else {
-            firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
-        }
+    firebase.auth().onAuthStateChanged(user => {
+        if(user) user.getIdToken().then(t => { AUTH_TOKEN = t; loadInteractions(); });
+        else firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
     });
 
-    async function secureFetch(url, options = {}) {
-        const separator = url.includes('?') ? '&' : '?';
-        const finalUrl = AUTH_TOKEN ? `${url}${separator}auth=${AUTH_TOKEN}` : url;
-        return fetch(finalUrl, options);
-    }
-
-    // Função de deletar genérica (preservada do original)
-    async function deleteRef(path) {
-        if(!confirm("Tem certeza que deseja EXCLUIR este registro?")) return;
-        try {
-            await secureFetch(DB_ROOT_URL + path + ".json", { method: 'DELETE' });
-            showToast("Registro excluído!", "success");
-            loadInteractions();
-        } catch(e) { showToast("Erro ao excluir.", "error"); }
-    }
-
-    // Função específica para deletar usuário do Quiz (preservada do original)
-    async function deleteQuizUser(userId) {
-        if(!confirm("Apagar histórico deste usuário no Quiz?")) return;
-        try {
-            const resp = await secureFetch(DB_ROOT_URL + "safety_quiz.json");
-            const data = await resp.json();
-            if(data) {
-                const promises = Object.keys(data).filter(qId => data[qId][userId]).map(qId => 
-                    secureFetch(DB_ROOT_URL + `safety_quiz/${qId}/${userId}.json`, { method: 'DELETE' })
-                );
-                await Promise.all(promises);
-            }
-            showToast("Usuário limpo do Quiz!", "success");
-            loadInteractions();
-        } catch(e) { showToast("Erro no quiz.", "error"); }
-    }
-
     async function loadInteractions() {
-        if(!AUTH_TOKEN) return;
-        const filterDate = document.getElementById('monitor-filter-date').value; 
-        
+        const filterDate = document.getElementById('filter-date').value; // Formato YYYY-MM
         try {
-            const resp = await secureFetch(DB_ROOT_URL + ".json");
+            const resp = await fetch(DB_URL + ".json?auth=" + AUTH_TOKEN);
             const db = await resp.json();
             if(!db) return;
 
-            const makeItem = (content, deletePath) => `
-                <div class="monitor-item">
-                    <div class="monitor-content">${content}</div>
-                    <button class="btn-trash" onclick="deleteRef('${deletePath}')"><i class="fas fa-trash"></i></button>
-                </div>`;
-
-            // 1. Hobby Likes
-            let likesHtml = '';
-            const histLikes = db.hobby_interactions_history?.[filterDate]?.likes;
-            if(histLikes) Object.keys(histLikes).forEach(u => 
-                likesHtml += makeItem(`${u} curtiu.`, `hobby_interactions_history/${filterDate}/likes/${u}`)
-            );
-            document.getElementById('monitor-hobby-likes').innerHTML = likesHtml || 'Zero.';
-
-            // 2. Hobby Comentários
-            let commHtml = '';
-            if(db.hobby_interactions?.comments) Object.entries(db.hobby_interactions.comments).forEach(([k, v]) => {
-                if(!v.date || v.date.startsWith(filterDate)) commHtml += makeItem(`<b>${v.author}:</b> ${v.text}`, `hobby_interactions/comments/${k}`);
-            });
-            document.getElementById('monitor-hobby-comments').innerHTML = commHtml || 'Zero.';
-
-            // 3. Desafios
-            let chalHtml = '';
-            const histChal = db.challenges_history?.[filterDate];
-            if(histChal) for(const [t, d] of Object.entries(histChal)) {
-                chalHtml += `<b>${t}</b><br>`;
-                Object.entries(d).forEach(([u, s]) => chalHtml += makeItem(`${u}: ${s}`, `challenges_history/${filterDate}/${t}/${u}`));
-            }
-            document.getElementById('monitor-challenges').innerHTML = chalHtml || 'Zero.';
-
-            // 4. Quiz (Lógica complexa de contagem preservada)
-            let quizHtml = '';
+            // --- QUIZ (Mantido lógica original) ---
+            let quizH = '';
             if(db.safety_quiz) {
                 let stats = {};
                 for(let q in db.safety_quiz) for(let u in db.safety_quiz[q]) {
-                    if(!stats[u]) stats[u] = {c:0, t:0};
+                    if(!stats[u]) stats[u] = {t:0, c:0};
                     stats[u].t++; if(db.safety_quiz[q][u]) stats[u].c++;
                 }
-                for(let u in stats) quizHtml += `<div class="monitor-item"><div>${u}<br><small>✅${stats[u].c} / ${stats[u].t}</small></div><button class="btn-trash" onclick="deleteQuizUser('${u}')"><i class="fas fa-trash"></i></button></div>`;
+                for(let u in stats) quizH += item(`<b>${u}</b><br>Acertos: ${stats[u].c}/${stats[u].t}`, `safety_quiz`);
             }
-            document.getElementById('monitor-quiz').innerHTML = quizHtml || 'Zero.';
+            document.getElementById('m-quiz').innerHTML = quizH || 'Sem dados.';
 
-            // 5. Elogios
-            let praiseHtml = '';
-            if(db.praise_messages) Object.entries(db.praise_messages).forEach(([k, v]) => {
-                if(!v.date || v.date.startsWith(filterDate)) praiseHtml += makeItem(`De ${v.from} p/ ${v.to}: "${v.message}"`, `praise_messages/${k}`);
-            });
-            document.getElementById('monitor-praise').innerHTML = praiseHtml || 'Zero.';
-            
-            // 6. Jogos (Lógica de filtro de data dentro do score preservada)
-            let gamesHtml = '';
+            // --- HOBBY (Filtro por Chave de Data) ---
+            let hobH = '';
+            if(db.hobby_interactions_history?.[filterDate]?.likes) {
+                Object.keys(db.hobby_interactions_history[filterDate].likes).forEach(u => hobH += item(`Curtiu: <span class="id-badge">${u}</span>`, `hobby_interactions_history/${filterDate}/likes/${u}`));
+            }
+            document.getElementById('m-hobby').innerHTML = hobH || 'Sem dados.';
+
+            // --- GAMES (Filtro dentro do objeto) ---
+            let gameH = '';
             if(db.games) {
-                for (const [gameName, gameData] of Object.entries(db.games)) {
-                    if(gameData.scores) {
-                        gamesHtml += `<div style="margin:10px 0 5px; font-weight:bold; color:var(--primary);">${gameName}</div>`;
-                        Object.entries(gameData.scores).forEach(([key, s]) => {
-                            let show = true;
-                            if(s.data) {
-                                const parts = s.data.split('/');
-                                if(parts.length >= 3) {
-                                    const gameMonth = parts[1];
-                                    const gameYear = parts[2].split(',')[0].trim();
-                                    if(`${gameYear}-${gameMonth}` !== filterDate) show = false;
-                                }
+                for(let g in db.games) {
+                    if(db.games[g].scores) {
+                        let gameContent = '';
+                        Object.entries(db.games[g].scores).forEach(([k, s]) => {
+                            // Verifica se a data do jogo contém o mês filtrado (ex: "02/2026")
+                            // A data vem como "DD/MM/YYYY, HH:MM:SS" ou ISO. Vamos tentar bater pelo string
+                            const parts = filterDate.split('-'); // [2026, 02]
+                            const searchStr = `/${parts[1]}/${parts[0]}`; // "/02/2026"
+                            
+                            // Se for formato ISO
+                            if(s.data && (s.data.includes(searchStr) || s.data.startsWith(filterDate))) { 
+                                gameContent += item(`<b>${s.pontos}</b> - ${s.nome} <small>(${s.data})</small>`, `games/${g}/scores/${k}`);
                             }
-                            if(show) gamesHtml += makeItem(`Rank: <b>${s.pontos}</b> - ${s.nome} <small>${s.data}</small>`, `games/${gameName}/scores/${key}`);
                         });
+                        if(gameContent) {
+                            gameH += `<div style="margin:5px 0;font-weight:bold;color:#003366">${g}</div>` + gameContent;
+                        }
                     }
                 }
             }
-            document.getElementById('monitor-games').innerHTML = gamesHtml || 'Sem jogos no período.';
+            document.getElementById('m-games').innerHTML = gameH || 'Sem jogos neste mês.';
 
-            // 7. Sugestões (Merge de 3 fontes)
-            let suggHtml = '';
-            const processSugg = (nodeName, label, formatFn) => {
-                if(db[nodeName]) Object.entries(db[nodeName]).forEach(([key, s]) => {
-                    if(s.date && !s.date.startsWith(filterDate)) return;
-                    suggHtml += makeItem(`<strong style="color:#DAA520">${label}</strong> ${formatFn(s)} <small>${new Date(s.date).toLocaleString()}</small>`, `${nodeName}/${key}`);
-                });
-            };
-            processSugg('hobby_suggestions', 'Hobby', s => `De ${s.from} indicando <b>${s.target}</b>: "${s.reason}"`);
-            processSugg('game_suggestions', 'Game', s => `<b>${s.name}</b>: "${s.text}"`);
-            processSugg('recipe_suggestions', 'Receita', s => `<b>${s.author}</b>: Prato "${s.dish}"`);
-            document.getElementById('monitor-suggestions').innerHTML = suggHtml || 'Sem sugestões.';
-
-            // 8. Avaliações
-            let rateHtml = '';
-            const histRate = db.ratings_history?.[filterDate];
-            if(histRate) for(const [itemId, votes] of Object.entries(histRate)) {
-                rateHtml += `<div style="margin:10px 0 5px; font-weight:bold; color:var(--primary);">${itemId}</div>`;
-                Object.entries(votes).forEach(([userId, stars]) => {
-                    rateHtml += makeItem(`<span class="id-badge">${userId}</span> : ${stars} ⭐`, `ratings_history/${filterDate}/${itemId}/${userId}`);
-                });
+            // --- DESAFIOS (Filtro por Chave de Data) ---
+            let chalH = '';
+            if(db.challenges_history?.[filterDate]) {
+                for(let c in db.challenges_history[filterDate]) {
+                    chalH += `<div style="margin:5px 0;font-weight:bold;color:#DAA520">${c}</div>`;
+                    Object.entries(db.challenges_history[filterDate][c]).forEach(([u, r]) => chalH += item(`<span class="id-badge">${u}</span>: ${r}`, `challenges_history/${filterDate}/${c}/${u}`));
+                }
             }
-            document.getElementById('monitor-ratings').innerHTML = rateHtml || 'Sem avaliações.';
+            document.getElementById('m-chal').innerHTML = chalH || 'Sem dados.';
 
-            // 9. Comunicados
-            let commHtmlText = '';
-            if(db.Comunicado) Object.entries(db.Comunicado).forEach(([k, c]) => commHtmlText += makeItem(`<b>${c["autor:"]}</b>: "${c["comunicado:"]}"`, `Comunicado/${k}`));
-            if(db.Leituras_Confirmadas && db.Leituras_Confirmadas[0]) {
-                commHtmlText += `<div style="margin-top:10px;"><strong>Leituras Confirmadas (IDs):</strong></div>`;
-                Object.keys(db.Leituras_Confirmadas[0]).forEach(uid => commHtmlText += makeItem(`<span class="id-badge">${uid}</span> Leu.`, `Leituras_Confirmadas/0/${uid}`));
+            // --- SUGESTÕES (Filtro Estrito de Mês Vigente) ---
+            let sugH = '';
+            // Helper para checar data ISO YYYY-MM
+            const isInMonth = (dateStr) => dateStr && dateStr.startsWith(filterDate);
+
+            if(db.hobby_suggestions) Object.entries(db.hobby_suggestions).forEach(([k,v]) => {
+                if(isInMonth(v.date)) sugH += item(`<b>Hobby:</b> Indicado: ${v.target} <br><small>De: ${v.from}</small>`, `hobby_suggestions/${k}`);
+            });
+            if(db.game_suggestions) Object.entries(db.game_suggestions).forEach(([k,v]) => {
+                if(isInMonth(v.date)) sugH += item(`<b>Game:</b> ${v.name}: "${v.text}"`, `game_suggestions/${k}`);
+            });
+            if(db.recipe_suggestions) Object.entries(db.recipe_suggestions).forEach(([k,v]) => {
+                if(isInMonth(v.date)) sugH += item(`<b>Receita:</b> ${v.dish} (De: ${v.author})`, `recipe_suggestions/${k}`);
+            });
+            document.getElementById('m-sugg').innerHTML = sugH || 'Sem sugestões neste mês.';
+
+            // --- ELOGIOS (Filtro Estrito de Mês Vigente) ---
+            let praH = '';
+            if(db.praise_messages) Object.entries(db.praise_messages).forEach(([k,v]) => {
+                if(isInMonth(v.date)) praH += item(`De <b>${v.from}</b> para <b>${v.to}</b>:<br><i>"${v.message}"</i>`, `praise_messages/${k}`);
+            });
+            document.getElementById('m-praise').innerHTML = praH || 'Sem elogios neste mês.';
+
+            // --- AVALIAÇÕES (Filtro por Chave de Data) ---
+            let rateH = '';
+            if(db.ratings_history?.[filterDate]) {
+                for(let i in db.ratings_history[filterDate]) {
+                    rateH += `<div style="margin:5px 0;font-weight:bold;">${i}</div>`;
+                    Object.entries(db.ratings_history[filterDate][i]).forEach(([u, s]) => rateH += item(`<span class="id-badge">${u}</span>: ${s} ⭐`, `ratings_history/${filterDate}/${i}/${u}`));
+                }
             }
-            document.getElementById('monitor-comms').innerHTML = commHtmlText || 'Sem dados.';
-             
+            document.getElementById('m-rate').innerHTML = rateH || 'Sem avaliações.';
+
+            // --- COMUNICADOS (Lógica do Mais Recente + Leituras Associadas) ---
+            let commH = '';
+            if(db.Comunicado) {
+                // 1. Encontrar o comunicado mais recente (baseado na data ou maior ID)
+                let latestId = null;
+                let latestData = null;
+                let maxTime = 0;
+
+                Object.entries(db.Comunicado).forEach(([key, val]) => {
+                    // Nota: As chaves do JSON têm dois pontos no final (ex: "data:")
+                    const dataStr = val["data:"]; 
+                    if(dataStr) {
+                        const time = new Date(dataStr).getTime();
+                        if(time > maxTime) {
+                            maxTime = time;
+                            latestId = key; // ex: "0"
+                            latestData = val;
+                        }
+                    }
+                });
+
+                if(latestData) {
+                    // Exibir o conteúdo do comunicado
+                    const dataFormatada = new Date(latestData["data:"]).toLocaleDateString('pt-BR');
+                    commH += `<div class="comunicado-box">
+                        <strong>📢 Último Comunicado (${dataFormatada})</strong><br>
+                        <em>${latestData["autor:"]}</em><br>
+                        "${latestData["comunicado:"]}"
+                    </div>`;
+
+                    // 2. Buscar leituras APENAS para este ID (latestId)
+                    if(db.Leituras_Confirmadas && db.Leituras_Confirmadas[latestId]) {
+                        const leituras = db.Leituras_Confirmadas[latestId];
+                        const totalLidos = Object.keys(leituras).length;
+                        
+                        commH += `<div style="margin-bottom:10px; font-weight:bold; color:var(--success)">
+                            ✅ ${totalLidos} Colaboradores leram este comunicado:
+                        </div>`;
+
+                        Object.keys(leituras).forEach(uid => {
+                            commH += item(`Lido por: <span class="id-badge">${uid}</span>`, `Leituras_Confirmadas/${latestId}/${uid}`);
+                        });
+                    } else {
+                        commH += `<div style="color:#666; font-style:italic; margin-top:5px;">Nenhuma leitura confirmada para este comunicado ainda.</div>`;
+                    }
+                } else {
+                    commH = 'Nenhum comunicado encontrado.';
+                }
+            }
+            document.getElementById('m-comm').innerHTML = commH || 'Sem dados.';
+
         } catch(e) { console.error(e); }
     }
 
-    function showToast(msg, type) { 
-        const t = document.getElementById('toast'); 
-        t.textContent = msg; 
-        t.className = type; 
-        t.style.display = 'block'; 
-        setTimeout(() => t.style.display = 'none', 3500); 
+    function item(txt, path) {
+        return `<div class="monitor-item"><div>${txt}</div><button class="btn-trash" onclick="del('${path}')" title="Excluir"><i class="fas fa-trash"></i></button></div>`;
+    }
+
+    async function del(path) {
+        if(confirm("Tem certeza que deseja excluir este registro?")) {
+            await fetch(DB_URL + path + ".json?auth=" + AUTH_TOKEN, { method: 'DELETE' });
+            loadInteractions();
+        }
     }
 </script>
-
 </body>
 </html>
