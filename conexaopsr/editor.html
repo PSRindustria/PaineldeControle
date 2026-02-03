@@ -221,34 +221,34 @@
             </div>
 
             <div class="card">
-                <div class="card-header"><h2><i class="fas fa-dumbbell"></i> Desafios do Mês</h2></div>
+                <div class="card-header"><h2><i class="fas fa-trophy"></i> Desafios & Metas</h2></div>
+                <div class="form-group">
+                    <label>Título Principal da Seção (Ex: Desafio de Carnaval):</label>
+                    <input type="text" id="desafio-main-titulo" placeholder="Padrão: Desafio do Mês de...">
+                </div>
                 
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e0e0e0;">
-                    <h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 0.9em; text-transform: uppercase;"><i class="fas fa-tint"></i> Slot 1 (Padrão: Hidratação)</h4>
-                    <div class="cols-2">
-                        <div class="form-group"><label>Emoji:</label><input type="text" id="desafio-0-emoji" placeholder="💧"></div>
-                        <div class="form-group"><label>Título:</label><input type="text" id="desafio-0-titulo" placeholder="Hidratação"></div>
-                    </div>
-                    <div class="form-group"><label>Descrição (Meta):</label><input type="text" id="desafio-0-desc" placeholder="Ex: Beba 2 litros de água"></div>
-                </div>
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
 
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e0e0e0;">
-                    <h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 0.9em; text-transform: uppercase;"><i class="fas fa-walking"></i> Slot 2 (Padrão: Passos)</h4>
-                    <div class="cols-2">
-                        <div class="form-group"><label>Emoji:</label><input type="text" id="desafio-1-emoji" placeholder="🚶"></div>
-                        <div class="form-group"><label>Título:</label><input type="text" id="desafio-1-titulo" placeholder="10 Mil Passos"></div>
-                    </div>
-                    <div class="form-group"><label>Descrição (Meta):</label><input type="text" id="desafio-1-desc" placeholder="Ex: Caminhe 10 mil passos diários"></div>
+                <h4 style="color:var(--primary); margin-bottom:10px;">Slot 1 (Hidratação)</h4>
+                <div class="cols-2">
+                    <div class="form-group"><label>Emoji:</label><input type="text" id="des-0-emoji"></div>
+                    <div class="form-group"><label>Título:</label><input type="text" id="des-0-titulo"></div>
                 </div>
+                <div class="form-group"><label>Descrição (Meta):</label><input type="text" id="des-0-desc"></div>
 
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e0e0e0;">
-                    <h4 style="margin: 0 0 10px 0; color: var(--primary); font-size: 0.9em; text-transform: uppercase;"><i class="fas fa-bed"></i> Slot 3 (Padrão: Sono)</h4>
-                    <div class="cols-2">
-                        <div class="form-group"><label>Emoji:</label><input type="text" id="desafio-2-emoji" placeholder="😴"></div>
-                        <div class="form-group"><label>Título:</label><input type="text" id="desafio-2-titulo" placeholder="Sono de Qualidade"></div>
-                    </div>
-                    <div class="form-group"><label>Descrição (Meta):</label><input type="text" id="desafio-2-desc" placeholder="Ex: Tente dormir 8 horas por noite"></div>
+                <h4 style="color:var(--primary); margin-bottom:10px; margin-top:15px;">Slot 2 (Movimento)</h4>
+                <div class="cols-2">
+                    <div class="form-group"><label>Emoji:</label><input type="text" id="des-1-emoji"></div>
+                    <div class="form-group"><label>Título:</label><input type="text" id="des-1-titulo"></div>
                 </div>
+                <div class="form-group"><label>Descrição (Meta):</label><input type="text" id="des-1-desc"></div>
+
+                <h4 style="color:var(--primary); margin-bottom:10px; margin-top:15px;">Slot 3 (Recuperação)</h4>
+                <div class="cols-2">
+                    <div class="form-group"><label>Emoji:</label><input type="text" id="des-2-emoji"></div>
+                    <div class="form-group"><label>Título:</label><input type="text" id="des-2-titulo"></div>
+                </div>
+                <div class="form-group"><label>Descrição (Meta):</label><input type="text" id="des-2-desc"></div>
             </div>
 
             <div class="card">
@@ -413,19 +413,17 @@
                 setVal('tag-3', tags[2] || '');
             }
 
-            // Carregar Desafios (NOVO)
-            if(data.desafios) {
+            // --- INÍCIO DA ADIÇÃO (Carregar Desafios) ---
+            setVal('desafio-main-titulo', data.desafios_titulo); 
+            if(data.desafios && Array.isArray(data.desafios)) {
                 data.desafios.forEach((d, i) => {
-                    if(i > 2) return;
-                    setVal(`desafio-${i}-emoji`, d.emoji);
-                    setVal(`desafio-${i}-titulo`, d.titulo);
-                    setVal(`desafio-${i}-desc`, d.desc);
+                    if(i > 2) return; // Limite de 3 slots
+                    setVal(`des-`+i+`-emoji`, d.emoji);
+                    setVal(`des-`+i+`-titulo`, d.titulo);
+                    setVal(`des-`+i+`-desc`, d.desc);
                 });
-            } else {
-                setVal('desafio-0-emoji', '💧'); setVal('desafio-0-titulo', 'Hidratação'); setVal('desafio-0-desc', 'Beba 2 litros de água por dia.');
-                setVal('desafio-1-emoji', '🚶'); setVal('desafio-1-titulo', '10 Mil Passos'); setVal('desafio-1-desc', 'Caminhe 10 mil passos diários.');
-                setVal('desafio-2-emoji', '😴'); setVal('desafio-2-titulo', 'Sono de Qualidade'); setVal('desafio-2-desc', 'Tente dormir 8 horas por noite.');
             }
+            // --- FIM DA ADIÇÃO ---
 
             if(data.novos_clientes) {
                 setVal('clientes-qtd', data.novos_clientes.resumo?.quantidade);
@@ -503,27 +501,29 @@
                 })).filter(c => c.nome)
             },
             
-            // DESAFIOS (ATUALIZADO)
-            desafios: [
+            // --- INÍCIO DA SUBSTITUIÇÃO (Salvar Desafios) ---
+            desafios_titulo: getVal('desafio-main-titulo'), // Salva o título principal
+            desafios: [ 
                 {
-                    id: "hidratacao",
-                    emoji: getVal('desafio-0-emoji') || "💧",
-                    titulo: getVal('desafio-0-titulo') || "Hidratação",
-                    desc: getVal('desafio-0-desc') || "Beba água"
+                    id: "hidratacao", 
+                    emoji: getVal('des-0-emoji') || "💧", 
+                    titulo: getVal('des-0-titulo') || "Hidratação", 
+                    desc: getVal('des-0-desc') || "Beba água"
                 },
                 {
-                    id: "passos",
-                    emoji: getVal('desafio-1-emoji') || "🚶",
-                    titulo: getVal('desafio-1-titulo') || "Caminhada",
-                    desc: getVal('desafio-1-desc') || "Caminhe todo dia"
+                    id: "passos", 
+                    emoji: getVal('des-1-emoji') || "🚶", 
+                    titulo: getVal('des-1-titulo') || "Movimento", 
+                    desc: getVal('des-1-desc') || "Caminhe todo dia"
                 },
                 {
-                    id: "sono",
-                    emoji: getVal('desafio-2-emoji') || "😴",
-                    titulo: getVal('desafio-2-titulo') || "Sono",
-                    desc: getVal('desafio-2-desc') || "Durma bem"
+                    id: "sono", 
+                    emoji: getVal('des-2-emoji') || "😴", 
+                    titulo: getVal('des-2-titulo') || "Sono", 
+                    desc: getVal('des-2-desc') || "Durma bem"
                 }
             ],
+            // --- FIM DA SUBSTITUIÇÃO ---
 
             sustentabilidade: currentData.sustentabilidade || {}
         };
