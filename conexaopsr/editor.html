@@ -223,30 +223,33 @@
             <div class="card">
                 <div class="card-header"><h2><i class="fas fa-trophy"></i> Desafios & Metas</h2></div>
                 <div class="form-group">
-                    <label>Título Principal da Seção (Ex: Desafio de Carnaval):</label>
+                    <label>Título Principal da Seção:</label>
                     <input type="text" id="desafio-main-titulo" placeholder="Padrão: Desafio do Mês de...">
                 </div>
                 
                 <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
 
-                <h4 style="color:var(--primary); margin-bottom:10px;">Slot 1 (Hidratação)</h4>
+                <h4 id="label-des-0" style="color:var(--primary); margin-bottom:10px;">Desafio #1</h4>
+                <div class="form-group"><label style="color:#777; font-size:0.8em;">ID ÚNICO (Sem espaços, ex: leitura):</label><input type="text" id="des-0-id" style="background:#f0f0f0;"></div>
                 <div class="cols-2">
                     <div class="form-group"><label>Emoji:</label><input type="text" id="des-0-emoji"></div>
-                    <div class="form-group"><label>Título:</label><input type="text" id="des-0-titulo"></div>
+                    <div class="form-group"><label>Título:</label><input type="text" id="des-0-titulo" oninput="updateLabel(0)"></div>
                 </div>
                 <div class="form-group"><label>Descrição (Meta):</label><input type="text" id="des-0-desc"></div>
 
-                <h4 style="color:var(--primary); margin-bottom:10px; margin-top:15px;">Slot 2 (Movimento)</h4>
+                <h4 id="label-des-1" style="color:var(--primary); margin-bottom:10px; margin-top:15px;">Desafio #2</h4>
+                <div class="form-group"><label style="color:#777; font-size:0.8em;">ID ÚNICO (Sem espaços, ex: foco):</label><input type="text" id="des-1-id" style="background:#f0f0f0;"></div>
                 <div class="cols-2">
                     <div class="form-group"><label>Emoji:</label><input type="text" id="des-1-emoji"></div>
-                    <div class="form-group"><label>Título:</label><input type="text" id="des-1-titulo"></div>
+                    <div class="form-group"><label>Título:</label><input type="text" id="des-1-titulo" oninput="updateLabel(1)"></div>
                 </div>
                 <div class="form-group"><label>Descrição (Meta):</label><input type="text" id="des-1-desc"></div>
 
-                <h4 style="color:var(--primary); margin-bottom:10px; margin-top:15px;">Slot 3 (Recuperação)</h4>
+                <h4 id="label-des-2" style="color:var(--primary); margin-bottom:10px; margin-top:15px;">Desafio #3</h4>
+                <div class="form-group"><label style="color:#777; font-size:0.8em;">ID ÚNICO (Sem espaços, ex: detox):</label><input type="text" id="des-2-id" style="background:#f0f0f0;"></div>
                 <div class="cols-2">
                     <div class="form-group"><label>Emoji:</label><input type="text" id="des-2-emoji"></div>
-                    <div class="form-group"><label>Título:</label><input type="text" id="des-2-titulo"></div>
+                    <div class="form-group"><label>Título:</label><input type="text" id="des-2-titulo" oninput="updateLabel(2)"></div>
                 </div>
                 <div class="form-group"><label>Descrição (Meta):</label><input type="text" id="des-2-desc"></div>
             </div>
@@ -282,21 +285,12 @@
     const CONTENT_URL = "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com/content.json";
     const CATEGORIES_MAP = { "Açougues": "🥩", "Restaurantes": "🍽️", "Indústria": "🏭", "Transporte": "🚚", "Comércio": "🏪", "Serviços": "💼", "Outros": "🏢", "Farmácias": "💊", "E-commerce": "📦", "Automotivo": "🚗", "Têxtil": "👕" };
     
-    // --- SEGURANÇA ---
     const ALLOWED_EMAILS = ["marketingpsrimpressao@gmail.com", "rohsantos1@gmail.com"];
-    // REMOVIDO ONE_WEEK_MS para evitar logout indesejado
 
-    // Monitora estado (Login/Logout)
     firebase.auth().onAuthStateChanged(async user => {
         if (user) {
-            // USUÁRIO LOGADO
             if (ALLOWED_EMAILS.includes(user.email)) {
-                // E-mail PERMITIDO
-                
-                // ATUALIZA TIMESTAMP AUTOMATICAMENTE AO CARREGAR (Correção do Login Chato)
                 localStorage.setItem('secure_last_login_ts', Date.now());
-
-                // Tudo OK: Esconde Login, Mostra App
                 user.getIdToken().then(token => { 
                     AUTH_TOKEN = token;
                     document.getElementById('login-screen').style.display = 'none';
@@ -304,47 +298,30 @@
                     document.getElementById('app-content').style.display = 'block';
                     loadContent(); 
                 });
-
             } else {
-                // E-mail NÃO PERMITIDO
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app-content').style.display = 'none';
                 document.getElementById('access-denied').style.display = 'flex';
-                firebase.auth().signOut(); // Desloga o intruso
+                firebase.auth().signOut();
             }
         } else {
-            // USUÁRIO NÃO LOGADO
             document.getElementById('app-content').style.display = 'none';
             document.getElementById('access-denied').style.display = 'none';
-            document.getElementById('login-screen').style.display = 'flex'; // Mostra botão de login
+            document.getElementById('login-screen').style.display = 'flex';
         }
     });
 
-    // Função manual chamada pelo botão (EVITA BLOQUEIO DE POPUP)
     function performLogin() {
         firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
             .then((result) => {
                 const email = result.user.email;
-                if (ALLOWED_EMAILS.includes(email)) {
-                    // Login novo com sucesso
-                    localStorage.setItem('secure_last_login_ts', Date.now());
-                }
-                // O onAuthStateChanged vai lidar com o resto
+                if (ALLOWED_EMAILS.includes(email)) localStorage.setItem('secure_last_login_ts', Date.now());
             })
-            .catch((error) => {
-                console.error(error);
-                alert("Erro ao logar: " + error.message);
-            });
+            .catch((error) => { console.error(error); alert("Erro ao logar: " + error.message); });
     }
 
-    function performLogout() {
-        firebase.auth().signOut().then(() => {
-            window.location.reload();
-        });
-    }
-    // -----------------
+    function performLogout() { firebase.auth().signOut().then(() => { window.location.reload(); }); }
 
-    // --- FUNÇÕES DO EDITOR ---
     function switchTab(tabId, btn) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -359,13 +336,19 @@
         addNewClientRow();
     }
 
+    // Função visual para atualizar o nome do slot enquanto digita
+    function updateLabel(index) {
+        const val = document.getElementById(`des-${index}-titulo`).value;
+        const label = document.getElementById(`label-des-${index}`);
+        if(label) label.innerText = val ? `Desafio #${index+1}: ${val}` : `Desafio #${index+1}`;
+    }
+
     async function loadContent() {
         try {
             const resp = await fetch(CONTENT_URL + "?auth=" + AUTH_TOKEN);
             const data = await resp.json();
             if(!data) return;
 
-            // Preenchimento
             setVal('tema-titulo', data.temaMes?.titulo);
             setVal('tema-subtitulo', data.temaMes?.subtitulo);
             setVal('tema-resumo', data.temaMes?.resumo);
@@ -373,7 +356,7 @@
             setVal('tema-fonte-nome', data.temaMes?.fonte?.texto);
             setVal('tema-fonte-link', data.temaMes?.fonte?.link);
             setVal('tema-capa', data.temaMes?.capaUrl);
-            setVal('tema-icon', data.temaMes?.icon); // NOVO
+            setVal('tema-icon', data.temaMes?.icon);
 
             setVal('pp-titulo', data.partiuPensar?.titulo);
             setVal('pp-subtitulo', data.partiuPensar?.subtitulo);
@@ -383,8 +366,8 @@
             setVal('pp-fonte', data.partiuPensar?.fonte);
 
             setVal('saude-subtitulo', data.saudeFisica?.subtitulo);
-            setVal('saude-bg', data.saudeFisica?.imagemFundo); // NOVO
-            setVal('saude-icon', data.saudeFisica?.icon); // NOVO
+            setVal('saude-bg', data.saudeFisica?.imagemFundo);
+            setVal('saude-icon', data.saudeFisica?.icon);
             setVal('saude-resumo', data.saudeFisica?.resumo);
             setVal('saude-conteudo', data.saudeFisica?.conteudoCompleto);
             setVal('saude-link', data.saudeFisica?.fonte?.link);
@@ -397,7 +380,7 @@
                     setVal(`cultura-${i}-img`, item.img);
                     setVal(`cultura-${i}-indicado`, item.indicadoPor);
                     setVal(`cultura-${i}-sinopse`, item.sinopse);
-                    setVal(`cultura-${i}-tag`, item.tag); // NOVO
+                    setVal(`cultura-${i}-tag`, item.tag);
                 });
             }
 
@@ -413,17 +396,18 @@
                 setVal('tag-3', tags[2] || '');
             }
 
-            // --- INÍCIO DA ADIÇÃO (Carregar Desafios) ---
+            // --- CARREGAR DESAFIOS (Com IDs) ---
             setVal('desafio-main-titulo', data.desafios_titulo); 
             if(data.desafios && Array.isArray(data.desafios)) {
                 data.desafios.forEach((d, i) => {
-                    if(i > 2) return; // Limite de 3 slots
+                    if(i > 2) return;
+                    setVal(`des-`+i+`-id`, d.id); // Carrega ID salvo
                     setVal(`des-`+i+`-emoji`, d.emoji);
                     setVal(`des-`+i+`-titulo`, d.titulo);
                     setVal(`des-`+i+`-desc`, d.desc);
+                    updateLabel(i); // Atualiza o label visualmente
                 });
             }
-            // --- FIM DA ADIÇÃO ---
 
             if(data.novos_clientes) {
                 setVal('clientes-qtd', data.novos_clientes.resumo?.quantidade);
@@ -460,7 +444,7 @@
                 resumo: getVal('tema-resumo'),
                 conteudoCompleto: getVal('tema-conteudo'),
                 capaUrl: getVal('tema-capa'),
-                icon: getVal('tema-icon'), // NOVO
+                icon: getVal('tema-icon'),
                 fonte: { texto: getVal('tema-fonte-nome'), link: getVal('tema-fonte-link') }
             },
             partiuPensar: {
@@ -473,15 +457,15 @@
             },
             saudeFisica: {
                 subtitulo: getVal('saude-subtitulo'),
-                imagemFundo: getVal('saude-bg'), // NOVO
-                icon: getVal('saude-icon'), // NOVO
+                imagemFundo: getVal('saude-bg'),
+                icon: getVal('saude-icon'),
                 resumo: getVal('saude-resumo'),
                 conteudoCompleto: getVal('saude-conteudo'),
                 fonte: { link: getVal('saude-link'), texto: "Fonte" }
             },
             cultura: [
-                { id: "filme_mes", tipo: "video", titulo: getVal('cultura-0-titulo'), link: getVal('cultura-0-link'), img: getVal('cultura-0-img'), indicadoPor: getVal('cultura-0-indicado'), sinopse: getVal('cultura-0-sinopse'), tag: getVal('cultura-0-tag') }, // NOVO TAG
-                { id: "livro_mes", tipo: "livro", titulo: getVal('cultura-1-titulo'), link: getVal('cultura-1-link'), img: getVal('cultura-1-img'), indicadoPor: getVal('cultura-1-indicado'), sinopse: getVal('cultura-1-sinopse'), tag: getVal('cultura-1-tag') } // NOVO TAG
+                { id: "filme_mes", tipo: "video", titulo: getVal('cultura-0-titulo'), link: getVal('cultura-0-link'), img: getVal('cultura-0-img'), indicadoPor: getVal('cultura-0-indicado'), sinopse: getVal('cultura-0-sinopse'), tag: getVal('cultura-0-tag') }, 
+                { id: "livro_mes", tipo: "livro", titulo: getVal('cultura-1-titulo'), link: getVal('cultura-1-link'), img: getVal('cultura-1-img'), indicadoPor: getVal('cultura-1-indicado'), sinopse: getVal('cultura-1-sinopse'), tag: getVal('cultura-1-tag') } 
             ],
             hobby: {
                 nome: getVal('hobby-nome'),
@@ -501,29 +485,30 @@
                 })).filter(c => c.nome)
             },
             
-            // --- INÍCIO DA SUBSTITUIÇÃO (Salvar Desafios) ---
-            desafios_titulo: getVal('desafio-main-titulo'), // Salva o título principal
+            // --- SALVAR DESAFIOS (Com IDs dinâmicos) ---
+            desafios_titulo: getVal('desafio-main-titulo'),
             desafios: [ 
                 {
-                    id: "hidratacao", 
+                    // Se o usuário não preencher ID, usa um padrão (mas idealmente deve preencher se mudar o tema)
+                    id: getVal('des-0-id') || "desafio_01_padrao", 
                     emoji: getVal('des-0-emoji') || "💧", 
                     titulo: getVal('des-0-titulo') || "Hidratação", 
                     desc: getVal('des-0-desc') || "Beba água"
                 },
                 {
-                    id: "passos", 
+                    id: getVal('des-1-id') || "desafio_02_padrao", 
                     emoji: getVal('des-1-emoji') || "🚶", 
                     titulo: getVal('des-1-titulo') || "Movimento", 
                     desc: getVal('des-1-desc') || "Caminhe todo dia"
                 },
                 {
-                    id: "sono", 
+                    id: getVal('des-2-id') || "desafio_03_padrao", 
                     emoji: getVal('des-2-emoji') || "😴", 
                     titulo: getVal('des-2-titulo') || "Sono", 
                     desc: getVal('des-2-desc') || "Durma bem"
                 }
             ],
-            // --- FIM DA SUBSTITUIÇÃO ---
+            // -----------------------------
 
             sustentabilidade: currentData.sustentabilidade || {}
         };
