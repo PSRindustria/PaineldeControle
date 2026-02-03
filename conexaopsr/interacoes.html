@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Interações - Portal PSR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { var(--primary: #003366; --accent: #DAA520; --bg: #f4f7f9; --success: #28a745; --danger: #dc3545; --shadow-sm: 0 2px 8px rgba(0,0,0,0.06); --transition: all 0.3s ease; }
+        body { font-family: 'Poppins', sans-serif; background: #f5f7fa; padding: 20px; color: #333; margin: 0; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: var(--primary); margin: 0 0 10px 0; }
+        
+        .view-switcher { display: flex; justify-content: center; gap: 12px; margin-bottom: 35px; background: white; padding: 8px; border-radius: 50px; width: fit-content; margin-left: auto; margin-right: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .view-btn { text-decoration: none; padding: 12px 28px; border-radius: 25px; color: #777; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: var(--transition); font-size: 0.9em; }
+        .view-btn.active { background: var(--primary); color: white; }
+        .view-btn:hover:not(.active) { background: #eef2f5; }
+
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; max-width: 1400px; margin: 0 auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: var(--shadow-sm); border-top: 4px solid var(--accent); }
+        .card h2 { color: #444; font-size: 1.1em; margin-top: 0; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        
+        .monitor-list { max-height: 300px; overflow-y: auto; }
+        .monitor-item { background: #f9f9f9; padding: 10px; margin-bottom: 8px; border-radius: 6px; font-size: 0.85em; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; border-left: 3px solid #ddd; }
+        .monitor-item:hover { border-left-color: var(--accent); background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .btn-trash { color: var(--danger); background: none; border: none; cursor: pointer; opacity: 0.6; transition: 0.2s; }
+        .btn-trash:hover { opacity: 1; transform: scale(1.1); }
+        
+        .filter-bar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; max-width: 1400px; margin: 0 auto 20px; }
+        .date-input { padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+        .btn-refresh { background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Painel PSR</h1>
+    <div class="view-switcher">
+        <a href="editor.html" class="view-btn"><i class="fas fa-edit"></i> Editor</a>
+        <a href="interacoes.html" class="view-btn active"><i class="fas fa-chart-line"></i> Interações</a>
+        <a href="trafego_interno.html" class="view-btn"><i class="fas fa-network-wired"></i> Tráfego Interno</a>
+        <a href="trafego_portal.html" class="view-btn"><i class="fas fa-globe"></i> Tráfego Portal</a>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <input type="month" id="filter-date" class="date-input" onchange="loadInteractions()">
+    <button class="btn-refresh" onclick="loadInteractions()"><i class="fas fa-sync-alt"></i> Atualizar</button>
+</div>
+
+<div class="dashboard-grid">
+    <div class="card"><h2><i class="fas fa-shield-alt"></i> Quiz - Participantes</h2><div id="m-quiz" class="monitor-list">...</div></div>
+    <div class="card"><h2><i class="fas fa-user-circle"></i> Hobby - Interações</h2><div id="m-hobby" class="monitor-list">...</div></div>
+    <div class="card"><h2><i class="fas fa-dumbbell"></i> Desafios</h2><div id="m-chal" class="monitor-list">...</div></div>
+    <div class="card"><h2><i class="fas fa-heart"></i> Elogios</h2><div id="m-praise" class="monitor-list">...</div></div>
+    <div class="card"><h2><i class="fas fa-gamepad"></i> Ranking Jogos</h2><div id="m-games" class="monitor-list">...</div></div>
+    <div class="card"><h2><i class="fas fa-lightbulb"></i> Sugestões</h2><div id="m-sugg" class="monitor-list">...</div></div>
+    <div class="card"><h2><i class="fas fa-bullhorn"></i> Comunicados</h2><div id="m-comm" class="monitor-list">...</div></div>
+    <div class="card"><h2><i class="fas fa-star"></i> Avaliações</h2><div id="m-rate" class="monitor-list">...</div></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script>
+    const firebaseConfig = { apiKey: "AIzaSyBzMvAw9ahEyd-tSYY08HxcMzo9RKf3IFY", authDomain: "jornalpsr-1b8c6.firebaseapp.com", databaseURL: "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com", projectId: "jornalpsr-1b8c6" };
+    firebase.initializeApp(firebaseConfig);
+    
+    let AUTH_TOKEN = null;
+    const DB_URL = "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com/";
+
+    // Definir data padrão
+    const now = new Date();
+    document.getElementById('filter-date').value = now.toISOString().slice(0, 7);
+
+    firebase.auth().onAuthStateChanged(user => {
+        if(user) user.getIdToken().then(t => { AUTH_TOKEN = t; loadInteractions(); });
+        else firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    });
+
+    async function loadInteractions() {
+        const date = document.getElementById('filter-date').value;
+        try {
+            const resp = await fetch(DB_URL + ".json?auth=" + AUTH_TOKEN);
+            const db = await resp.json();
+            if(!db) return;
+
+            // Quiz
+            let quizH = '';
+            if(db.safety_quiz) {
+                for(let q in db.safety_quiz) {
+                    for(let u in db.safety_quiz[q]) {
+                        quizH += item(`Q: ${q} - User: ${u} - Resp: ${db.safety_quiz[q][u]}`, `safety_quiz/${q}/${u}`);
+                    }
+                }
+            }
+            document.getElementById('m-quiz').innerHTML = quizH || 'Sem dados.';
+
+            // Hobby
+            let hobH = '';
+            if(db.hobby_interactions_history?.[date]?.likes) {
+                Object.keys(db.hobby_interactions_history[date].likes).forEach(u => hobH += item(`Like: ${u}`, `hobby_interactions_history/${date}/likes/${u}`));
+            }
+            document.getElementById('m-hobby').innerHTML = hobH || 'Sem dados.';
+
+            // Games
+            let gameH = '';
+            if(db.games) {
+                for(let g in db.games) {
+                    if(db.games[g].scores) {
+                        Object.entries(db.games[g].scores).forEach(([k, s]) => {
+                            if(s.data && s.data.includes(date.split('-')[1])) { // Filtro simples de mês
+                                gameH += item(`<b>${g}</b>: ${s.nome} (${s.pontos})`, `games/${g}/scores/${k}`);
+                            }
+                        });
+                    }
+                }
+            }
+            document.getElementById('m-games').innerHTML = gameH || 'Sem dados.';
+
+            // Desafios
+            let chalH = '';
+            if(db.challenges_history?.[date]) {
+                for(let c in db.challenges_history[date]) {
+                    Object.entries(db.challenges_history[date][c]).forEach(([u, r]) => chalH += item(`${c}: ${u} (${r})`, `challenges_history/${date}/${c}/${u}`));
+                }
+            }
+            document.getElementById('m-chal').innerHTML = chalH || 'Sem dados.';
+
+            // Sugestões
+            let sugH = '';
+            if(db.hobby_suggestions) Object.entries(db.hobby_suggestions).forEach(([k,v]) => sugH += item(`Hobby: ${v.target} (de ${v.from})`, `hobby_suggestions/${k}`));
+            if(db.game_suggestions) Object.entries(db.game_suggestions).forEach(([k,v]) => sugH += item(`Game: ${v.name} - ${v.text}`, `game_suggestions/${k}`));
+            document.getElementById('m-sugg').innerHTML = sugH || 'Sem dados.';
+
+            // Elogios
+            let praH = '';
+            if(db.praise_messages) Object.entries(db.praise_messages).forEach(([k,v]) => praH += item(`De ${v.from} para ${v.to}: ${v.message}`, `praise_messages/${k}`));
+            document.getElementById('m-praise').innerHTML = praH || 'Sem dados.';
+
+            // Avaliações
+            let rateH = '';
+            if(db.ratings_history?.[date]) {
+                for(let i in db.ratings_history[date]) {
+                    Object.entries(db.ratings_history[date][i]).forEach(([u, s]) => rateH += item(`${i}: ${u} (${s} estrelas)`, `ratings_history/${date}/${i}/${u}`));
+                }
+            }
+            document.getElementById('m-rate').innerHTML = rateH || 'Sem dados.';
+
+            // Comunicados
+            let commH = '';
+            if(db.Leituras_Confirmadas && db.Leituras_Confirmadas[0]) {
+                Object.keys(db.Leituras_Confirmadas[0]).forEach(u => commH += item(`Leitura confirmada: ${u}`, `Leituras_Confirmadas/0/${u}`));
+            }
+            document.getElementById('m-comm').innerHTML = commH || 'Sem dados.';
+
+        } catch(e) { console.error(e); }
+    }
+
+    function item(txt, path) {
+        return `<div class="monitor-item"><span>${txt}</span><button class="btn-trash" onclick="del('${path}')"><i class="fas fa-trash"></i></button></div>`;
+    }
+
+    async function del(path) {
+        if(confirm("Excluir?")) {
+            await fetch(DB_URL + path + ".json?auth=" + AUTH_TOKEN, { method: 'DELETE' });
+            loadInteractions();
+        }
+    }
+</script>
+</body>
+</html>

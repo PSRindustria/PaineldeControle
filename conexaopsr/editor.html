@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Conteúdo - Portal PSR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- REUTILIZANDO O MESMO CSS PARA MANTER IDENTIDADE VISUAL -->
+    <style>
+        :root { var(--primary: #003366; --accent: #DAA520; --bg: #f4f7f9; --success: #28a745; --danger: #dc3545; --shadow-sm: 0 2px 8px rgba(0,0,0,0.06); --shadow-md: 0 4px 16px rgba(0,0,0,0.08); --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        * { box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%); padding: 20px; color: #333; margin: 0; padding-bottom: 80px; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { color: var(--primary); margin: 0 0 10px 0; font-size: 2.5em; background: linear-gradient(135deg, var(--primary) 0%, #004d99 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* MENU DE NAVEGAÇÃO ENTRE ARQUIVOS */
+        .view-switcher { display: flex; justify-content: center; gap: 12px; margin-bottom: 35px; background: white; padding: 8px; border-radius: 50px; box-shadow: var(--shadow-md); width: fit-content; margin-left: auto; margin-right: auto; flex-wrap: wrap; }
+        .view-btn { text-decoration: none; border: none; background: transparent; padding: 12px 28px; border-radius: 25px; cursor: pointer; font-weight: 600; color: #777; transition: var(--transition); display: flex; align-items: center; gap: 8px; font-size: 0.9em; }
+        .view-btn.active { background: var(--primary); color: white; box-shadow: 0 6px 16px rgba(0,51,102,0.25); transform: translateY(-2px); }
+        .view-btn:hover:not(.active) { background: rgba(0,51,102,0.05); }
+
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; max-width: 1400px; margin: 0 auto; }
+        .card { background: white; padding: 28px; border-radius: 16px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; position: relative; border-top: 4px solid var(--primary); }
+        .card-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 22px; }
+        .card h2 { margin: 0; color: var(--primary); font-size: 1.2em; display: flex; align-items: center; gap: 10px; }
+        
+        .form-group { margin-bottom: 18px; width: 100%; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 7px; font-size: 0.85em; color: #555; text-transform: uppercase; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-family: inherit; font-size: 0.9em; background: #fafafa; }
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--primary); outline: none; background: white; }
+        
+        .btn-save { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, var(--primary) 0%, #004d99 100%); color: white; border: none; padding: 16px 60px; border-radius: 50px; font-size: 1.15em; font-weight: bold; cursor: pointer; box-shadow: 0 6px 20px rgba(0, 51, 102, 0.3); z-index: 100; transition: transform 0.3s; }
+        .btn-save:hover { transform: translateX(-50%) translateY(-3px); }
+        
+        .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .client-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; align-items: center; }
+        .client-remove { background: #ffe5e5; border: 1px solid #ffcccc; color: #dc3545; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-add-client { width: 100%; padding: 10px; background: #f0f4f8; border: 2px dashed #cedae6; color: var(--primary); cursor: pointer; border-radius: 8px; font-weight: 600; }
+        
+        /* Loading Overlay */
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:9999; display:flex; justify-content:center; align-items:center; flex-direction:column; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Painel PSR</h1>
+    <div class="view-switcher">
+        <a href="editor.html" class="view-btn active"><i class="fas fa-edit"></i> Editor</a>
+        <a href="interacoes.html" class="view-btn"><i class="fas fa-chart-line"></i> Interações</a>
+        <a href="trafego_interno.html" class="view-btn"><i class="fas fa-network-wired"></i> Tráfego Interno</a>
+        <a href="trafego_portal.html" class="view-btn"><i class="fas fa-globe"></i> Tráfego Portal</a>
+    </div>
+</div>
+
+<form id="dashboardForm" onsubmit="event.preventDefault(); confirmSave();">
+    <div class="dashboard-grid">
+        <!-- TEMA DO MÊS -->
+        <div class="card">
+            <div class="card-header"><h2><i class="fas fa-calendar-alt"></i> Tema do Mês</h2></div>
+            <div class="form-group"><label>Título:</label><input type="text" id="tema-titulo"></div>
+            <div class="form-group"><label>Subtítulo:</label><input type="text" id="tema-subtitulo"></div>
+            <div class="form-group"><label>Resumo (Capa):</label><textarea id="tema-resumo" rows="3"></textarea></div>
+            <div class="form-group"><label>Conteúdo HTML:</label><textarea id="tema-conteudo" rows="6"></textarea></div>
+            <div class="cols-2">
+                <div class="form-group"><label>Fonte Nome:</label><input type="text" id="tema-fonte-nome"></div>
+                <div class="form-group"><label>Fonte Link:</label><input type="text" id="tema-fonte-link"></div>
+            </div>
+        </div>
+
+        <!-- SAUDE E BEM ESTAR -->
+        <div class="card">
+            <div class="card-header"><h2><i class="fas fa-heartbeat"></i> Bem-Estar</h2></div>
+            <div class="form-group"><label>Subtítulo:</label><input type="text" id="saude-subtitulo"></div>
+            <div class="form-group"><label>Resumo:</label><textarea id="saude-resumo" rows="3"></textarea></div>
+            <div class="form-group"><label>Conteúdo HTML:</label><textarea id="saude-conteudo" rows="6"></textarea></div>
+            <div class="form-group"><label>Link Fonte:</label><input type="text" id="saude-link"></div>
+        </div>
+
+        <!-- INDICA AÍ (Livros e Filmes) -->
+        <div class="card">
+            <div class="card-header"><h2><i class="fas fa-film"></i> Indica Aí (Cultura)</h2></div>
+            <div style="background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:15px;">
+                <strong style="color:var(--primary)">🎥 Vídeo/Filme (Posição 0)</strong>
+                <div class="form-group"><label>Título:</label><input type="text" id="cultura-0-titulo"></div>
+                <div class="form-group"><label>Link:</label><input type="text" id="cultura-0-link"></div>
+                <div class="form-group"><label>Capa URL:</label><input type="text" id="cultura-0-img"></div>
+                <div class="form-group"><label>Indicado Por:</label><input type="text" id="cultura-0-indicado"></div>
+                <div class="form-group"><label>Sinopse:</label><textarea id="cultura-0-sinopse"></textarea></div>
+            </div>
+            <div style="background:#f9f9f9; padding:10px; border-radius:8px;">
+                <strong style="color:var(--primary)">📚 Livro (Posição 1)</strong>
+                <div class="form-group"><label>Título:</label><input type="text" id="cultura-1-titulo"></div>
+                <div class="form-group"><label>Link:</label><input type="text" id="cultura-1-link"></div>
+                <div class="form-group"><label>Capa URL:</label><input type="text" id="cultura-1-img"></div>
+                <div class="form-group"><label>Indicado Por:</label><input type="text" id="cultura-1-indicado"></div>
+                <div class="form-group"><label>Sinopse:</label><textarea id="cultura-1-sinopse"></textarea></div>
+            </div>
+        </div>
+
+        <!-- HOBBY -->
+        <div class="card">
+            <div class="card-header"><h2><i class="fas fa-user-circle"></i> Além do Crachá</h2></div>
+            <div class="form-group"><label>Nome:</label><input type="text" id="hobby-nome"></div>
+            <div class="form-group"><label>Setor/Cargo:</label><input type="text" id="hobby-cargo"></div>
+            <div class="form-group"><label>Foto URL:</label><input type="text" id="hobby-foto"></div>
+            <div class="form-group"><label>Texto:</label><textarea id="hobby-texto" rows="4"></textarea></div>
+            <div class="form-group"><label>Tags (Separe por vírgula):</label><input type="text" id="hobby-tags" placeholder="Ex: ☕ Café, 🐶 Animais"></div>
+        </div>
+
+        <!-- RECEITA -->
+        <div class="card">
+            <div class="card-header"><h2><i class="fas fa-utensils"></i> Receita</h2></div>
+            <div class="cols-2">
+                <div class="form-group"><label>Emoji:</label><input type="text" id="rec-emoji"></div>
+                <div class="form-group"><label>Tempo:</label><input type="text" id="rec-tempo"></div>
+            </div>
+            <div class="form-group"><label>Título:</label><input type="text" id="rec-titulo"></div>
+            <div class="form-group"><label>Indicado Por:</label><input type="text" id="rec-indicado"></div>
+            <div class="form-group"><label>Descrição:</label><textarea id="rec-desc"></textarea></div>
+            <div class="form-group"><label>Ingredientes (Separar por ;):</label><textarea id="rec-ing"></textarea></div>
+            <div class="form-group"><label>Preparo (Separar por ;):</label><textarea id="rec-prep"></textarea></div>
+        </div>
+
+        <!-- NOVOS CLIENTES -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-briefcase"></i> Novos Clientes</h2>
+                <button type="button" class="client-remove" onclick="document.getElementById('clientes-list').innerHTML=''; addNewClientRow();" title="Limpar Lista"><i class="fas fa-trash"></i></button>
+            </div>
+            <div class="cols-2">
+                <div class="form-group"><label>Qtd Resumo:</label><input type="text" id="clientes-qtd"></div>
+                <div class="form-group"><label>Período:</label><input type="text" id="clientes-periodo"></div>
+            </div>
+            <label>Lista (Copie e cole do Excel na caixa de texto):</label>
+            <div id="clientes-list"></div>
+            <button type="button" class="btn-add-client" onclick="addNewClientRow()">+ Adicionar Linha</button>
+        </div>
+    </div>
+</form>
+
+<button class="btn-save" onclick="confirmSave()"><i class="fas fa-save"></i> PUBLICAR NO SITE</button>
+
+<div id="loading"><div><i class="fas fa-spinner fa-spin fa-3x" style="color:var(--primary)"></i></div><h3>Carregando dados...</h3></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script>
+    const firebaseConfig = { apiKey: "AIzaSyBzMvAw9ahEyd-tSYY08HxcMzo9RKf3IFY", authDomain: "jornalpsr-1b8c6.firebaseapp.com", databaseURL: "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com", projectId: "jornalpsr-1b8c6" };
+    firebase.initializeApp(firebaseConfig);
+    
+    let AUTH_TOKEN = null;
+    const CONTENT_URL = "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com/content.json";
+    const CATEGORIES_MAP = { "Açougues": "🥩", "Restaurantes": "🍽️", "Indústria": "🏭", "Transporte": "🚚", "Comércio": "🏪", "Serviços": "💼", "Outros": "🏢", "Farmácias": "💊", "E-commerce": "📦", "Automotivo": "🚗", "Têxtil": "👕" };
+
+    firebase.auth().onAuthStateChanged(user => {
+        if (user) {
+            user.getIdToken().then(token => { AUTH_TOKEN = token; loadContent(); });
+        } else {
+            alert("Acesso restrito. Faça login.");
+            // Aqui você poderia redirecionar para uma página de login ou abrir o popup
+            firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        }
+    });
+
+    async function loadContent() {
+        try {
+            const resp = await fetch(CONTENT_URL + "?auth=" + AUTH_TOKEN);
+            const data = await resp.json();
+            document.getElementById('loading').style.display = 'none';
+            if(!data) return;
+
+            // Mapeamento dos campos
+            setVal('tema-titulo', data.temaMes?.titulo);
+            setVal('tema-subtitulo', data.temaMes?.subtitulo);
+            setVal('tema-resumo', data.temaMes?.resumo);
+            setVal('tema-conteudo', data.temaMes?.conteudoCompleto);
+            setVal('tema-fonte-nome', data.temaMes?.fonte?.texto);
+            setVal('tema-fonte-link', data.temaMes?.fonte?.link);
+
+            setVal('saude-subtitulo', data.saudeFisica?.subtitulo);
+            setVal('saude-resumo', data.saudeFisica?.resumo);
+            setVal('saude-conteudo', data.saudeFisica?.conteudoCompleto);
+            setVal('saude-link', data.saudeFisica?.fonte?.link);
+
+            if(data.cultura) {
+                data.cultura.forEach((item, i) => {
+                    if(i>1) return;
+                    setVal(`cultura-${i}-titulo`, item.titulo);
+                    setVal(`cultura-${i}-link`, item.link);
+                    setVal(`cultura-${i}-img`, item.img);
+                    setVal(`cultura-${i}-indicado`, item.indicadoPor);
+                    setVal(`cultura-${i}-sinopse`, item.sinopse);
+                });
+            }
+
+            if(data.hobby) {
+                setVal('hobby-nome', data.hobby.nome);
+                setVal('hobby-cargo', data.hobby.cargo);
+                setVal('hobby-foto', data.hobby.foto);
+                setVal('hobby-texto', data.hobby.texto);
+                setVal('hobby-tags', data.hobby.tags ? data.hobby.tags.join(', ') : '');
+            }
+
+            if(data.receitas && data.receitas[0]) {
+                const r = data.receitas[0];
+                setVal('rec-emoji', r.emoji);
+                setVal('rec-titulo', r.titulo);
+                setVal('rec-tempo', r.tempo);
+                setVal('rec-indicado', r.indicadoPor);
+                setVal('rec-desc', r.desc);
+                setVal('rec-ing', r.ingredientes ? r.ingredientes.join('; ') : '');
+                setVal('rec-prep', r.preparo ? r.preparo.join('; ') : '');
+            }
+
+            if(data.novos_clientes) {
+                setVal('clientes-qtd', data.novos_clientes.resumo?.quantidade);
+                setVal('clientes-periodo', data.novos_clientes.resumo?.periodo);
+                const list = document.getElementById('clientes-list');
+                list.innerHTML = '';
+                if(data.novos_clientes.lista) {
+                    data.novos_clientes.lista.forEach(c => {
+                        let catKey = Object.keys(CATEGORIES_MAP).find(k => CATEGORIES_MAP[k] === c.icone) || "Outros";
+                        addNewClientRow(catKey, c.nome);
+                    });
+                } else {
+                    addNewClientRow();
+                }
+            }
+
+        } catch(e) { console.error(e); alert("Erro ao carregar dados."); }
+    }
+
+    async function confirmSave() {
+        if(!confirm("Tem certeza que deseja publicar as alterações?")) return;
+        
+        // Montar Objeto JSON
+        const data = {
+            temaMes: {
+                titulo: getVal('tema-titulo'),
+                subtitulo: getVal('tema-subtitulo'),
+                resumo: getVal('tema-resumo'),
+                conteudoCompleto: getVal('tema-conteudo'),
+                fonte: { texto: getVal('tema-fonte-nome'), link: getVal('tema-fonte-link') }
+            },
+            saudeFisica: {
+                subtitulo: getVal('saude-subtitulo'),
+                resumo: getVal('saude-resumo'),
+                conteudoCompleto: getVal('saude-conteudo'),
+                fonte: { link: getVal('saude-link'), texto: "Fonte" }
+            },
+            cultura: [
+                { id: "filme_mes", tipo: "video", titulo: getVal('cultura-0-titulo'), link: getVal('cultura-0-link'), img: getVal('cultura-0-img'), indicadoPor: getVal('cultura-0-indicado'), sinopse: getVal('cultura-0-sinopse'), tag: "Indicação" },
+                { id: "livro_mes", tipo: "livro", titulo: getVal('cultura-1-titulo'), link: getVal('cultura-1-link'), img: getVal('cultura-1-img'), indicadoPor: getVal('cultura-1-indicado'), sinopse: getVal('cultura-1-sinopse'), tag: "Leitura" }
+            ],
+            hobby: {
+                nome: getVal('hobby-nome'),
+                cargo: getVal('hobby-cargo'),
+                foto: getVal('hobby-foto'),
+                texto: getVal('hobby-texto'),
+                tags: getVal('hobby-tags').split(',').map(t=>t.trim()).filter(t=>t)
+            },
+            receitas: [{
+                emoji: getVal('rec-emoji'), titulo: getVal('rec-titulo'), tempo: getVal('rec-tempo'), indicadoPor: getVal('rec-indicado'), desc: getVal('rec-desc'),
+                ingredientes: getVal('rec-ing').split(';').map(s=>s.trim()).filter(s=>s),
+                preparo: getVal('rec-prep').split(';').map(s=>s.trim()).filter(s=>s)
+            }],
+            novos_clientes: {
+                resumo: { quantidade: getVal('clientes-qtd'), periodo: getVal('clientes-periodo') },
+                lista: Array.from(document.querySelectorAll('.client-row')).map(row => ({
+                    icone: CATEGORIES_MAP[row.querySelector('select').value] || "🏢",
+                    nome: row.querySelector('input').value,
+                    destaque: false, data: ""
+                })).filter(c => c.nome)
+            },
+            // Preservando desafios do load anterior ou hardcoded se necessário, pois não pedi para editar desafios dessa vez, mas é bom manter a estrutura
+            desafios: [ 
+                {id: "hidratacao", emoji: "💧", titulo: "Hidratação", desc: "Beba 2L de água"},
+                {id: "passos", emoji: "🚶", titulo: "10k Passos", desc: "Caminhe todo dia"},
+                {id: "sono", emoji: "😴", titulo: "Sono", desc: "Durma 8h"}
+            ] 
+        };
+
+        try {
+            await fetch(CONTENT_URL + "?auth=" + AUTH_TOKEN, { method: 'PUT', body: JSON.stringify(data) });
+            alert("Conteúdo publicado com sucesso!");
+        } catch(e) { alert("Erro ao salvar: " + e.message); }
+    }
+
+    function addNewClientRow(cat="", name="") {
+        const div = document.createElement('div'); div.className = 'client-row';
+        let options = ''; 
+        for(let k in CATEGORIES_MAP) options += `<option value="${k}" ${k===cat?'selected':''}>${k}</option>`;
+        div.innerHTML = `<select>${options}</select><div style="display:flex;gap:5px;width:100%"><input type="text" value="${name}" class="client-input"><button type="button" class="client-remove" onclick="this.closest('.client-row').remove()">X</button></div>`;
+        document.getElementById('clientes-list').appendChild(div);
+    }
+
+    // Lógica de colar lista
+    document.getElementById('clientes-list').addEventListener('paste', e => {
+        if(!e.target.classList.contains('client-input')) return;
+        const text = (e.clipboardData || window.clipboardData).getData('text');
+        if(!text.includes('\n')) return;
+        e.preventDefault();
+        const lines = text.split(/\r?\n/).filter(l=>l.trim());
+        const cat = e.target.closest('.client-row').querySelector('select').value;
+        e.target.value = lines[0];
+        for(let i=1; i<lines.length; i++) addNewClientRow(cat, lines[i]);
+    });
+
+    function getVal(id) { return document.getElementById(id)?.value || ""; }
+    function setVal(id, v) { if(document.getElementById(id)) document.getElementById(id).value = v || ""; }
+</script>
+</body>
+</html>
