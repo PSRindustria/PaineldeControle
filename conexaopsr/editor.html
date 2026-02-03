@@ -154,6 +154,7 @@
                 <div class="form-group"><label>Título:</label><input type="text" id="tema-titulo"></div>
                 <div class="form-group"><label>Subtítulo:</label><input type="text" id="tema-subtitulo"></div>
                 <div class="form-group"><label>CAPA URL:</label><input type="text" id="tema-capa"></div>
+                <div class="form-group"><label>Ícone (Emoji):</label><input type="text" id="tema-icon"></div>
                 <div class="form-group"><label>Resumo:</label><textarea id="tema-resumo" rows="3"></textarea></div>
                 <div class="form-group"><label>Conteúdo HTML:</label><textarea id="tema-conteudo" rows="6"></textarea></div>
                 <div class="cols-2">
@@ -192,6 +193,7 @@
                     <div class="form-group"><label>Capa URL:</label><input type="text" id="cultura-0-img"></div>
                     <div class="form-group"><label>Indicado Por:</label><input type="text" id="cultura-0-indicado"></div>
                     <div class="form-group"><label>Sinopse:</label><textarea id="cultura-0-sinopse"></textarea></div>
+                    <div class="form-group"><label>Categoria:</label><input type="text" id="cultura-0-tag"></div>
                 </div>
                 <div id="cultura-livro" class="tab-content">
                     <div class="form-group"><label>Título:</label><input type="text" id="cultura-1-titulo"></div>
@@ -199,6 +201,7 @@
                     <div class="form-group"><label>Capa URL:</label><input type="text" id="cultura-1-img"></div>
                     <div class="form-group"><label>Indicado Por:</label><input type="text" id="cultura-1-indicado"></div>
                     <div class="form-group"><label>Sinopse:</label><textarea id="cultura-1-sinopse"></textarea></div>
+                    <div class="form-group"><label>Categoria:</label><input type="text" id="cultura-1-tag"></div>
                 </div>
             </div>
 
@@ -250,7 +253,7 @@
     
     // --- SEGURANÇA ---
     const ALLOWED_EMAILS = ["marketingpsrimpressao@gmail.com", "rohsantos1@gmail.com"];
-    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    // REMOVIDO ONE_WEEK_MS para evitar logout indesejado
 
     // Monitora estado (Login/Logout)
     firebase.auth().onAuthStateChanged(async user => {
@@ -258,16 +261,9 @@
             // USUÁRIO LOGADO
             if (ALLOWED_EMAILS.includes(user.email)) {
                 // E-mail PERMITIDO
-                const lastVerified = localStorage.getItem('secure_last_login_ts');
-                const now = Date.now();
-
-                // Checa 7 dias
-                if (!lastVerified || (now - parseInt(lastVerified) > ONE_WEEK_MS)) {
-                    console.log("Sessão expirada (7 dias).");
-                    await firebase.auth().signOut(); // Força logout para pedir senha
-                    // A tela de login aparecerá automaticamente via 'else' abaixo
-                    return; 
-                }
+                
+                // ATUALIZA TIMESTAMP AUTOMATICAMENTE AO CARREGAR (Correção do Login Chato)
+                localStorage.setItem('secure_last_login_ts', Date.now());
 
                 // Tudo OK: Esconde Login, Mostra App
                 user.getIdToken().then(token => { 
@@ -299,7 +295,7 @@
             .then((result) => {
                 const email = result.user.email;
                 if (ALLOWED_EMAILS.includes(email)) {
-                    // Login novo com sucesso: Renova timer de 7 dias
+                    // Login novo com sucesso
                     localStorage.setItem('secure_last_login_ts', Date.now());
                 }
                 // O onAuthStateChanged vai lidar com o resto
@@ -346,6 +342,7 @@
             setVal('tema-fonte-nome', data.temaMes?.fonte?.texto);
             setVal('tema-fonte-link', data.temaMes?.fonte?.link);
             setVal('tema-capa', data.temaMes?.capaUrl);
+            setVal('tema-icon', data.temaMes?.icon); // NOVO
 
             setVal('pp-titulo', data.partiuPensar?.titulo);
             setVal('pp-subtitulo', data.partiuPensar?.subtitulo);
@@ -367,6 +364,7 @@
                     setVal(`cultura-${i}-img`, item.img);
                     setVal(`cultura-${i}-indicado`, item.indicadoPor);
                     setVal(`cultura-${i}-sinopse`, item.sinopse);
+                    setVal(`cultura-${i}-tag`, item.tag); // NOVO
                 });
             }
 
@@ -417,6 +415,7 @@
                 resumo: getVal('tema-resumo'),
                 conteudoCompleto: getVal('tema-conteudo'),
                 capaUrl: getVal('tema-capa'),
+                icon: getVal('tema-icon'), // NOVO
                 fonte: { texto: getVal('tema-fonte-nome'), link: getVal('tema-fonte-link') }
             },
             partiuPensar: {
@@ -434,8 +433,8 @@
                 fonte: { link: getVal('saude-link'), texto: "Fonte" }
             },
             cultura: [
-                { id: "filme_mes", tipo: "video", titulo: getVal('cultura-0-titulo'), link: getVal('cultura-0-link'), img: getVal('cultura-0-img'), indicadoPor: getVal('cultura-0-indicado'), sinopse: getVal('cultura-0-sinopse'), tag: "Indicação" },
-                { id: "livro_mes", tipo: "livro", titulo: getVal('cultura-1-titulo'), link: getVal('cultura-1-link'), img: getVal('cultura-1-img'), indicadoPor: getVal('cultura-1-indicado'), sinopse: getVal('cultura-1-sinopse'), tag: "Leitura" }
+                { id: "filme_mes", tipo: "video", titulo: getVal('cultura-0-titulo'), link: getVal('cultura-0-link'), img: getVal('cultura-0-img'), indicadoPor: getVal('cultura-0-indicado'), sinopse: getVal('cultura-0-sinopse'), tag: getVal('cultura-0-tag') }, // NOVO TAG
+                { id: "livro_mes", tipo: "livro", titulo: getVal('cultura-1-titulo'), link: getVal('cultura-1-link'), img: getVal('cultura-1-img'), indicadoPor: getVal('cultura-1-indicado'), sinopse: getVal('cultura-1-sinopse'), tag: getVal('cultura-1-tag') } // NOVO TAG
             ],
             hobby: {
                 nome: getVal('hobby-nome'),
