@@ -179,7 +179,7 @@
             }
             document.getElementById('m-quiz').innerHTML = quizH || 'Sem dados.';
 
-            // --- HOBBY ---
+            // --- HOBBY (LIKES) ---
             let hobH = '';
             if(db.hobby_interactions_history?.[filterDate]?.likes) {
                 Object.keys(db.hobby_interactions_history[filterDate].likes).forEach(u => hobH += item(`Curtiu: <span class="id-badge">${u}</span>`, `hobby_interactions_history/${filterDate}/likes/${u}`));
@@ -217,12 +217,16 @@
             }
             document.getElementById('m-chal').innerHTML = chalH || 'Sem dados.';
 
-            // --- SUGESTÕES GERAIS ---
+            // --- SUGESTÕES GERAIS (COM A CORREÇÃO DO REASON) ---
             let sugH = '';
             const isInMonth = (dateStr) => dateStr && dateStr.startsWith(filterDate);
 
             if(db.hobby_suggestions) Object.entries(db.hobby_suggestions).forEach(([k,v]) => {
-                if(isInMonth(v.date)) sugH += item(`<b>Hobby:</b> Indicado: ${v.target} <br><small>De: ${v.from}</small>`, `hobby_suggestions/${k}`);
+                if(isInMonth(v.date)) {
+                    // AQUI ESTÁ A CORREÇÃO: Adicionando v.reason
+                    const reasonText = v.reason ? `<i>"${v.reason}"</i><br>` : '';
+                    sugH += item(`<b>Hobby:</b> Para ${v.target} <br>${reasonText}<small>De: ${v.from}</small>`, `hobby_suggestions/${k}`);
+                }
             });
             if(db.game_suggestions) Object.entries(db.game_suggestions).forEach(([k,v]) => {
                 if(isInMonth(v.date)) sugH += item(`<b>Game:</b> ${v.name}: "${v.text}"`, `game_suggestions/${k}`);
@@ -232,7 +236,7 @@
             });
             document.getElementById('m-sugg').innerHTML = sugH || 'Sem sugestões neste mês.';
 
-            // --- SUGESTÕES DE FILMES (COM DETECTOR INTELIGENTE) ---
+            // --- SUGESTÕES DE FILMES ---
             let movH = '';
             if(db.suggestions) {
                 Object.entries(db.suggestions).forEach(([k,v]) => {
@@ -240,30 +244,22 @@
                     let autor = "";
 
                     if (typeof v === 'object' && v !== null) {
-                        // 1. Tenta encontrar campos de conteúdo (filme)
                         filme = v.sugestao || v.filme || v.film || v.movie || v.titulo || v.title || v.text || v.texto || v.mensagem || v.content || v.indicacao;
-                        
-                        // 2. Tenta encontrar campos de autor
                         autor = v.autor || v.author || v.user || v.usuario || v.from || v.quem || v.nome || v.name || v.email;
 
-                        // 3. SE FALHAR: Tenta adivinhar pelo tamanho do texto
                         if (!filme && !autor) {
                             const valores = Object.values(v).filter(x => typeof x === 'string');
-                            // Ordena por tamanho: maior string provavelmente é a sugestão
                             valores.sort((a, b) => b.length - a.length);
-                            if (valores.length > 0) filme = valores[0]; // Maior string = Conteúdo
-                            if (valores.length > 1) autor = valores[valores.length - 1]; // Menor string = Autor
+                            if (valores.length > 0) filme = valores[0]; 
+                            if (valores.length > 1) autor = valores[valores.length - 1]; 
                         }
                     } else {
-                        // Se for apenas uma string direta
                         filme = v;
                     }
 
-                    // Fallbacks finais
                     if (!filme) filme = "Conteúdo não identificado";
                     if (!autor) autor = "Anônimo";
 
-                    // Formatação bonita
                     const content = `<b>${filme}</b> <br><small style="color:#666">De: ${autor}</small>`;
                     movH += item(content, `suggestions/${k}`);
                 });
