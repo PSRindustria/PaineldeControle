@@ -6,11 +6,17 @@
     <title>Editor de Conteúdo - Portal PSR</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <style>
         :root { 
-            --primary: #003366; --accent: #DAA520; --bg: #f4f7f9; --success: #28a745; --danger: #dc3545;
-            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06); --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+            --primary: #003366; 
+            --accent: #DAA520; 
+            --bg: #f4f7f9; 
+            --success: #28a745; 
+            --danger: #dc3545;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
@@ -19,376 +25,469 @@
         body { 
             font-family: 'Poppins', sans-serif; 
             background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
-            padding: 20px; color: #333; margin: 0; padding-bottom: 100px;
+            padding: 20px; 
+            color: #333; 
+            margin: 0;
+            position: relative;
+            overflow-x: hidden;
+            padding-bottom: 100px; /* Espaço para barra de salvar */
         }
 
-        .header { text-align: center; margin-bottom: 40px; }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 20% 50%, rgba(0, 51, 102, 0.03) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(218, 165, 32, 0.03) 0%, transparent 50%);
+            pointer-events: none; z-index: 0; animation: floatBg 20s ease-in-out infinite;
+        }
+
+        @keyframes floatBg {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, 20px); }
+        }
+        
+        .header { text-align: center; margin-bottom: 40px; position: relative; z-index: 1; }
         
         .header h1 { 
-            color: var(--primary); margin: 0 0 20px 0; font-size: 2.5em;
+            color: var(--primary); margin: 0 0 20px 0; font-size: 2.5em; font-weight: 700;
             background: linear-gradient(135deg, var(--primary) 0%, #004d99 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
         /* MENU DE NAVEGAÇÃO */
-        .view-switcher { 
+        .view-switcher {
             display: flex; justify-content: center; gap: 12px; margin-bottom: 35px;
-            background: white; padding: 10px; border-radius: 50px;
+            background: white; padding: 8px; border-radius: 50px;
             box-shadow: var(--shadow-md); width: fit-content; margin-left: auto; margin-right: auto;
-            flex-wrap: wrap;
+            position: relative; z-index: 2;
         }
-        .view-btn { 
+
+        .view-btn {
             text-decoration: none; border: none; background: transparent; 
-            padding: 12px 24px; border-radius: 25px; cursor: pointer; 
-            font-weight: 600; color: #777; transition: var(--transition); 
-            display: flex; align-items: center; gap: 8px; font-size: 0.9em;
+            padding: 12px 28px; border-radius: 25px; cursor: pointer; 
+            font-weight: 600; color: #777; transition: var(--transition);
+            display: flex; align-items: center; gap: 8px; position: relative; font-size: 0.9em;
         }
+
         .view-btn.active { 
             background: var(--primary); color: white; 
             box-shadow: 0 6px 16px rgba(0,51,102,0.25); transform: translateY(-2px);
         }
-        .view-btn:hover:not(.active) { background: rgba(0,51,102,0.05); }
+
+        .view-btn:hover:not(.active) { 
+            background: rgba(0,51,102,0.05); transform: translateY(-1px); 
+        }
 
         /* GRID E CARDS */
         .dashboard-grid { 
             display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
-            gap: 25px; max-width: 1400px; margin: 0 auto; 
+            gap: 25px; max-width: 1400px; margin: 0 auto; position: relative; z-index: 1;
         }
+
         .card { 
             background: white; padding: 28px; border-radius: 16px; 
-            box-shadow: var(--shadow-sm); display: flex; flex-direction: column; 
-            position: relative; border-top: 4px solid var(--primary);
-            transition: var(--transition);
+            box-shadow: var(--shadow-sm); display: flex; flex-direction: column;
+            overflow: hidden; position: relative; border: 1px solid rgba(0,0,0,0.04);
+            transition: var(--transition); animation: cardSlideIn 0.5s ease backwards;
         }
-        .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
-        
+
+        @keyframes cardSlideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card::before { 
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; 
+            background: linear-gradient(90deg, var(--primary), var(--accent)); transition: height 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg); transform: translateY(-4px); border-color: rgba(0,51,102,0.1);
+        }
+        .card:hover::before { height: 6px; }
+
         .card-header { 
             display: flex; align-items: center; justify-content: space-between; 
-            border-bottom: 2px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 22px; 
+            border-bottom: 2px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 22px; position: relative;
         }
-        .card h2 { 
-            margin: 0; color: var(--primary); font-size: 1.2em; 
-            display: flex; align-items: center; gap: 10px; 
+        .card-header::after {
+            content: ''; position: absolute; bottom: -2px; left: 0; width: 60px; height: 2px;
+            background: var(--accent); transition: width 0.3s ease;
         }
+        .card:hover .card-header::after { width: 120px; }
         
+        .card h2 { 
+            margin: 0; color: var(--primary); font-size: 1.2em; display: flex; align-items: center; gap: 10px; 
+        }
+        .card h2 i {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
         /* FORMULÁRIOS */
         .form-group { margin-bottom: 18px; width: 100%; }
         .form-group label { 
-            display: block; font-weight: 600; margin-bottom: 7px; 
-            font-size: 0.85em; color: #555; text-transform: uppercase; 
+            display: block; font-weight: 600; margin-bottom: 7px; font-size: 0.85em; color: #555; 
+            text-transform: uppercase; letter-spacing: 0.5px;
         }
         .form-group input, .form-group textarea, .form-group select { 
-            width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; 
-            border-radius: 8px; font-family: inherit; font-size: 0.9em; 
-            background: #fafafa; transition: 0.3s;
+            width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; 
+            font-family: inherit; font-size: 0.9em; transition: var(--transition); background: #fafafa;
         }
-        .form-group input:focus, .form-group textarea:focus { 
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { 
             border-color: var(--primary); outline: none; background: white; 
-            box-shadow: 0 0 0 3px rgba(0,51,102,0.1);
+            box-shadow: 0 0 0 3px rgba(0,51,102,0.1); transform: translateY(-1px);
         }
-        
-        /* BOTÃO SALVAR FLUTUANTE */
-        .btn-save { 
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); 
-            background: linear-gradient(135deg, var(--primary) 0%, #004d99 100%); 
-            color: white; border: none; padding: 16px 60px; border-radius: 50px; 
-            font-size: 1.15em; font-weight: bold; cursor: pointer; 
-            box-shadow: 0 10px 25px rgba(0, 51, 102, 0.3); z-index: 100; 
-            transition: transform 0.3s; display: flex; align-items: center; gap: 10px;
-        }
-        .btn-save:hover { transform: translateX(-50%) translateY(-5px); }
-        
-        /* UTILITÁRIOS */
-        .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .client-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; align-items: center; }
-        
-        .client-remove { 
-            background: #ffe5e5; border: 1px solid #ffcccc; color: #dc3545; 
-            width: 34px; height: 34px; border-radius: 50%; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; 
-            transition: 0.2s;
-        }
-        .client-remove:hover { background: #dc3545; color: white; }
 
+        /* LAYOUTS AUXILIARES */
+        .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+        /* TABS (INDICA AÍ) */
+        .tabs-header { display: flex; border-bottom: 2px solid #eee; margin-bottom: 18px; gap: 4px; }
+        .tab-btn { 
+            flex: 1; padding: 12px; text-align: center; cursor: pointer; background: #f8f9fa; 
+            border: none; border-bottom: 3px solid transparent; font-weight: 600; color: #777; 
+            transition: var(--transition); position: relative;
+        }
+        .tab-btn.active { background: white; color: var(--primary); }
+        .tab-btn.active::before {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: var(--accent);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* SUB-CARDS (DESAFIOS) */
+        .sub-card { 
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border: 1px solid #e8ecf0; border-left: 4px solid var(--accent);
+            padding: 18px; border-radius: 10px; margin-bottom: 18px; transition: var(--transition);
+        }
+        .sub-card:hover { box-shadow: var(--shadow-sm); transform: translateX(4px); }
+        .sub-card-title { 
+            font-weight: 700; color: var(--primary); margin-bottom: 12px; font-size: 0.9em; 
+            text-transform: uppercase; border-bottom: 2px solid #e0e0e0; padding-bottom: 6px;
+        }
+        .emoji-input { font-size: 1.3em; text-align: center; width: 90px !important; }
+
+        /* CLIENT LIST */
+        .client-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; align-items: center; animation: slideInLeft 0.3s ease; }
+        .client-select { width: 100%; padding: 12px; border: 2px solid #e1e4e8; border-radius: 8px; background: #fafafa; }
+        .client-input-wrapper { display: flex; align-items: center; width: 100%; gap: 8px; }
+        .client-input { flex: 1; height: 46px; padding: 0 12px; border: 2px solid #e0e0e0; border-radius: 8px; }
+        .client-remove { 
+            background: transparent; border: none; color: #bbb; width: 34px; height: 34px; 
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .client-remove:hover { color: var(--danger); background-color: rgba(220, 53, 69, 0.1); }
         .btn-add-client { 
-            width: 100%; padding: 12px; background: #f0f4f8; 
-            border: 2px dashed #cedae6; color: var(--primary); 
-            cursor: pointer; border-radius: 8px; font-weight: 600; margin-top: 10px;
-            transition: 0.2s;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e3e9ef 100%); color: var(--primary); 
+            border: 2px dashed #cedae6; width: 100%; padding: 12px; border-radius: 8px; 
+            cursor: pointer; margin-top: 12px; font-weight: 600; transition: var(--transition);
         }
-        .btn-add-client:hover { background: #e1e8ef; border-color: var(--primary); }
+        .btn-add-client:hover { border-color: var(--primary); transform: translateY(-2px); }
+
+        /* BOTÕES DE AÇÃO GLOBAL */
+        .btn-global-clear { 
+            margin-top: 15px; background: linear-gradient(135deg, #ffebeb 0%, #ffe0e0 100%);
+            color: #dc3545; border: 2px solid #dc3545; padding: 10px 24px; border-radius: 25px; 
+            font-size: 0.85em; cursor: pointer; font-weight: 600; text-transform: uppercase; 
+            display: inline-flex; align-items: center; gap: 8px; transition: var(--transition);
+        }
+        .btn-global-clear:hover { color: white; background: var(--danger); box-shadow: 0 6px 16px rgba(220,53,69,0.3); }
         
-        /* Loading Overlay */
-        #loading { 
-            position: fixed; top:0; left:0; width:100%; height:100%; 
-            background:rgba(255,255,255,0.95); z-index:9999; 
-            display:flex; justify-content:center; align-items:center; flex-direction:column;
-            backdrop-filter: blur(5px);
+        .btn-clear-header { 
+            background: #f8f9fa; color: #666; border: 1px solid #ddd; padding: 6px 12px; 
+            border-radius: 6px; font-size: 0.75em; cursor: pointer; font-weight: 600; 
+            text-transform: uppercase; display: flex; align-items: center; gap: 5px;
         }
+
+        /* BARRA DE SALVAR */
+        .save-bar { 
+            position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.95);
+            padding: 18px; box-shadow: 0 -8px 24px rgba(0,0,0,0.12); text-align: center; z-index: 100;
+            backdrop-filter: blur(10px); animation: slideUp 0.4s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .btn-save { 
+            background: linear-gradient(135deg, var(--primary) 0%, #004d99 100%);
+            color: white; border: none; padding: 16px 60px; border-radius: 50px; 
+            font-size: 1.15em; font-weight: bold; cursor: pointer; transition: var(--transition);
+            box-shadow: 0 6px 20px rgba(0, 51, 102, 0.3); position: relative; overflow: hidden;
+        }
+        .btn-save:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0, 51, 102, 0.4); }
+        .btn-save i { margin-right: 8px; }
+
+        /* TOAST E LOGIN */
+        #toast { 
+            position: fixed; bottom: 110px; right: 30px; padding: 16px 28px; 
+            border-radius: 12px; color: white; display: none; z-index: 101; 
+            font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+        }
+        .success { background: linear-gradient(135deg, #28a745 0%, #20893a 100%); }
+        .error { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); }
+
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
     </style>
 </head>
 <body>
 
 <div class="header">
     <h1>Painel PSR</h1>
+    
     <div class="view-switcher">
         <a href="editor.html" class="view-btn active"><i class="fas fa-edit"></i> Editor</a>
         <a href="interacoes.html" class="view-btn"><i class="fas fa-chart-line"></i> Interações</a>
         <a href="trafego_interno.html" class="view-btn"><i class="fas fa-network-wired"></i> Tráfego Interno</a>
         <a href="trafego_portal.html" class="view-btn"><i class="fas fa-globe"></i> Tráfego Portal</a>
     </div>
+
+    <div id="editor-controls">
+        <button type="button" class="btn-global-clear" onclick="clearAllFields()">
+            <i class="fas fa-trash"></i> <span>Limpar Todo o Painel</span>
+        </button>
+    </div>
 </div>
 
 <form id="dashboardForm" onsubmit="event.preventDefault(); confirmSave();">
     <div class="dashboard-grid">
+        
         <!-- TEMA DO MÊS -->
         <div class="card">
             <div class="card-header"><h2><i class="fas fa-calendar-alt"></i> Tema do Mês</h2></div>
-            <div class="form-group"><label>Título:</label><input type="text" id="tema-titulo"></div>
-            <div class="form-group"><label>Subtítulo:</label><input type="text" id="tema-subtitulo"></div>
-            <div class="form-group"><label>Resumo (Capa):</label><textarea id="tema-resumo" rows="3"></textarea></div>
-            <div class="form-group"><label>Conteúdo HTML:</label><textarea id="tema-conteudo" rows="6"></textarea></div>
-            <div class="cols-2">
-                <div class="form-group"><label>Fonte Nome:</label><input type="text" id="tema-fonte-nome"></div>
-                <div class="form-group"><label>Fonte Link:</label><input type="text" id="tema-fonte-link"></div>
+            <div class="form-group"><label>Título:</label><input type="text" id="tema-titulo" placeholder="Ex: Janeiro Branco"></div>
+            <div class="form-group"><label>Subtítulo:</label><input type="text" id="tema-subtitulo" placeholder="Ex: Quem cuida da mente, cuida da vida!"></div>
+            <div class="form-group"><label>Resumo (Capa):</label><textarea id="tema-resumo" placeholder="Ex: Neste mês, convidamos a todos para uma reflexão..."></textarea></div>
+            <div class="form-group"><label>Conteúdo Completo (HTML):</label><textarea id="tema-conteudo" style="height: 150px;" placeholder="Ex: <p>Texto detalhado sobre a campanha...</p>"></textarea></div>
+            <div class="form-group"><label>Fonte (Nome / Link):</label>
+                <div class="cols-2">
+                    <input type="text" id="tema-fonte-nome" placeholder="Ex: G1 - Saúde">
+                    <input type="text" id="tema-fonte-link" placeholder="Ex: https://g1.globo.com...">
+                </div>
             </div>
         </div>
 
-        <!-- SAUDE E BEM ESTAR -->
+        <!-- INDICA AÍ -->
         <div class="card">
-            <div class="card-header"><h2><i class="fas fa-heartbeat"></i> Bem-Estar</h2></div>
-            <div class="form-group"><label>Subtítulo:</label><input type="text" id="saude-subtitulo"></div>
-            <div class="form-group"><label>Resumo:</label><textarea id="saude-resumo" rows="3"></textarea></div>
-            <div class="form-group"><label>Conteúdo HTML:</label><textarea id="saude-conteudo" rows="6"></textarea></div>
-            <div class="form-group"><label>Link Fonte:</label><input type="text" id="saude-link"></div>
-        </div>
-
-        <!-- INDICA AÍ (Livros e Filmes) -->
-        <div class="card">
-            <div class="card-header"><h2><i class="fas fa-film"></i> Indica Aí (Cultura)</h2></div>
-            <div style="background:#f8f9fa; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #eee;">
-                <strong style="color:var(--primary); display:block; margin-bottom:10px;">🎥 Vídeo/Filme (Posição 0)</strong>
-                <div class="form-group"><label>Título:</label><input type="text" id="cultura-0-titulo"></div>
-                <div class="form-group"><label>Link:</label><input type="text" id="cultura-0-link"></div>
-                <div class="form-group"><label>Capa URL:</label><input type="text" id="cultura-0-img"></div>
-                <div class="form-group"><label>Indicado Por:</label><input type="text" id="cultura-0-indicado"></div>
-                <div class="form-group"><label>Sinopse:</label><textarea id="cultura-0-sinopse"></textarea></div>
+            <div class="card-header"><h2><i class="fas fa-film"></i> Indica Aí</h2></div>
+            <div class="tabs-header">
+                <button type="button" class="tab-btn active" onclick="openTab('tab-filme', this)">🎥 Filme</button>
+                <button type="button" class="tab-btn" onclick="openTab('tab-livro', this)">📚 Livro</button>
             </div>
-            <div style="background:#f8f9fa; padding:15px; border-radius:10px; border:1px solid #eee;">
-                <strong style="color:var(--primary); display:block; margin-bottom:10px;">📚 Livro (Posição 1)</strong>
-                <div class="form-group"><label>Título:</label><input type="text" id="cultura-1-titulo"></div>
-                <div class="form-group"><label>Link:</label><input type="text" id="cultura-1-link"></div>
-                <div class="form-group"><label>Capa URL:</label><input type="text" id="cultura-1-img"></div>
-                <div class="form-group"><label>Indicado Por:</label><input type="text" id="cultura-1-indicado"></div>
-                <div class="form-group"><label>Sinopse:</label><textarea id="cultura-1-sinopse"></textarea></div>
+            <div id="tab-filme" class="tab-content active">
+                <input type="hidden" id="cult-filme-id" value="filme_mes">
+                <input type="hidden" id="cult-filme-tipo" value="video">
+                <div class="form-group"><label>Título do Filme:</label><input type="text" id="cult-filme-titulo" placeholder="Ex: O Dilema das Redes"></div>
+                <div class="form-group"><label>Link (YouTube):</label><input type="text" id="cult-filme-link" placeholder="Ex: https://youtube.com/watch?v=..."></div>
+                <div class="form-group"><label>Capa URL:</label><input type="text" id="cult-filme-img" placeholder="Ex: https://img.youtube.com/..."></div>
+                <div class="form-group"><label>Indicado por:</label><input type="text" id="cult-filme-indicado" placeholder="Ex: João (TI)"></div>
+                <div class="form-group"><label>Sinopse:</label><textarea id="cult-filme-sinopse" placeholder="Ex: Especialistas do Vale do Silício alertam..."></textarea></div>
+                <div class="form-group"><label>Categoria:</label><input type="text" id="cult-filme-tag" placeholder="Ex: Reflexão"></div>
+            </div>
+            <div id="tab-livro" class="tab-content">
+                <input type="hidden" id="cult-livro-id" value="livro_mes">
+                <input type="hidden" id="cult-livro-tipo" value="livro">
+                <div class="form-group"><label>Título do Livro:</label><input type="text" id="cult-livro-titulo" placeholder="Ex: O Poder do Hábito"></div>
+                <div class="form-group"><label>Link (Opcional):</label><input type="text" id="cult-livro-link" placeholder="Ex: https://amazon.com.br/..."></div>
+                <div class="form-group"><label>Capa URL:</label><input type="text" id="cult-livro-img" placeholder="Ex: https://imagens.com/livro.jpg"></div>
+                <div class="form-group"><label>Indicado por:</label><input type="text" id="cult-livro-indicado" placeholder="Ex: Maria (RH)"></div>
+                <div class="form-group"><label>Sinopse:</label><textarea id="cult-livro-sinopse" placeholder="Ex: O livro explora a ciência dos hábitos..."></textarea></div>
+                <div class="form-group"><label>Categoria:</label><input type="text" id="cult-livro-tag" placeholder="Ex: Autoajuda"></div>
             </div>
         </div>
 
         <!-- HOBBY -->
         <div class="card">
             <div class="card-header"><h2><i class="fas fa-user-circle"></i> Além do Crachá</h2></div>
-            <div class="form-group"><label>Nome:</label><input type="text" id="hobby-nome"></div>
-            <div class="form-group"><label>Setor/Cargo:</label><input type="text" id="hobby-cargo"></div>
-            <div class="form-group"><label>Foto URL:</label><input type="text" id="hobby-foto"></div>
-            <div class="form-group"><label>Texto:</label><textarea id="hobby-texto" rows="4"></textarea></div>
-            <div class="form-group"><label>Tags (Separe por vírgula):</label><input type="text" id="hobby-tags" placeholder="Ex: ☕ Café, 🐶 Animais"></div>
+            <div class="form-group"><label>Colaborador:</label><input type="text" id="hobby-nome" placeholder="Ex: Iasmim Ferreira"></div>
+            <div class="form-group"><label>Setor:</label><input type="text" id="hobby-cargo" placeholder="Ex: Setor Financeiro"></div>
+            <div class="form-group"><label>Foto URL:</label><input type="text" id="hobby-foto" placeholder="Ex: https://postimg.cc/..."></div>
+            <div class="form-group"><label>Texto "Fora da PSR":</label><textarea id="hobby-texto" style="height: 120px;" placeholder="Ex: Gosto de passear com minha cachorrinha..."></textarea></div>
+            <div class="form-group"><label>Tags (Skills/Hobbies - Máx 3):</label>
+                <div class="cols-3">
+                    <input type="text" id="hobby-tag-1" placeholder="Ex: ☕ Café">
+                    <input type="text" id="hobby-tag-2" placeholder="Ex: 🗺️ Viajar">
+                    <input type="text" id="hobby-tag-3" placeholder="Ex: 🐶 Animais">
+                </div>
+            </div>
+        </div>
+
+        <!-- BEM ESTAR -->
+        <div class="card">
+            <div class="card-header"><h2><i class="fas fa-heartbeat"></i> Bem-Estar e Saúde</h2></div>
+            <div class="form-group"><label>Subtítulo:</label><input type="text" id="bemestar-subtitulo" placeholder="Ex: A pausa necessária"></div>
+            <div class="form-group"><label>Resumo:</label><textarea id="bemestar-resumo" placeholder="Ex: Na correria do dia a dia..."></textarea></div>
+            <div class="form-group"><label>Conteúdo (HTML):</label><textarea id="bemestar-conteudo" style="height: 120px;" placeholder="Ex: <p>Dicas de ergonomia...</p>"></textarea></div>
+            <div class="form-group"><label>Link da Fonte:</label><input type="text" id="bemestar-link" placeholder="Ex: https://blog.saude.com.br"></div>
         </div>
 
         <!-- RECEITA -->
         <div class="card">
-            <div class="card-header"><h2><i class="fas fa-utensils"></i> Receita</h2></div>
-            <div class="cols-2">
-                <div class="form-group"><label>Emoji:</label><input type="text" id="rec-emoji"></div>
-                <div class="form-group"><label>Tempo:</label><input type="text" id="rec-tempo"></div>
-            </div>
-            <div class="form-group"><label>Título:</label><input type="text" id="rec-titulo"></div>
-            <div class="form-group"><label>Indicado Por:</label><input type="text" id="rec-indicado"></div>
-            <div class="form-group"><label>Descrição:</label><textarea id="rec-desc"></textarea></div>
-            <div class="form-group"><label>Ingredientes (Separar por ;):</label><textarea id="rec-ing"></textarea></div>
-            <div class="form-group"><label>Preparo (Separar por ;):</label><textarea id="rec-prep"></textarea></div>
+            <div class="card-header"><h2><i class="fas fa-utensils"></i> Receita do Mês</h2></div>
+            <div class="form-group"><label>Emoji:</label><input type="text" id="rec-emoji" class="emoji-input" placeholder="Ex: 🥘"></div>
+            <div class="form-group"><label>Título:</label><input type="text" id="rec-titulo" placeholder="Ex: Salada de Quinoa"></div>
+            <div class="form-group"><label>Tempo:</label><input type="text" id="rec-tempo" placeholder="Ex: 15 minutos"></div>
+            <div class="form-group"><label>Indicado por:</label><input type="text" id="rec-indicado" placeholder="Ex: Nutricionista Ana"></div>
+            <div class="form-group"><label>Descrição:</label><textarea id="rec-desc" placeholder="Ex: Uma receita leve e nutritiva..."></textarea></div>
+            <div class="form-group"><label>Ingredientes (separar por ;):</label><textarea id="rec-ing" placeholder="Ex: 1 tomate; Azeite; Sal a gosto"></textarea></div>
+            <div class="form-group"><label>Preparo (separar por ;):</label><textarea id="rec-prep" placeholder="Ex: Corte os legumes; Misture tudo; Sirva gelado"></textarea></div>
         </div>
 
-        <!-- NOVOS CLIENTES -->
+        <!-- DESAFIOS -->
         <div class="card">
-            <div class="card-header">
-                <h2><i class="fas fa-briefcase"></i> Novos Clientes</h2>
-                <button type="button" class="client-remove" onclick="document.getElementById('clientes-list').innerHTML=''; addNewClientRow();" title="Limpar Lista"><i class="fas fa-trash"></i></button>
+            <div class="card-header"><h2><i class="fas fa-dumbbell"></i> Desafios (3 Cards)</h2></div>
+            <div class="sub-card">
+                <div class="sub-card-title">Desafio 1</div><input type="hidden" id="chal-1-id" value="hidratacao">
+                <div class="cols-2"><div class="form-group"><label>Emoji:</label><input type="text" id="chal-1-emoji" class="emoji-input" placeholder="Ex: 💧"></div><div class="form-group"><label>Título:</label><input type="text" id="chal-1-titulo" placeholder="Ex: Hidratação"></div></div>
+                <div class="form-group"><label>Descrição:</label><input type="text" id="chal-1-desc" placeholder="Ex: Beber 2L de água"></div>
             </div>
-            <div class="cols-2">
-                <div class="form-group"><label>Qtd Resumo:</label><input type="text" id="clientes-qtd"></div>
-                <div class="form-group"><label>Período:</label><input type="text" id="clientes-periodo"></div>
+            <div class="sub-card">
+                <div class="sub-card-title">Desafio 2</div><input type="hidden" id="chal-2-id" value="passos">
+                <div class="cols-2"><div class="form-group"><label>Emoji:</label><input type="text" id="chal-2-emoji" class="emoji-input" placeholder="Ex: 🚶"></div><div class="form-group"><label>Título:</label><input type="text" id="chal-2-titulo" placeholder="Ex: 10 Mil Passos"></div></div>
+                <div class="form-group"><label>Descrição:</label><input type="text" id="chal-2-desc" placeholder="Ex: Caminhada diária"></div>
             </div>
-            <label style="font-size:0.8em; color:#666; margin-top:10px; display:block;">LISTA (Copie e cole do Excel na caixa de texto):</label>
-            <div id="clientes-list" style="margin-top:10px;"></div>
-            <button type="button" class="btn-add-client" onclick="addNewClientRow()">+ Adicionar Linha</button>
+            <div class="sub-card">
+                <div class="sub-card-title">Desafio 3</div><input type="hidden" id="chal-3-id" value="sono">
+                <div class="cols-2"><div class="form-group"><label>Emoji:</label><input type="text" id="chal-3-emoji" class="emoji-input" placeholder="Ex: 😴"></div><div class="form-group"><label>Título:</label><input type="text" id="chal-3-titulo" placeholder="Ex: Sono de Qualidade"></div></div>
+                <div class="form-group"><label>Descrição:</label><input type="text" id="chal-3-desc" placeholder="Ex: Dormir 8h por noite"></div>
+            </div>
         </div>
+
+        <!-- CLIENTES -->
+        <div class="card">
+            <div class="card-header"><h2><i class="fas fa-briefcase"></i> Novos Clientes</h2><button type="button" class="btn-clear-header" onclick="clearClientList()"><i class="fas fa-trash-alt"></i> Limpar Lista</button></div>
+            <div class="cols-2">
+                <div class="form-group"><label>Qtd:</label><input type="text" id="clientes-qtd" placeholder="Ex: 6"></div>
+                <div class="form-group"><label>Período:</label><input type="text" id="clientes-periodo" placeholder="Ex: Janeiro/2026"></div>
+            </div>
+            <label style="margin-top:10px; display:block; font-weight:600; font-size:0.85em; color:#555;">LISTA DE EMPRESAS (Selecione a categoria e cole a lista):</label>
+            <div id="clientes-list"></div>
+            <button type="button" class="btn-add-client" onclick="addNewClientRow()">+ Adicionar Cliente Manualmente</button>
+        </div>
+
     </div>
+    <div style="height: 80px;"></div>
 </form>
 
-<button class="btn-save" onclick="confirmSave()"><i class="fas fa-save"></i> PUBLICAR NO SITE</button>
+<div class="save-bar"><button class="btn-save" onclick="confirmSave()"><i class="fas fa-save"></i> PUBLICAR NO SITE</button></div>
 
-<div id="loading"><div><i class="fas fa-spinner fa-spin fa-3x" style="color:var(--primary)"></i></div><h3 style="color:var(--primary); margin-top:15px;">Carregando dados...</h3></div>
+<div id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
 <script>
-    const firebaseConfig = { apiKey: "AIzaSyBzMvAw9ahEyd-tSYY08HxcMzo9RKf3IFY", authDomain: "jornalpsr-1b8c6.firebaseapp.com", databaseURL: "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com", projectId: "jornalpsr-1b8c6" };
+    const firebaseConfig = {
+        apiKey: "AIzaSyBzMvAw9ahEyd-tSYY08HxcMzo9RKf3IFY",
+        authDomain: "jornalpsr-1b8c6.firebaseapp.com",
+        databaseURL: "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com",
+        projectId: "jornalpsr-1b8c6",
+    };
+
     firebase.initializeApp(firebaseConfig);
-    
     let AUTH_TOKEN = null;
     const CONTENT_URL = "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com/content.json";
-    const CATEGORIES_MAP = { "Açougues": "🥩", "Restaurantes": "🍽️", "Indústria": "🏭", "Transporte": "🚚", "Comércio": "🏪", "Serviços": "💼", "Outros": "🏢", "Farmácias": "💊", "E-commerce": "📦", "Automotivo": "🚗", "Têxtil": "👕" };
 
-    firebase.auth().onAuthStateChanged(user => {
+    const CATEGORIES_MAP = {
+        "Açougues": "🥩", "Supermercados e Hipermercados": "🛒", "Padarias e Confeitarias": "🥖",
+        "Hortifrutis (Sacolões)": "🍎", "Restaurantes": "🍽️", "Bares e Casas Noturnas": "🍻",
+        "Lanchonetes e Fast Food": "🍔", "Pizzarias e Delivery": "🍕", "Farmácias e Drogarias": "💊",
+        "Hospitais e Laboratórios": "🏥", "Indústria Alimentícia": "🥫", "Indústria de Bebidas": "🥤",
+        "Indústria Farmacêutica": "🧪", "Indústria de Cosméticos": "💄", "Indústria de Produtos de Limpeza": "🧹",
+        "Indústria Automotiva": "🚗", "Confecções (Indústria Têxtil)": "👕", "Transportadoras e Logística": "🚚",
+        "E-commerce": "📦", "Estacionamentos": "🅿️", "Postos de Combustível": "⛽",
+        "Shopping Centers": "🛍️", "Condomínios (Comerciais e Residenciais)": "🏢", "Bancos e Financeiras": "💰"
+    };
+
+    firebase.auth().onAuthStateChanged((user) => {
         if (user) {
-            user.getIdToken().then(token => { AUTH_TOKEN = token; loadContent(); });
+            user.getIdToken().then(token => {
+                AUTH_TOKEN = token;
+                iniciarDashboard();
+            });
         } else {
             firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
         }
     });
 
-    async function loadContent() {
+    async function secureFetch(url, options = {}) {
+        const separator = url.includes('?') ? '&' : '?';
+        const finalUrl = AUTH_TOKEN ? `${url}${separator}auth=${AUTH_TOKEN}` : url;
+        return fetch(finalUrl, options);
+    }
+
+    async function iniciarDashboard() {
         try {
-            const resp = await fetch(CONTENT_URL + "?auth=" + AUTH_TOKEN);
+            const resp = await secureFetch(CONTENT_URL);
             const data = await resp.json();
-            document.getElementById('loading').style.display = 'none';
-            if(!data) return;
-
-            setVal('tema-titulo', data.temaMes?.titulo);
-            setVal('tema-subtitulo', data.temaMes?.subtitulo);
-            setVal('tema-resumo', data.temaMes?.resumo);
-            setVal('tema-conteudo', data.temaMes?.conteudoCompleto);
-            setVal('tema-fonte-nome', data.temaMes?.fonte?.texto);
-            setVal('tema-fonte-link', data.temaMes?.fonte?.link);
-
-            setVal('saude-subtitulo', data.saudeFisica?.subtitulo);
-            setVal('saude-resumo', data.saudeFisica?.resumo);
-            setVal('saude-conteudo', data.saudeFisica?.conteudoCompleto);
-            setVal('saude-link', data.saudeFisica?.fonte?.link);
-
-            if(data.cultura) {
-                data.cultura.forEach((item, i) => {
-                    if(i>1) return;
-                    setVal(`cultura-${i}-titulo`, item.titulo);
-                    setVal(`cultura-${i}-link`, item.link);
-                    setVal(`cultura-${i}-img`, item.img);
-                    setVal(`cultura-${i}-indicado`, item.indicadoPor);
-                    setVal(`cultura-${i}-sinopse`, item.sinopse);
-                });
-            }
-
-            if(data.hobby) {
-                setVal('hobby-nome', data.hobby.nome);
-                setVal('hobby-cargo', data.hobby.cargo);
-                setVal('hobby-foto', data.hobby.foto);
-                setVal('hobby-texto', data.hobby.texto);
-                setVal('hobby-tags', data.hobby.tags ? data.hobby.tags.join(', ') : '');
-            }
-
-            if(data.receitas && data.receitas[0]) {
-                const r = data.receitas[0];
-                setVal('rec-emoji', r.emoji);
-                setVal('rec-titulo', r.titulo);
-                setVal('rec-tempo', r.tempo);
-                setVal('rec-indicado', r.indicadoPor);
-                setVal('rec-desc', r.desc);
-                setVal('rec-ing', r.ingredientes ? r.ingredientes.join('; ') : '');
-                setVal('rec-prep', r.preparo ? r.preparo.join('; ') : '');
-            }
-
-            if(data.novos_clientes) {
-                setVal('clientes-qtd', data.novos_clientes.resumo?.quantidade);
-                setVal('clientes-periodo', data.novos_clientes.resumo?.periodo);
-                const list = document.getElementById('clientes-list');
-                list.innerHTML = '';
-                if(data.novos_clientes.lista) {
-                    data.novos_clientes.lista.forEach(c => {
-                        let catKey = Object.keys(CATEGORIES_MAP).find(k => CATEGORIES_MAP[k] === c.icone) || "Outros";
-                        addNewClientRow(catKey, c.nome);
-                    });
-                } else {
-                    addNewClientRow();
-                }
-            }
-
-        } catch(e) { console.error(e); alert("Erro ao carregar dados."); }
-    }
-
-    async function confirmSave() {
-        if(!confirm("Tem certeza que deseja publicar as alterações?")) return;
+            if(data) populateForm(data);
+        } catch (e) { console.error(e); }
         
-        const data = {
-            temaMes: {
-                titulo: getVal('tema-titulo'),
-                subtitulo: getVal('tema-subtitulo'),
-                resumo: getVal('tema-resumo'),
-                conteudoCompleto: getVal('tema-conteudo'),
-                fonte: { texto: getVal('tema-fonte-nome'), link: getVal('tema-fonte-link') }
-            },
-            saudeFisica: {
-                subtitulo: getVal('saude-subtitulo'),
-                resumo: getVal('saude-resumo'),
-                conteudoCompleto: getVal('saude-conteudo'),
-                fonte: { link: getVal('saude-link'), texto: "Fonte" }
-            },
-            cultura: [
-                { id: "filme_mes", tipo: "video", titulo: getVal('cultura-0-titulo'), link: getVal('cultura-0-link'), img: getVal('cultura-0-img'), indicadoPor: getVal('cultura-0-indicado'), sinopse: getVal('cultura-0-sinopse'), tag: "Indicação" },
-                { id: "livro_mes", tipo: "livro", titulo: getVal('cultura-1-titulo'), link: getVal('cultura-1-link'), img: getVal('cultura-1-img'), indicadoPor: getVal('cultura-1-indicado'), sinopse: getVal('cultura-1-sinopse'), tag: "Leitura" }
-            ],
-            hobby: {
-                nome: getVal('hobby-nome'),
-                cargo: getVal('hobby-cargo'),
-                foto: getVal('hobby-foto'),
-                texto: getVal('hobby-texto'),
-                tags: getVal('hobby-tags').split(',').map(t=>t.trim()).filter(t=>t)
-            },
-            receitas: [{
-                emoji: getVal('rec-emoji'), titulo: getVal('rec-titulo'), tempo: getVal('rec-tempo'), indicadoPor: getVal('rec-indicado'), desc: getVal('rec-desc'),
-                ingredientes: getVal('rec-ing').split(';').map(s=>s.trim()).filter(s=>s),
-                preparo: getVal('rec-prep').split(';').map(s=>s.trim()).filter(s=>s)
-            }],
-            novos_clientes: {
-                resumo: { quantidade: getVal('clientes-qtd'), periodo: getVal('clientes-periodo') },
-                lista: Array.from(document.querySelectorAll('.client-row')).map(row => ({
-                    icone: CATEGORIES_MAP[row.querySelector('select').value] || "🏢",
-                    nome: row.querySelector('input').value,
-                    destaque: false, data: ""
-                })).filter(c => c.nome)
-            },
-            desafios: [ 
-                {id: "hidratacao", emoji: "💧", titulo: "Hidratação", desc: "Beba 2L de água"},
-                {id: "passos", emoji: "🚶", titulo: "10k Passos", desc: "Caminhe todo dia"},
-                {id: "sono", emoji: "😴", titulo: "Sono", desc: "Durma 8h"}
-            ] 
-        };
-
-        try {
-            await fetch(CONTENT_URL + "?auth=" + AUTH_TOKEN, { method: 'PUT', body: JSON.stringify(data) });
-            alert("Conteúdo publicado com sucesso!");
-        } catch(e) { alert("Erro ao salvar: " + e.message); }
+        const listEl = document.getElementById('clientes-list');
+        if(listEl) listEl.addEventListener('paste', handleClientPaste);
     }
 
-    function addNewClientRow(cat="", name="") {
-        const div = document.createElement('div'); div.className = 'client-row';
-        let options = ''; 
-        for(let k in CATEGORIES_MAP) options += `<option value="${k}" ${k===cat?'selected':''}>${k}</option>`;
-        div.innerHTML = `<select class="client-select" style="padding:10px; border-radius:8px; border:2px solid #ddd;">${options}</select><div style="display:flex;gap:5px;width:100%"><input type="text" value="${name}" class="client-input"><button type="button" class="client-remove" onclick="this.closest('.client-row').remove()"><i class="fas fa-trash"></i></button></div>`;
-        document.getElementById('clientes-list').appendChild(div);
+    function openTab(id, btn) {
+        document.querySelectorAll('.tab-content, .tab-btn').forEach(c => c.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
     }
 
-    document.getElementById('clientes-list').addEventListener('paste', e => {
-        if(!e.target.classList.contains('client-input')) return;
-        const text = (e.clipboardData || window.clipboardData).getData('text');
-        if(!text.includes('\n')) return;
-        e.preventDefault();
-        const lines = text.split(/\r?\n/).filter(l=>l.trim());
-        const cat = e.target.closest('.client-row').querySelector('select').value;
-        e.target.value = lines[0];
-        for(let i=1; i<lines.length; i++) addNewClientRow(cat, lines[i]);
-    });
+    function populateForm(data) {
+        setVal('tema-titulo', data.temaMes?.titulo); setVal('tema-subtitulo', data.temaMes?.subtitulo); setVal('tema-resumo', data.temaMes?.resumo); setVal('tema-conteudo', data.temaMes?.conteudoCompleto); setVal('tema-fonte-nome', data.temaMes?.fonte?.texto); setVal('tema-fonte-link', data.temaMes?.fonte?.link);
+        setVal('bemestar-subtitulo', data.saudeFisica?.subtitulo); setVal('bemestar-resumo', data.saudeFisica?.resumo); setVal('bemestar-conteudo', data.saudeFisica?.conteudoCompleto); setVal('bemestar-link', data.saudeFisica?.fonte?.link);
+        setVal('hobby-nome', data.hobby?.nome); setVal('hobby-cargo', data.hobby?.cargo); setVal('hobby-foto', data.hobby?.foto); setVal('hobby-texto', data.hobby?.texto);
+        if(data.hobby?.tags) { setVal('hobby-tag-1', data.hobby.tags[0]); setVal('hobby-tag-2', data.hobby.tags[1]); setVal('hobby-tag-3', data.hobby.tags[2]); }
+        if(data.cultura && data.cultura[0]) populateCulture('cult-filme', data.cultura[0]);
+        if(data.cultura && data.cultura[1]) populateCulture('cult-livro', data.cultura[1]);
+        if(data.receitas && data.receitas[0]) { const r = data.receitas[0]; setVal('rec-emoji', r.emoji); setVal('rec-titulo', r.titulo); setVal('rec-tempo', r.tempo); setVal('rec-indicado', r.indicadoPor); setVal('rec-desc', r.desc); setVal('rec-ing', r.ingredientes ? r.ingredientes.join('; ') : ''); setVal('rec-prep', r.preparo ? r.preparo.join('; ') : ''); }
+        if(data.desafios) { data.desafios.forEach((d, i) => { const idx = i + 1; if(idx <= 3) { setVal(`chal-${idx}-id`, d.id); setVal(`chal-${idx}-emoji`, d.emoji); setVal(`chal-${idx}-titulo`, d.titulo); setVal(`chal-${idx}-desc`, d.desc); } }); }
+        setVal('clientes-qtd', data.novos_clientes?.resumo?.quantidade); setVal('clientes-periodo', data.novos_clientes?.resumo?.periodo);
+        const listaClientes = data.novos_clientes?.lista || [];
+        document.getElementById('clientes-list').innerHTML = ''; 
+        if(listaClientes.length === 0) addNewClientRow(); else listaClientes.forEach(c => { let cat = Object.keys(CATEGORIES_MAP).find(key => CATEGORIES_MAP[key] === c.icone); addNewClientRow(cat, c.nome); });
+    }
 
-    function getVal(id) { return document.getElementById(id)?.value || ""; }
-    function setVal(id, v) { if(document.getElementById(id)) document.getElementById(id).value = v || ""; }
+    function populateCulture(prefix, data) { setVal(`${prefix}-titulo`, data.titulo); setVal(`${prefix}-link`, data.link); setVal(`${prefix}-img`, data.img); setVal(`${prefix}-indicado`, data.indicadoPor); setVal(`${prefix}-sinopse`, data.sinopse); const cleanTag = data.tag ? data.tag.replace(/^Categoria:\s*/i, '') : ''; setVal(`${prefix}-tag`, cleanTag); }
+
+    function addNewClientRow(selectedCat = "", name = "") { const container = document.getElementById('clientes-list'); const div = document.createElement('div'); div.className = 'client-row'; let options = '<option value="">Selecione...</option>'; for (const [cat, emoji] of Object.entries(CATEGORIES_MAP)) { const isSel = cat === selectedCat ? 'selected' : ''; options += `<option value="${cat}" ${isSel}>${cat}</option>`; } div.innerHTML = `<select class="client-select">${options}</select><div class="client-input-wrapper"><input type="text" class="client-input" value="${name}" placeholder="Nome do Cliente"><button type="button" class="client-remove" onclick="this.closest('.client-row').remove()"><i class="fas fa-trash-alt"></i></button></div>`; container.appendChild(div); }
+
+    function handleClientPaste(e) { if (!e.target.classList.contains('client-input')) return; const pastedText = (e.clipboardData || window.clipboardData).getData('text'); if (!pastedText.includes('\n')) return; e.preventDefault(); const lines = pastedText.split(/\r?\n/).filter(line => line.trim() !== ''); const currentRow = e.target.closest('.client-row'); const currentCategory = currentRow.querySelector('.client-select').value; e.target.value = lines[0]; for (let i = 1; i < lines.length; i++) { addNewClientRow(currentCategory, lines[i]); } }
+
+    function clearClientList() { document.getElementById('clientes-list').innerHTML = ''; addNewClientRow(); }
+    function clearAllFields() { if(confirm("Limpar tudo?")) { document.querySelectorAll('input, textarea').forEach(el => el.value = ""); clearClientList(); } }
+
+    async function confirmSave() { 
+        if(!confirm("Publicar?")) return;
+        const btn = document.querySelector('.btn-save'); btn.innerHTML = 'SALVANDO...'; btn.disabled = true;
+        
+        let existingData = {}; 
+        try { const getResp = await secureFetch(CONTENT_URL); existingData = await getResp.json() || {}; } catch(e) {}
+
+        const getValSafe = (id, existingVal) => { const el = document.getElementById(id); if (!el) return existingVal || ''; const val = el.value.trim(); return val !== '' ? val : (existingVal || ''); };
+        
+        const culturaArr = [{ id: getValSafe('cult-filme-id', existingData.cultura?.[0]?.id), tipo: 'video', titulo: getValSafe('cult-filme-titulo', existingData.cultura?.[0]?.titulo), link: getValSafe('cult-filme-link', existingData.cultura?.[0]?.link), img: getValSafe('cult-filme-img', existingData.cultura?.[0]?.img), indicadoPor: getValSafe('cult-filme-indicado', existingData.cultura?.[0]?.indicadoPor), sinopse: getValSafe('cult-filme-sinopse', existingData.cultura?.[0]?.sinopse), tag: getValSafe('cult-filme-tag', existingData.cultura?.[0]?.tag) }, { id: getValSafe('cult-livro-id', existingData.cultura?.[1]?.id), tipo: 'livro', titulo: getValSafe('cult-livro-titulo', existingData.cultura?.[1]?.titulo), link: getValSafe('cult-livro-link', existingData.cultura?.[1]?.link), img: getValSafe('cult-livro-img', existingData.cultura?.[1]?.img), indicadoPor: getValSafe('cult-livro-indicado', existingData.cultura?.[1]?.indicadoPor), sinopse: getValSafe('cult-livro-sinopse', existingData.cultura?.[1]?.sinopse), tag: getValSafe('cult-livro-tag', existingData.cultura?.[1]?.tag) }];
+        const hobbyTags = [getVal('hobby-tag-1'), getVal('hobby-tag-2'), getVal('hobby-tag-3')].filter(t=>t); const finalHobbyTags = hobbyTags.length > 0 ? hobbyTags : (existingData.hobby?.tags || []);
+        const receitaObj = { emoji: getValSafe('rec-emoji', existingData.receitas?.[0]?.emoji), titulo: getValSafe('rec-titulo', existingData.receitas?.[0]?.titulo), tempo: getValSafe('rec-tempo', existingData.receitas?.[0]?.tempo), indicadoPor: getValSafe('rec-indicado', existingData.receitas?.[0]?.indicadoPor), desc: getValSafe('rec-desc', existingData.receitas?.[0]?.desc), ingredientes: document.getElementById('rec-ing').value.trim() ? getVal('rec-ing').split(';').map(s=>s.trim()).filter(s=>s) : (existingData.receitas?.[0]?.ingredientes || []), preparo: document.getElementById('rec-prep').value.trim() ? getVal('rec-prep').split(';').map(s=>s.trim()).filter(s=>s) : (existingData.receitas?.[0]?.preparo || []) };
+        const desafiosArr = [1, 2, 3].map(i => ({ id: getValSafe(`chal-${i}-id`, existingData.desafios?.[i-1]?.id), emoji: getValSafe(`chal-${i}-emoji`, existingData.desafios?.[i-1]?.emoji), titulo: getValSafe(`chal-${i}-titulo`, existingData.desafios?.[i-1]?.titulo), desc: getValSafe(`chal-${i}-desc`, existingData.desafios?.[i-1]?.desc) }));
+        const clientRows = document.querySelectorAll('.client-row'); const clientesLista = Array.from(clientRows).map(row => { const cat = row.querySelector('.client-select').value; const nome = row.querySelector('.client-input').value; if(!nome) return null; return { icone: CATEGORIES_MAP[cat] || "🏢", nome: nome, data: "", destaque: false }; }).filter(c => c !== null);
+        
+        const data = { temaMes: { titulo: getValSafe('tema-titulo', existingData.temaMes?.titulo), subtitulo: getValSafe('tema-subtitulo', existingData.temaMes?.subtitulo), resumo: getValSafe('tema-resumo', existingData.temaMes?.resumo), conteudoCompleto: getValSafe('tema-conteudo', existingData.temaMes?.conteudoCompleto), fonte: { texto: getValSafe('tema-fonte-nome', existingData.temaMes?.fonte?.texto), link: getValSafe('tema-fonte-link', existingData.temaMes?.fonte?.link) } }, saudeFisica: { subtitulo: getValSafe('bemestar-subtitulo', existingData.saudeFisica?.subtitulo), resumo: getValSafe('bemestar-resumo', existingData.saudeFisica?.resumo), conteudoCompleto: getValSafe('bemestar-conteudo', existingData.saudeFisica?.conteudoCompleto), fonte: { link: getValSafe('bemestar-link', existingData.saudeFisica?.fonte?.link), texto: "Fonte" } }, hobby: { nome: getValSafe('hobby-nome', existingData.hobby?.nome), cargo: getValSafe('hobby-cargo', existingData.hobby?.cargo), foto: getValSafe('hobby-foto', existingData.hobby?.foto), texto: getValSafe('hobby-texto', existingData.hobby?.texto), tags: finalHobbyTags }, cultura: culturaArr, receitas: [receitaObj], desafios: desafiosArr, novos_clientes: { resumo: { quantidade: getValSafe('clientes-qtd', existingData.novos_clientes?.resumo?.quantidade), periodo: getValSafe('clientes-periodo', existingData.novos_clientes?.resumo?.periodo) }, lista: clientesLista } };
+        
+        try { 
+            const resp = await secureFetch(CONTENT_URL, { method: 'PUT', body: JSON.stringify(data) }); 
+            if (resp.ok) showToast("Publicado! ✅", "success"); else throw new Error(); 
+        } catch (e) { showToast("Erro.", "error"); } 
+        finally { btn.innerHTML = '<i class="fas fa-save"></i> PUBLICAR NO SITE'; btn.disabled = false; }
+    }
+
+    function getVal(id) { return document.getElementById(id) ? document.getElementById(id).value : ''; }
+    function setVal(id, v) { if(document.getElementById(id)) document.getElementById(id).value = v || ''; }
+    function showToast(msg, type) { const t = document.getElementById('toast'); t.textContent = msg; t.className = type; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3500); }
 </script>
+
 </body>
 </html>
