@@ -161,7 +161,7 @@
     });
 
     async function loadInteractions() {
-        const filterDate = document.getElementById('filter-date').value; // Formato YYYY-MM
+        const filterDate = document.getElementById('filter-date').value; 
         try {
             const resp = await fetch(DB_URL + ".json?auth=" + AUTH_TOKEN);
             const db = await resp.json();
@@ -217,7 +217,7 @@
             }
             document.getElementById('m-chal').innerHTML = chalH || 'Sem dados.';
 
-            // --- SUGESTÕES ---
+            // --- SUGESTÕES GERAIS ---
             let sugH = '';
             const isInMonth = (dateStr) => dateStr && dateStr.startsWith(filterDate);
 
@@ -232,28 +232,42 @@
             });
             document.getElementById('m-sugg').innerHTML = sugH || 'Sem sugestões neste mês.';
 
-            // --- FILMES (AJUSTADO PARA FICAR BONITO) ---
+            // --- SUGESTÕES DE FILMES (COM DETECTOR INTELIGENTE) ---
             let movH = '';
-            if(db.suggestions) Object.entries(db.suggestions).forEach(([k,v]) => {
-                // Tenta pegar o nome do filme e o autor de forma inteligente
-                let filme = "Indefinido";
-                let autor = "Anônimo";
+            if(db.suggestions) {
+                Object.entries(db.suggestions).forEach(([k,v]) => {
+                    let filme = "";
+                    let autor = "";
 
-                if (typeof v === 'object') {
-                    // Procura campos prováveis de nome do filme
-                    filme = v.sugestao || v.filme || v.nome || v.text || "Sem título";
-                    // Procura campos prováveis de autor
-                    autor = v.autor || v.from || v.quem || "Anônimo";
-                } else {
-                    // Se for só texto direto
-                    filme = v;
-                }
+                    if (typeof v === 'object' && v !== null) {
+                        // 1. Tenta encontrar campos de conteúdo (filme)
+                        filme = v.sugestao || v.filme || v.film || v.movie || v.titulo || v.title || v.text || v.texto || v.mensagem || v.content || v.indicacao;
+                        
+                        // 2. Tenta encontrar campos de autor
+                        autor = v.autor || v.author || v.user || v.usuario || v.from || v.quem || v.nome || v.name || v.email;
 
-                // Formatação bonita: Filme em negrito, autor em pequeno embaixo (estilo card)
-                const content = `<b>${filme}</b> <br><small style="color:#666">De: ${autor}</small>`;
-                
-                movH += item(content, `suggestions/${k}`);
-            });
+                        // 3. SE FALHAR: Tenta adivinhar pelo tamanho do texto
+                        if (!filme && !autor) {
+                            const valores = Object.values(v).filter(x => typeof x === 'string');
+                            // Ordena por tamanho: maior string provavelmente é a sugestão
+                            valores.sort((a, b) => b.length - a.length);
+                            if (valores.length > 0) filme = valores[0]; // Maior string = Conteúdo
+                            if (valores.length > 1) autor = valores[valores.length - 1]; // Menor string = Autor
+                        }
+                    } else {
+                        // Se for apenas uma string direta
+                        filme = v;
+                    }
+
+                    // Fallbacks finais
+                    if (!filme) filme = "Conteúdo não identificado";
+                    if (!autor) autor = "Anônimo";
+
+                    // Formatação bonita
+                    const content = `<b>${filme}</b> <br><small style="color:#666">De: ${autor}</small>`;
+                    movH += item(content, `suggestions/${k}`);
+                });
+            }
             document.getElementById('m-movies').innerHTML = movH || '<div style="padding:5px; color:#888; font-style:italic">Nenhuma sugestão de filme.</div>';
 
 
