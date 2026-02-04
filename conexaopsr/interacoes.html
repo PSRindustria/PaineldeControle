@@ -275,9 +275,26 @@
             document.getElementById('m-quiz').innerHTML = quizH || 'Sem dados.';
 
             // --- HOBBY (LIKES) ---
-            let hobH = '';
-            if(db.hobby_interactions_history?.[filterDate]?.likes) {
-                Object.keys(db.hobby_interactions_history[filterDate].likes).forEach(u => hobH += item(`Curtiu: <span class="id-badge">${u}</span>`, `hobby_interactions_history/${filterDate}/likes/${u}`));
+let hobH = '';
+            const hobbyData = db.hobby_interactions_history?.[filterDate];
+
+            if (hobbyData) {
+                // 1. Exibir Curtidas (Likes)
+                if (hobbyData.likes) {
+                    Object.keys(hobbyData.likes).forEach(u => 
+                        hobH += item(`❤️ Curtiu: <span class="id-badge">${u}</span>`, `hobby_interactions_history/${filterDate}/likes/${u}`)
+                    );
+                }
+
+                // 2. Exibir Comentários (NOVO)
+                if (hobbyData.comments) {
+                    Object.entries(hobbyData.comments).forEach(([key, val]) => {
+                        // Valida se o objeto do comentário está completo
+                        const autor = val.author || "Anônimo";
+                        const texto = val.text || "";
+                        hobH += item(`💬 <b>${autor}</b>: "${texto}"`, `hobby_interactions_history/${filterDate}/comments/${key}`);
+                    });
+                }
             }
             document.getElementById('m-hobby').innerHTML = hobH || 'Sem dados.';
 
