@@ -13,11 +13,42 @@
             --primary: #003366; --accent: #DAA520; --bg: #f4f7f9; --success: #28a745; --danger: #dc3545;
             --shadow-sm: 0 2px 8px rgba(0,0,0,0.06); --transition: all 0.3s ease;
         }
+        
+        * { box-sizing: border-box; }
+
         body { 
             font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
-            padding: 20px; color: #333; margin: 0;
+            padding: 20px; color: #333; margin: 0; padding-bottom: 50px;
+        }
+
+        /* ESTADOS DE VISUALIZAÇÃO */
+        #app-content { display: none; } /* Oculto por padrão */
+        
+        /* TELA DE LOGIN */
+        #login-screen {
+            display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95); z-index: 9999;
+            flex-direction: column; justify-content: center; align-items: center; text-align: center;
+            backdrop-filter: blur(5px);
         }
         
+        /* TELA DE ACESSO NEGADO */
+        #access-denied {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #1a1a1a; color: #fff; z-index: 10000;
+            flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
+
+        .btn-login-google {
+            background: white; color: #444; border: 1px solid #ddd;
+            padding: 15px 30px; font-size: 1.1em; font-weight: 600;
+            border-radius: 50px; cursor: pointer; display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.2s;
+        }
+        .btn-login-google:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+        .btn-login-google img { width: 24px; height: 24px; }
+        
+        /* ESTILOS DO PAINEL */
         .header { text-align: center; margin-bottom: 30px; }
         .header h1 { 
             color: var(--primary); margin: 0 0 20px 0; font-size: 2.5em;
@@ -30,6 +61,7 @@
             display: flex; justify-content: center; gap: 12px; margin-bottom: 35px;
             background: white; padding: 10px; border-radius: 50px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: fit-content; margin: 0 auto 30px;
+            flex-wrap: wrap;
         }
         .view-btn { 
             text-decoration: none; padding: 12px 24px; border-radius: 25px; 
@@ -114,34 +146,54 @@
 </head>
 <body>
 
-<div class="header">
-    <h1>Painel PSR</h1>
-    <div class="view-switcher">
-        <a href="editor.html" class="view-btn"><i class="fas fa-edit"></i> Editor</a>
-        <a href="interacoes.html" class="view-btn active"><i class="fas fa-chart-line"></i> Interações</a>
-        <a href="trafego_interno.html" class="view-btn"><i class="fas fa-network-wired"></i> Tráfego Interno</a>
-        <a href="trafego_portal.html" class="view-btn"><i class="fas fa-globe"></i> Tráfego Portal</a>
+<div id="login-screen">
+    <div style="margin-bottom: 30px;">
+        <i class="fas fa-lock fa-3x" style="color:var(--primary); margin-bottom: 20px;"></i>
+        <h2 style="color:var(--primary); margin:0;">Área Restrita</h2>
+        <p style="color:#666;">Faça login para gerenciar as interações</p>
     </div>
+    <button class="btn-login-google" onclick="performLogin()">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1280px-Google_%22G%22_logo.svg.png" alt="G">
+        Entrar com Google
+    </button>
 </div>
 
-<div class="filter-bar">
-    <label>Filtrar mês:</label>
-    <input type="month" id="filter-date" class="date-input" onchange="loadInteractions()">
-    <button class="btn-refresh" onclick="loadInteractions()"><i class="fas fa-sync-alt"></i> Atualizar</button>
+<div id="access-denied">
+    <h1><i class="fas fa-ban"></i> Acesso Negado</h1>
+    <p>Este e-mail não tem permissão para acessar o painel.</p>
+    <button onclick="performLogout()" style="margin-top:30px; padding:10px 20px; cursor:pointer; background:transparent; border:1px solid #666; color:#aaa; border-radius:5px;">Voltar / Trocar Conta</button>
 </div>
 
-<div class="dashboard-grid">
-    <div class="card"><h2><i class="fas fa-shield-alt"></i> Quiz - Participantes</h2><div id="m-quiz" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
-    <div class="card"><h2><i class="fas fa-user-circle"></i> Hobby - Interações</h2><div id="m-hobby" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
-    <div class="card"><h2><i class="fas fa-dumbbell"></i> Desafios</h2><div id="m-chal" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
-    <div class="card"><h2><i class="fas fa-heart"></i> Elogios</h2><div id="m-praise" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
-    <div class="card"><h2><i class="fas fa-gamepad"></i> Ranking Jogos</h2><div id="m-games" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
-    <div class="card"><h2><i class="fas fa-lightbulb"></i> Sugestões</h2><div id="m-sugg" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
-    
-    <div class="card"><h2><i class="fas fa-film"></i> Sugestões de Filmes</h2><div id="m-movies" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
-    
-    <div class="card"><h2><i class="fas fa-bullhorn"></i> Comunicados</h2><div id="m-comm" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
-    <div class="card"><h2><i class="fas fa-star"></i> Avaliações</h2><div id="m-rate" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+<div id="app-content">
+    <div class="header">
+        <h1>Painel PSR</h1>
+        <div class="view-switcher">
+            <a href="editor.html" class="view-btn"><i class="fas fa-edit"></i> Editor</a>
+            <a href="interacoes.html" class="view-btn active"><i class="fas fa-chart-line"></i> Interações</a>
+            <a href="trafego_interno.html" class="view-btn"><i class="fas fa-network-wired"></i> Tráfego Interno</a>
+            <a href="trafego_portal.html" class="view-btn"><i class="fas fa-globe"></i> Tráfego Portal</a>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <label>Filtrar mês:</label>
+        <input type="month" id="filter-date" class="date-input" onchange="loadInteractions()">
+        <button class="btn-refresh" onclick="loadInteractions()"><i class="fas fa-sync-alt"></i> Atualizar</button>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card"><h2><i class="fas fa-shield-alt"></i> Quiz - Participantes</h2><div id="m-quiz" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+        <div class="card"><h2><i class="fas fa-user-circle"></i> Hobby - Interações</h2><div id="m-hobby" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+        <div class="card"><h2><i class="fas fa-dumbbell"></i> Desafios</h2><div id="m-chal" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+        <div class="card"><h2><i class="fas fa-heart"></i> Elogios</h2><div id="m-praise" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+        <div class="card"><h2><i class="fas fa-gamepad"></i> Ranking Jogos</h2><div id="m-games" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+        <div class="card"><h2><i class="fas fa-lightbulb"></i> Sugestões</h2><div id="m-sugg" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+        
+        <div class="card"><h2><i class="fas fa-film"></i> Sugestões de Filmes</h2><div id="m-movies" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+        
+        <div class="card"><h2><i class="fas fa-bullhorn"></i> Comunicados</h2><div id="m-comm" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+        <div class="card"><h2><i class="fas fa-star"></i> Avaliações</h2><div id="m-rate" class="monitor-list"><i class="fas fa-spinner fa-spin"></i></div></div>
+    </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -152,14 +204,56 @@
     
     let AUTH_TOKEN = null;
     const DB_URL = "https://jornalpsr-1b8c6-default-rtdb.firebaseio.com/";
+    const ALLOWED_EMAILS = ["marketingpsrimpressao@gmail.com", "rohsantos1@gmail.com"];
 
     const now = new Date();
     document.getElementById('filter-date').value = now.toISOString().slice(0, 7);
 
-    firebase.auth().onAuthStateChanged(user => {
-        if(user) user.getIdToken().then(t => { AUTH_TOKEN = t; loadInteractions(); });
-        else firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    // --- LÓGICA DE LOGIN/AUTENTICAÇÃO ---
+    firebase.auth().onAuthStateChanged(async user => {
+        if (user) {
+            // Verifica se o e-mail está na lista permitida
+            if (ALLOWED_EMAILS.includes(user.email)) {
+                
+                // Login Autorizado
+                user.getIdToken().then(token => { 
+                    AUTH_TOKEN = token;
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('access-denied').style.display = 'none';
+                    document.getElementById('app-content').style.display = 'block';
+                    loadInteractions(); 
+                });
+
+            } else {
+                // E-mail NÃO permitido
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-content').style.display = 'none';
+                document.getElementById('access-denied').style.display = 'flex';
+                firebase.auth().signOut();
+            }
+        } else {
+            // Não logado
+            document.getElementById('app-content').style.display = 'none';
+            document.getElementById('access-denied').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+        }
     });
+
+    function performLogin() {
+        firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
+            .catch((error) => {
+                console.error(error);
+                alert("Erro ao logar: " + error.message);
+            });
+    }
+
+    function performLogout() {
+        firebase.auth().signOut().then(() => {
+            window.location.reload();
+        });
+    }
+
+    // --- FUNÇÕES DA APLICAÇÃO ---
 
     async function loadInteractions() {
         const filterDate = document.getElementById('filter-date').value; 
@@ -218,13 +312,12 @@
             }
             document.getElementById('m-chal').innerHTML = chalH || 'Sem dados.';
 
-            // --- SUGESTÕES GERAIS (COM A CORREÇÃO DO REASON) ---
+            // --- SUGESTÕES GERAIS ---
             let sugH = '';
             const isInMonth = (dateStr) => dateStr && dateStr.startsWith(filterDate);
 
             if(db.hobby_suggestions) Object.entries(db.hobby_suggestions).forEach(([k,v]) => {
                 if(isInMonth(v.date)) {
-                    // AQUI ESTÁ A CORREÇÃO: Adicionando v.reason
                     const reasonText = v.reason ? `<i>"${v.reason}"</i><br>` : '';
                     sugH += item(`<b>Hobby:</b> Para ${v.target} <br>${reasonText}<small>De: ${v.from}</small>`, `hobby_suggestions/${k}`);
                 }
