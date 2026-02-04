@@ -255,11 +255,13 @@
 
     // --- FUNÇÕES DA APLICAÇÃO ---
 
-    async function loadInteractions() {
-        const filterDate = document.getElementById('filter-date').value; 
+async function loadInteractions() {
+        const filterDate = document.getElementById('filter-date').value; // Ex: "2026-02"
         try {
-            const resp = await fetch(DB_URL + ".json?auth=" + AUTH_TOKEN);
+            // Adiciona timestamp para evitar cache do navegador na requisição
+            const resp = await fetch(DB_URL + ".json?auth=" + AUTH_TOKEN + "&t=" + new Date().getTime());
             const db = await resp.json();
+            
             if(!db) return;
 
             // --- QUIZ ---
@@ -274,22 +276,23 @@
             }
             document.getElementById('m-quiz').innerHTML = quizH || 'Sem dados.';
 
-            // --- HOBBY (LIKES) ---
-let hobH = '';
-            const hobbyData = db.hobby_interactions_history?.[filterDate];
+            // --- HOBBY (LIKES E COMENTÁRIOS) ---
+            let hobH = '';
+            // Tenta acessar a raiz do histórico
+            const historyRoot = db.hobby_interactions_history || {};
+            // Tenta pegar o mês exato selecionado no filtro
+            const hobbyData = historyRoot[filterDate];
 
             if (hobbyData) {
-                // 1. Exibir Curtidas (Likes)
+                // 1. LIKES
                 if (hobbyData.likes) {
                     Object.keys(hobbyData.likes).forEach(u => 
                         hobH += item(`❤️ Curtiu: <span class="id-badge">${u}</span>`, `hobby_interactions_history/${filterDate}/likes/${u}`)
                     );
                 }
-
-                // 2. Exibir Comentários (NOVO)
+                // 2. COMENTÁRIOS (Correção aplicada aqui)
                 if (hobbyData.comments) {
                     Object.entries(hobbyData.comments).forEach(([key, val]) => {
-                        // Valida se o objeto do comentário está completo
                         const autor = val.author || "Anônimo";
                         const texto = val.text || "";
                         hobH += item(`💬 <b>${autor}</b>: "${texto}"`, `hobby_interactions_history/${filterDate}/comments/${key}`);
@@ -377,7 +380,6 @@ let hobH = '';
             }
             document.getElementById('m-movies').innerHTML = movH || '<div style="padding:5px; color:#888; font-style:italic">Nenhuma sugestão de filme.</div>';
 
-
             // --- ELOGIOS ---
             let praH = '';
             if(db.praise_messages) Object.entries(db.praise_messages).forEach(([k,v]) => {
@@ -425,11 +427,9 @@ let hobH = '';
                     if(db.Leituras_Confirmadas && db.Leituras_Confirmadas[latestId]) {
                         const leituras = db.Leituras_Confirmadas[latestId];
                         const totalLidos = Object.keys(leituras).length;
-                        
                         commH += `<div style="margin-bottom:10px; font-weight:bold; color:var(--success)">
                             ✅ ${totalLidos} Colaboradores leram este comunicado:
                         </div>`;
-
                         Object.keys(leituras).forEach(uid => {
                             commH += item(`Lido por: <span class="id-badge">${uid}</span>`, `Leituras_Confirmadas/${latestId}/${uid}`);
                         });
