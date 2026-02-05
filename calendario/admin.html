@@ -39,6 +39,7 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; }
         
+        /* Container da Tabela com Scroll e Altura Fixa */
         .table-wrapper {
             height: calc(100vh - 220px); 
             overflow: auto;
@@ -49,6 +50,7 @@
         
         table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
         
+        /* Cabeçalho Fixo (Sticky) */
         thead th {
             background-color: #f3f2f1;
             color: #444;
@@ -95,6 +97,7 @@
         tr:hover td { background-color: #f9fafb; }
         .saving-row { background-color: #fffbeb !important; }
 
+        /* Animação Piscante para Nova Linha */
         @keyframes pulseGreen {
             0% { background-color: #f0fdf4; }
             50% { background-color: #bbf7d0; }
@@ -112,21 +115,28 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
+        // Importações do Firebase SDK via CDN (para funcionar sem instalação npm)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         // ============================================================
-        // ⚠️ SUBSTITUA PELAS SUAS CREDENCIAIS DO FIREBASE CONSOLE ⚠️
+        // CONFIGURAÇÕES DO FIREBASE (INTEGRADAS)
         // ============================================================
         const firebaseConfig = {
-            apiKey: "SUA_API_KEY_AQUI",
+            apiKey: "AIzaSyD4lN6iyKpdstb99vosxEDDaEn1QFXLCXI",
             authDomain: "agenda-portal-2d149.firebaseapp.com",
             databaseURL: "https://agenda-portal-2d149-default-rtdb.firebaseio.com",
             projectId: "agenda-portal-2d149",
-            storageBucket: "agenda-portal-2d149.appspot.com",
-            messagingSenderId: "SEU_MESSAGING_ID",
-            appId: "SEU_APP_ID"
+            storageBucket: "agenda-portal-2d149.firebasestorage.app",
+            messagingSenderId: "172797946066",
+            appId: "1:172797946066:web:b3f50853717477661c650b"
         };
+
+        // E-mails permitidos (Segurança Frontend)
+        const ALLOWED_EMAILS = [
+            'marketingpsrimpressao@gmail.com',
+            'rohsantos1@gmail.com'
+        ];
 
         // Inicializa Firebase
         const app = initializeApp(firebaseConfig);
@@ -135,9 +145,10 @@
 
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        // URL Base (Sem .json, o script adiciona)
+        // URL Base para usar com Auth Token
         const DATABASE_URL = firebaseConfig.databaseURL + '/agenda';
 
+        // Mapeamento de Colunas
         const KEYS = {
             CREATED: 'Data de Criação',
             TITLE: 'Título',
@@ -153,16 +164,17 @@
         };
 
         const App = () => {
-            // Estados de Autenticação
+            // Estados de Auth
             const [user, setUser] = useState(null);
             const [authToken, setAuthToken] = useState(null);
             const [authLoading, setAuthLoading] = useState(true);
+            const [accessDenied, setAccessDenied] = useState(false);
 
-            // Estados da Aplicação
+            // Estados da App
             const [data, setData] = useState({});
             const [loading, setLoading] = useState(false);
             const [unsavedRows, setUnsavedRows] = useState(new Set());
-            const [newRows, setNewRows] = useState(new Set());
+            const [newRows, setNewRows] = useState(new Set()); 
             const [feedback, setFeedback] = useState(null);
             const [alertModal, setAlertModal] = useState(null);
 
@@ -176,15 +188,23 @@
             const statusOptions = ['Pendente', 'Em Progresso', 'Fila', 'Produção', 'Aprovação', 'Concluído', 'Postado'];
             const platformOptions = ['Instagram', 'LinkedIn', 'Comunicação interna', 'Site', 'Email - Mkt', 'Geral'];
 
-            // --- SISTEMA DE LOGIN SILENCIOSO ---
+            // --- AUTENTICAÇÃO ---
             useEffect(() => {
                 const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+                    setAccessDenied(false);
                     if (currentUser) {
+                        // Verifica se o e-mail está na lista permitida
+                        if (!ALLOWED_EMAILS.includes(currentUser.email)) {
+                            setAccessDenied(true);
+                            await signOut(auth);
+                            setAuthLoading(false);
+                            return;
+                        }
+
                         const token = await currentUser.getIdToken();
                         setUser(currentUser);
                         setAuthToken(token);
-                        // Carrega dados automaticamente após login
-                        loadDataInternal(token);
+                        loadDataInternal(token); // Carrega dados automaticamente
                     } else {
                         setUser(null);
                         setAuthToken(null);
@@ -199,7 +219,7 @@
                 try {
                     await signInWithPopup(auth, provider);
                 } catch (error) {
-                    showFeedback("Erro ao fazer login: " + error.message, 'error');
+                    showFeedback("Erro no login: " + error.message, 'error');
                 }
             };
 
@@ -207,14 +227,13 @@
                 signOut(auth);
             };
 
-            // --- FUNÇÃO DE CARGA SEGURA ---
+            // --- CARGA DE DADOS ---
             const loadDataInternal = async (token) => {
                 setLoading(true);
                 try {
-                    // Adiciona o token de autenticação na URL
                     const res = await fetch(`${DATABASE_URL}.json?auth=${token}`);
                     
-                    if (res.status === 401) throw new Error("Permissão negada. Verifique as regras do Firebase.");
+                    if (res.status === 401) throw new Error("Permissão negada. Verifique suas regras no Firebase.");
                     
                     const json = await res.json();
                     if (json) {
@@ -234,10 +253,7 @@
                 finally { setLoading(false); }
             };
 
-            // Wrapper para carregar manualmente (usa estado atual do token)
-            const loadData = () => {
-                if(authToken) loadDataInternal(authToken);
-            };
+            const loadData = () => { if(authToken) loadDataInternal(authToken); };
 
             const requestSort = (key) => {
                 let direction = 'asc';
@@ -245,6 +261,7 @@
                 setSortConfig({ key, direction });
             };
 
+            // --- FILTROS INTELIGENTES ---
             const { filteredData, stats, availableMonths } = useMemo(() => {
                 const rows = Object.values(data);
                 const monthsSet = new Map();
@@ -306,12 +323,13 @@
                 return { filteredData: filtered, stats: { total, done, pending, avgProgress }, availableMonths: sortedMonths };
             }, [data, searchTerm, filterMonth, filterStatus, filterPlatform, sortConfig]);
 
+            // --- VALIDAÇÃO ---
             const validateRow = (id) => {
                 const row = data[id];
                 if (!row[KEYS.TITLE] || row[KEYS.TITLE] === 'NOVA TAREFA (EDITAR)') {
                     setAlertModal({
                         title: 'Título Obrigatório',
-                        msg: 'Você precisa definir um título para a nova tarefa antes de salvar.',
+                        msg: 'Preencha o título da tarefa para continuar.',
                         targetId: id
                     });
                     const el = document.getElementById(`row-${id}`);
@@ -331,6 +349,7 @@
 
             const saveRow = async (id) => {
                 if (!validateRow(id) || !authToken) return;
+                
                 const rowData = { ...data[id] };
                 delete rowData._id;
                 if(rowData[KEYS.PROG]) rowData[KEYS.PROG] = parseInt(String(rowData[KEYS.PROG]).replace(/\D/g, '')) || 0;
@@ -391,7 +410,8 @@
                     [KEYS.STATUS]: 'Pendente',
                     [KEYS.PROG]: 0,
                     [KEYS.DATE]: now.toISOString().split('T')[0],
-                    [KEYS.PLAT]: 'Geral'
+                    [KEYS.PLAT]: 'Geral',
+                    [KEYS.DRIVE]: ''
                 };
                 try {
                     const res = await fetch(`${DATABASE_URL}.json?auth=${authToken}`, {
@@ -402,8 +422,8 @@
                     const json = await res.json();
                     if (json.name) {
                         setData(prev => ({ ...prev, [json.name]: { ...newObj, _id: json.name } }));
-                        setNewRows(prev => new Set(prev).add(json.name));
-                        setUnsavedRows(prev => new Set(prev).add(json.name));
+                        setNewRows(prev => new Set(prev).add(json.name)); // Adiciona ao piscar
+                        setUnsavedRows(prev => new Set(prev).add(json.name)); // Marca como não salvo
                         showFeedback('Nova linha criada! Edite para salvar.', 'success');
                         setTimeout(() => {
                             const el = document.getElementById(`row-${json.name}`);
@@ -451,24 +471,36 @@
                     : <i className="fas fa-sort-down text-primary ml-1"></i>;
             };
 
-            // --- TELA DE LOGIN (BLINDAGEM) ---
+            // --- TELAS ---
             if (authLoading) {
                 return <div className="h-screen flex items-center justify-center bg-gray-100"><i className="fas fa-spinner fa-spin text-4xl text-primary"></i></div>;
+            }
+
+            if (accessDenied) {
+                return (
+                    <div className="h-screen flex items-center justify-center bg-red-50 animate-pop-in">
+                        <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-4 border border-red-100">
+                            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i className="fas fa-ban text-3xl text-red-600"></i>
+                            </div>
+                            <h1 className="text-2xl font-bold text-red-700 mb-2">Acesso Negado</h1>
+                            <p className="text-gray-600 mb-6">Este e-mail não tem permissão de administrador.</p>
+                            <button onClick={handleLogin} className="w-full py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition font-bold">Trocar Conta</button>
+                        </div>
+                    </div>
+                );
             }
 
             if (!user) {
                 return (
                     <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary to-blue-900">
-                        <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-4">
+                        <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-4 animate-pop-in">
                             <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <i className="fas fa-lock text-3xl text-primary"></i>
                             </div>
                             <h1 className="text-2xl font-bold text-gray-800 mb-2">Área Restrita</h1>
-                            <p className="text-gray-500 mb-8">Faça login com sua conta Google para acessar o editor.</p>
-                            <button 
-                                onClick={handleLogin}
-                                className="w-full py-3 px-4 bg-white border-2 border-gray-200 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-50 transition font-bold text-gray-700"
-                            >
+                            <p className="text-gray-500 mb-8">Faça login para gerenciar a Agenda PSR.</p>
+                            <button onClick={handleLogin} className="w-full py-3 px-4 bg-white border-2 border-gray-200 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-50 transition font-bold text-gray-700 shadow-sm hover:shadow-md">
                                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" />
                                 Entrar com Google
                             </button>
@@ -477,14 +509,13 @@
                 );
             }
 
-            // --- TELA PRINCIPAL (APENAS SE LOGADO) ---
             return (
                 <div className="flex flex-col h-screen overflow-hidden">
                     <div className="bg-white border-b border-gray-300 shadow-md z-30">
                         <div className="p-4 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50 border-b border-gray-200">
                             <div className="flex items-center gap-3">
                                 <div className="bg-primary text-white p-2.5 rounded-lg shadow"><i className="fas fa-edit fa-lg"></i></div>
-                                <div><h1 className="font-bold text-primary text-xl">Editor Master PSR</h1><p className="text-xs text-gray-500">Logado como: {user.email}</p></div>
+                                <div><h1 className="font-bold text-primary text-xl">Editor Master PSR</h1><p className="text-xs text-gray-500">Logado: {user.email}</p></div>
                             </div>
                             <div className="flex gap-4 items-center">
                                 <div className="flex flex-col items-center px-3 border-r border-gray-300"><span className="text-[10px] uppercase font-bold text-gray-400">Total</span><span className="font-bold text-gray-800 text-lg">{stats.total}</span></div>
@@ -593,7 +624,7 @@
                         </div>
                     </div>
 
-                    {/* MODAL DE AVISO (CENTRALIZADO E BONITO) */}
+                    {/* MODAL DE AVISO */}
                     {alertModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-pop-in">
                             <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm text-center transform transition-all scale-100 border border-gray-200">
@@ -602,12 +633,7 @@
                                 </div>
                                 <h3 className="text-lg font-extrabold text-gray-800 mb-2 tracking-tight">{alertModal.title}</h3>
                                 <p className="text-gray-500 text-sm mb-6 leading-relaxed">{alertModal.msg}</p>
-                                <button 
-                                    onClick={() => setAlertModal(null)}
-                                    className="w-full bg-primary text-white py-3 rounded-lg font-bold hover:bg-opacity-90 transition-all shadow-lg shadow-primary/30 transform hover:-translate-y-0.5"
-                                >
-                                    Entendi, vou corrigir
-                                </button>
+                                <button onClick={() => setAlertModal(null)} className="w-full bg-primary text-white py-3 rounded-lg font-bold hover:bg-opacity-90 transition-all shadow-lg shadow-primary/30 transform hover:-translate-y-0.5">Entendi, vou corrigir</button>
                             </div>
                         </div>
                     )}
