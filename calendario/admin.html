@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Seguro - Editor PSR</title>
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3596/3596144.png" type="image/png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        excelGreen: '#217346',
+                        excelHeader: '#f3f2f1',
+                        primary: '#003366',
+                    },
+                    animation: {
+                        'pop-in': 'popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                    },
+                    keyframes: {
+                        popIn: {
+                            '0%': { opacity: '0', transform: 'scale(0.95)' },
+                            '100%': { opacity: '1', transform: 'scale(1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; }
+        
+        .table-wrapper {
+            height: calc(100vh - 220px); 
+            overflow: auto;
+            background: white;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
+        
+        thead th {
+            background-color: #f3f2f1;
+            color: #444;
+            font-weight: 600;
+            text-align: left;
+            padding: 8px;
+            border-bottom: 2px solid #d1d5db;
+            border-right: 1px solid #d1d5db;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        thead th:hover { background-color: #e5e7eb; }
+        
+        td {
+            border-bottom: 1px solid #e5e7eb;
+            border-right: 1px solid #e5e7eb;
+            padding: 0;
+            margin: 0;
+            height: 35px;
+            position: relative;
+            background-clip: padding-box;
+        }
+
+        .cell-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            padding: 4px 8px;
+            outline: none;
+            background: transparent;
+            font-family: inherit;
+            color: #374151;
+            transition: background 0.2s;
+        }
+
+        .cell-input:focus { background-color: #e0f2fe; box-shadow: inset 0 0 0 2px #2563eb; }
+
+        tr:hover td { background-color: #f9fafb; }
+        .saving-row { background-color: #fffbeb !important; }
+
+        @keyframes pulseGreen {
+            0% { background-color: #f0fdf4; }
+            50% { background-color: #bbf7d0; }
+            100% { background-color: #f0fdf4; }
+        }
+        .new-row-pulse td { animation: pulseGreen 2s infinite; }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // ============================================================
+        // ⚠️ SUBSTITUA PELAS SUAS CREDENCIAIS DO FIREBASE CONSOLE ⚠️
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "SUA_API_KEY_AQUI",
+            authDomain: "agenda-portal-2d149.firebaseapp.com",
+            databaseURL: "https://agenda-portal-2d149-default-rtdb.firebaseio.com",
+            projectId: "agenda-portal-2d149",
+            storageBucket: "agenda-portal-2d149.appspot.com",
+            messagingSenderId: "SEU_MESSAGING_ID",
+            appId: "SEU_APP_ID"
+        };
+
+        // Inicializa Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        const { useState, useEffect, useMemo, useCallback } = React;
+
+        // URL Base (Sem .json, o script adiciona)
+        const DATABASE_URL = firebaseConfig.databaseURL + '/agenda';
+
+        const KEYS = {
+            CREATED: 'Data de Criação',
+            TITLE: 'Título',
+            DESC: 'Descrição',
+            OBJ: 'Objetivo e Assunto',
+            PLAT: 'Plataforma',
+            STATUS: 'Status',
+            DATE: 'Data de Entrega',
+            RESP: 'Responsável',
+            PROG: 'Progresso (%)',
+            APROV: 'Aprovação',
+            DRIVE: 'Link do Drive'
+        };
+
+        const App = () => {
+            // Estados de Autenticação
+            const [user, setUser] = useState(null);
+            const [authToken, setAuthToken] = useState(null);
+            const [authLoading, setAuthLoading] = useState(true);
+
+            // Estados da Aplicação
+            const [data, setData] = useState({});
+            const [loading, setLoading] = useState(false);
+            const [unsavedRows, setUnsavedRows] = useState(new Set());
+            const [newRows, setNewRows] = useState(new Set());
+            const [feedback, setFeedback] = useState(null);
+            const [alertModal, setAlertModal] = useState(null);
+
+            // Filtros e Ordenação
+            const [searchTerm, setSearchTerm] = useState('');
+            const [filterMonth, setFilterMonth] = useState('');
+            const [filterStatus, setFilterStatus] = useState('all');
+            const [filterPlatform, setFilterPlatform] = useState('all');
+            const [sortConfig, setSortConfig] = useState({ key: KEYS.DATE, direction: 'asc' });
+
+            const statusOptions = ['Pendente', 'Em Progresso', 'Fila', 'Produção', 'Aprovação', 'Concluído', 'Postado'];
+            const platformOptions = ['Instagram', 'LinkedIn', 'Comunicação interna', 'Site', 'Email - Mkt', 'Geral'];
+
+            // --- SISTEMA DE LOGIN SILENCIOSO ---
+            useEffect(() => {
+                const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+                    if (currentUser) {
+                        const token = await currentUser.getIdToken();
+                        setUser(currentUser);
+                        setAuthToken(token);
+                        // Carrega dados automaticamente após login
+                        loadDataInternal(token);
+                    } else {
+                        setUser(null);
+                        setAuthToken(null);
+                        setData({});
+                    }
+                    setAuthLoading(false);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            const handleLogin = async () => {
+                try {
+                    await signInWithPopup(auth, provider);
+                } catch (error) {
+                    showFeedback("Erro ao fazer login: " + error.message, 'error');
+                }
+            };
+
+            const handleLogout = () => {
+                signOut(auth);
+            };
+
+            // --- FUNÇÃO DE CARGA SEGURA ---
+            const loadDataInternal = async (token) => {
+                setLoading(true);
+                try {
+                    // Adiciona o token de autenticação na URL
+                    const res = await fetch(`${DATABASE_URL}.json?auth=${token}`);
+                    
+                    if (res.status === 401) throw new Error("Permissão negada. Verifique as regras do Firebase.");
+                    
+                    const json = await res.json();
+                    if (json) {
+                        const normalized = {};
+                        Object.keys(json).forEach(key => {
+                            if (json[key] && typeof json[key] === 'object') {
+                                normalized[key] = { ...json[key], _id: key };
+                            }
+                        });
+                        setData(normalized);
+                        if (filterMonth === '') {
+                            const now = new Date();
+                            setFilterMonth(`${now.getFullYear()}-${now.getMonth()}`);
+                        }
+                    } else { setData({}); }
+                } catch (error) { showFeedback(error.message, 'error'); } 
+                finally { setLoading(false); }
+            };
+
+            // Wrapper para carregar manualmente (usa estado atual do token)
+            const loadData = () => {
+                if(authToken) loadDataInternal(authToken);
+            };
+
+            const requestSort = (key) => {
+                let direction = 'asc';
+                if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+                setSortConfig({ key, direction });
+            };
+
+            const { filteredData, stats, availableMonths } = useMemo(() => {
+                const rows = Object.values(data);
+                const monthsSet = new Map();
+                
+                rows.forEach(row => {
+                    const dStr = row[KEYS.DATE];
+                    if (dStr) {
+                        try {
+                            const d = new Date(dStr);
+                            if(!isNaN(d)) {
+                                const key = `${d.getFullYear()}-${d.getMonth()}`;
+                                if (!monthsSet.has(key)) {
+                                    monthsSet.set(key, { value: key, label: d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase(), sort: d.getTime() });
+                                }
+                            }
+                        } catch(e){}
+                    }
+                });
+                const sortedMonths = Array.from(monthsSet.values()).sort((a,b) => b.sort - a.sort);
+
+                const filtered = rows.filter(row => {
+                    const term = searchTerm.toLowerCase();
+                    const matchesSearch = Object.values(row).some(val => String(val).toLowerCase().includes(term));
+                    if (!matchesSearch) return false;
+                    if (filterStatus !== 'all' && row[KEYS.STATUS] !== filterStatus) return false;
+                    if (filterPlatform !== 'all' && !(row[KEYS.PLAT] || '').includes(filterPlatform)) return false;
+                    if (filterMonth) {
+                        const [year, month] = filterMonth.split('-').map(Number);
+                        const d = new Date(row[KEYS.DATE]);
+                        if (isNaN(d) || d.getMonth() !== month || d.getFullYear() !== year) return false;
+                    }
+                    return true;
+                });
+
+                filtered.sort((a, b) => {
+                    let valA = a[sortConfig.key] || '';
+                    let valB = b[sortConfig.key] || '';
+                    if (sortConfig.key === KEYS.PROG) {
+                        valA = parseInt(String(valA).replace(/\D/g, '')) || 0;
+                        valB = parseInt(String(valB).replace(/\D/g, '')) || 0;
+                    } else {
+                        valA = String(valA).toLowerCase();
+                        valB = String(valB).toLowerCase();
+                    }
+                    if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+
+                const total = filtered.length;
+                const done = filtered.filter(v => String(v[KEYS.STATUS]).toLowerCase().includes('conclu') || String(v[KEYS.STATUS]).toLowerCase().includes('postado')).length;
+                const pending = total - done;
+                const totalProgress = filtered.reduce((acc, curr) => {
+                    const p = parseInt(String(curr[KEYS.PROG] || '0').replace(/\D/g, '')) || 0;
+                    return acc + p;
+                }, 0);
+                const avgProgress = total > 0 ? Math.round(totalProgress / total) : 0;
+
+                return { filteredData: filtered, stats: { total, done, pending, avgProgress }, availableMonths: sortedMonths };
+            }, [data, searchTerm, filterMonth, filterStatus, filterPlatform, sortConfig]);
+
+            const validateRow = (id) => {
+                const row = data[id];
+                if (!row[KEYS.TITLE] || row[KEYS.TITLE] === 'NOVA TAREFA (EDITAR)') {
+                    setAlertModal({
+                        title: 'Título Obrigatório',
+                        msg: 'Você precisa definir um título para a nova tarefa antes de salvar.',
+                        targetId: id
+                    });
+                    const el = document.getElementById(`row-${id}`);
+                    if(el) el.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    return false;
+                }
+                return true;
+            };
+
+            const handleChange = (id, field, value) => {
+                setData(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+                setUnsavedRows(prev => new Set(prev).add(id));
+                if (newRows.has(id)) {
+                    setNewRows(prev => { const next = new Set(prev); next.delete(id); return next; });
+                }
+            };
+
+            const saveRow = async (id) => {
+                if (!validateRow(id) || !authToken) return;
+                const rowData = { ...data[id] };
+                delete rowData._id;
+                if(rowData[KEYS.PROG]) rowData[KEYS.PROG] = parseInt(String(rowData[KEYS.PROG]).replace(/\D/g, '')) || 0;
+
+                try {
+                    const res = await fetch(`${DATABASE_URL}/${id}.json?auth=${authToken}`, {
+                        method: 'PATCH', 
+                        body: JSON.stringify(rowData),
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    if (res.ok) {
+                        const newUnsaved = new Set(unsavedRows);
+                        newUnsaved.delete(id);
+                        setUnsavedRows(newUnsaved);
+                        if (newRows.has(id)) {
+                            const updatedNew = new Set(newRows);
+                            updatedNew.delete(id);
+                            setNewRows(updatedNew);
+                        }
+                        showFeedback('Salvo com sucesso!', 'success');
+                    } else { throw new Error('Erro ao salvar'); }
+                } catch (err) { showFeedback('Erro de conexão.', 'error'); }
+            };
+
+            const saveAll = async () => {
+                const rowsToSave = Array.from(unsavedRows);
+                if (rowsToSave.length === 0) return alert("Nenhuma alteração pendente para salvar.");
+                
+                for (let id of rowsToSave) { if (!validateRow(id)) return; }
+
+                setLoading(true);
+                let successCount = 0;
+                for (let id of rowsToSave) {
+                    const rowData = { ...data[id] };
+                    delete rowData._id;
+                    if(rowData[KEYS.PROG]) rowData[KEYS.PROG] = parseInt(String(rowData[KEYS.PROG]).replace(/\D/g, '')) || 0;
+                    try {
+                        await fetch(`${DATABASE_URL}/${id}.json?auth=${authToken}`, {
+                            method: 'PATCH',
+                            body: JSON.stringify(rowData),
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        successCount++;
+                        setUnsavedRows(prev => { const n = new Set(prev); n.delete(id); return n; });
+                        setNewRows(prev => { const n = new Set(prev); n.delete(id); return n; });
+                    } catch (e) { console.error(`Erro ao salvar ${id}`, e); }
+                }
+                setLoading(false);
+                showFeedback(`${successCount} tarefas salvas com sucesso!`, 'success');
+            };
+
+            const addNewRow = async () => {
+                if(!authToken) return;
+                const now = new Date();
+                const newObj = {
+                    [KEYS.CREATED]: now.toISOString(),
+                    [KEYS.TITLE]: 'NOVA TAREFA (EDITAR)',
+                    [KEYS.STATUS]: 'Pendente',
+                    [KEYS.PROG]: 0,
+                    [KEYS.DATE]: now.toISOString().split('T')[0],
+                    [KEYS.PLAT]: 'Geral'
+                };
+                try {
+                    const res = await fetch(`${DATABASE_URL}.json?auth=${authToken}`, {
+                        method: 'POST',
+                        body: JSON.stringify(newObj),
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const json = await res.json();
+                    if (json.name) {
+                        setData(prev => ({ ...prev, [json.name]: { ...newObj, _id: json.name } }));
+                        setNewRows(prev => new Set(prev).add(json.name));
+                        setUnsavedRows(prev => new Set(prev).add(json.name));
+                        showFeedback('Nova linha criada! Edite para salvar.', 'success');
+                        setTimeout(() => {
+                            const el = document.getElementById(`row-${json.name}`);
+                            if(el) el.scrollIntoView({behavior: 'smooth', block: 'center'});
+                        }, 200);
+                    }
+                } catch (err) { alert("Erro ao criar."); }
+            };
+
+            const deleteRow = async (id) => {
+                if (!authToken) return;
+                if (!confirm('Excluir esta tarefa permanentemente?')) return;
+                try {
+                    await fetch(`${DATABASE_URL}/${id}.json?auth=${authToken}`, { method: 'DELETE' });
+                    setData(prev => { const copy = { ...prev }; delete copy[id]; return copy; });
+                    showFeedback('Excluído.', 'success');
+                } catch (err) { alert("Erro ao excluir."); }
+            };
+
+            const showFeedback = (msg, type) => {
+                setFeedback({ msg, type });
+                setTimeout(() => setFeedback(null), 3000);
+            };
+
+            const formatDateForInput = (isoString) => {
+                if (!isoString) return '';
+                try {
+                    if (isoString.includes('/')) {
+                       const parts = isoString.split('/');
+                       if(parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    }
+                    return isoString.split('T')[0];
+                } catch (e) { return ''; }
+            };
+
+            const formatDisplayDate = (isoString) => {
+                if (!isoString) return '-';
+                try { const d = new Date(isoString); if (isNaN(d)) return isoString; return d.toLocaleDateString('pt-BR'); } catch(e) { return isoString; }
+            };
+
+            const SortIcon = ({ colKey }) => {
+                if (sortConfig.key !== colKey) return <i className="fas fa-sort text-gray-300 ml-1 text-[10px]"></i>;
+                return sortConfig.direction === 'asc' 
+                    ? <i className="fas fa-sort-up text-primary ml-1"></i>
+                    : <i className="fas fa-sort-down text-primary ml-1"></i>;
+            };
+
+            // --- TELA DE LOGIN (BLINDAGEM) ---
+            if (authLoading) {
+                return <div className="h-screen flex items-center justify-center bg-gray-100"><i className="fas fa-spinner fa-spin text-4xl text-primary"></i></div>;
+            }
+
+            if (!user) {
+                return (
+                    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary to-blue-900">
+                        <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-4">
+                            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i className="fas fa-lock text-3xl text-primary"></i>
+                            </div>
+                            <h1 className="text-2xl font-bold text-gray-800 mb-2">Área Restrita</h1>
+                            <p className="text-gray-500 mb-8">Faça login com sua conta Google para acessar o editor.</p>
+                            <button 
+                                onClick={handleLogin}
+                                className="w-full py-3 px-4 bg-white border-2 border-gray-200 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-50 transition font-bold text-gray-700"
+                            >
+                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" />
+                                Entrar com Google
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // --- TELA PRINCIPAL (APENAS SE LOGADO) ---
+            return (
+                <div className="flex flex-col h-screen overflow-hidden">
+                    <div className="bg-white border-b border-gray-300 shadow-md z-30">
+                        <div className="p-4 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50 border-b border-gray-200">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-primary text-white p-2.5 rounded-lg shadow"><i className="fas fa-edit fa-lg"></i></div>
+                                <div><h1 className="font-bold text-primary text-xl">Editor Master PSR</h1><p className="text-xs text-gray-500">Logado como: {user.email}</p></div>
+                            </div>
+                            <div className="flex gap-4 items-center">
+                                <div className="flex flex-col items-center px-3 border-r border-gray-300"><span className="text-[10px] uppercase font-bold text-gray-400">Total</span><span className="font-bold text-gray-800 text-lg">{stats.total}</span></div>
+                                <div className="flex flex-col items-center px-3 border-r border-gray-300"><span className="text-[10px] uppercase font-bold text-green-600">Concluído</span><span className="font-bold text-green-700 text-lg">{stats.done}</span></div>
+                                <div className="flex flex-col items-center px-3 border-r border-gray-300"><span className="text-[10px] uppercase font-bold text-orange-500">Pendente</span><span className="font-bold text-orange-600 text-lg">{stats.pending}</span></div>
+                                <div className="flex flex-col items-center px-3 border-r border-gray-300"><span className="text-[10px] uppercase font-bold text-blue-500">Média %</span><span className="font-bold text-blue-700 text-lg">{stats.avgProgress}%</span></div>
+                                <button onClick={handleLogout} className="text-red-500 hover:text-red-700 text-xs font-bold underline ml-2">Sair</button>
+                            </div>
+                        </div>
+
+                        <div className="p-3 flex flex-col md:flex-row gap-3 bg-white items-center">
+                            <div className="relative flex-grow w-full md:w-auto">
+                                <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                <input type="text" placeholder="Pesquisar em TUDO..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none bg-gray-50 hover:bg-white transition" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                            </div>
+                            <div className="flex gap-2 w-full md:w-auto overflow-x-auto">
+                                <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white cursor-pointer" value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}>
+                                    <option value="">Todos os Meses</option>
+                                    {availableMonths.map(m => (<option key={m.value} value={m.value}>{m.label}</option>))}
+                                </select>
+                                <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white cursor-pointer" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                                    <option value="all">Todos Status</option>
+                                    {statusOptions.map(s => (<option key={s} value={s}>{s}</option>))}
+                                </select>
+                                <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white cursor-pointer" value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}>
+                                    <option value="all">Todas Plataformas</option>
+                                    {platformOptions.map(p => (<option key={p} value={p}>{p}</option>))}
+                                </select>
+                            </div>
+                            <div className="flex gap-2 w-full md:w-auto justify-end">
+                                <button onClick={loadData} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-sm font-bold transition" title="Recarregar"><i className={`fas fa-sync ${loading ? 'fa-spin' : ''}`}></i></button>
+                                <button onClick={saveAll} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow text-sm font-bold transition flex items-center gap-2"><i className="fas fa-save"></i> SALVAR TODOS</button>
+                                <button onClick={addNewRow} className="px-4 py-2 bg-excelGreen hover:bg-green-700 text-white rounded-lg shadow text-sm font-bold transition flex items-center gap-2"><i className="fas fa-plus"></i> Novo</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 p-2 md:p-4 bg-gray-100 overflow-hidden">
+                        <div className="table-wrapper rounded-lg shadow-inner custom-scrollbar">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th className="w-10 text-center">#</th>
+                                        <th className="w-12 text-center" title="Salvar"><i className="fas fa-save"></i></th>
+                                        <th style={{minWidth: '100px'}} onClick={() => requestSort(KEYS.CREATED)}>Criado em <SortIcon colKey={KEYS.CREATED} /></th>
+                                        <th style={{minWidth: '250px'}} onClick={() => requestSort(KEYS.TITLE)}>Título da Tarefa <SortIcon colKey={KEYS.TITLE} /></th>
+                                        <th style={{minWidth: '220px'}} onClick={() => requestSort(KEYS.DESC)}>Descrição / Obs <SortIcon colKey={KEYS.DESC} /></th>
+                                        <th style={{minWidth: '140px'}} onClick={() => requestSort(KEYS.PLAT)}>Plataforma <SortIcon colKey={KEYS.PLAT} /></th>
+                                        <th style={{minWidth: '130px'}} onClick={() => requestSort(KEYS.STATUS)}>Status <SortIcon colKey={KEYS.STATUS} /></th>
+                                        <th style={{minWidth: '110px'}} onClick={() => requestSort(KEYS.DATE)}>Entrega <SortIcon colKey={KEYS.DATE} /></th>
+                                        <th style={{minWidth: '80px'}} onClick={() => requestSort(KEYS.PROG)}>% <SortIcon colKey={KEYS.PROG} /></th>
+                                        <th style={{minWidth: '150px'}} onClick={() => requestSort(KEYS.APROV)}>Aprovação <SortIcon colKey={KEYS.APROV} /></th>
+                                        <th style={{minWidth: '160px'}} onClick={() => requestSort(KEYS.OBJ)}>Objetivo <SortIcon colKey={KEYS.OBJ} /></th>
+                                        <th style={{minWidth: '180px'}} onClick={() => requestSort(KEYS.DRIVE)}>Link Drive <SortIcon colKey={KEYS.DRIVE} /></th>
+                                        <th className="w-10 text-center"><i className="fas fa-trash-alt"></i></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {loading ? (
+                                        <tr><td colSpan="13" className="text-center py-10 text-gray-500"><i className="fas fa-spinner fa-spin mr-2"></i> Carregando dados...</td></tr>
+                                    ) : filteredData.length === 0 ? (
+                                        <tr><td colSpan="13" className="text-center py-10 text-gray-500">Nenhum dado encontrado.</td></tr>
+                                    ) : (
+                                        filteredData.map((row, index) => {
+                                            const isUnsaved = unsavedRows.has(row._id);
+                                            const isNew = newRows.has(row._id);
+                                            
+                                            return (
+                                                <tr key={row._id} id={`row-${row._id}`} className={`${isUnsaved ? 'saving-row' : ''} ${isNew ? 'new-row-pulse' : ''}`}>
+                                                    <td className="text-center bg-gray-50 text-gray-400 font-mono text-xs select-none">{index + 1}</td>
+                                                    <td className="text-center">
+                                                        <button onClick={() => saveRow(row._id)} disabled={!isUnsaved} className={`p-1 rounded transition w-full h-full flex items-center justify-center ${isUnsaved ? 'text-blue-600 hover:bg-blue-100 cursor-pointer animate-pulse' : 'text-gray-300 cursor-default'}`}><i className="fas fa-save fa-lg"></i></button>
+                                                    </td>
+                                                    <td className="px-2 text-[11px] text-gray-500 bg-gray-50">{formatDisplayDate(row[KEYS.CREATED])}</td>
+                                                    <td><input type="text" className="cell-input font-bold" value={row[KEYS.TITLE] || ''} onChange={e => handleChange(row._id, KEYS.TITLE, e.target.value)} /></td>
+                                                    <td><input type="text" className="cell-input text-gray-600" value={row[KEYS.DESC] || ''} onChange={e => handleChange(row._id, KEYS.DESC, e.target.value)} /></td>
+                                                    <td>
+                                                        <select className="cell-input cursor-pointer" value={row[KEYS.PLAT] || ''} onChange={e => handleChange(row._id, KEYS.PLAT, e.target.value)}>
+                                                            <option value="">Selecione...</option>
+                                                            {platformOptions.map(opt => (<option key={opt} value={opt}>{opt}</option>))}
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <select className={`cell-input cursor-pointer font-bold text-xs uppercase ${String(row[KEYS.STATUS]).includes('Pendente') ? 'text-yellow-600' : String(row[KEYS.STATUS]).includes('Conclu') ? 'text-green-600' : 'text-blue-600'}`} value={row[KEYS.STATUS] || ''} onChange={e => handleChange(row._id, KEYS.STATUS, e.target.value)}>
+                                                            <option value="">Status...</option>
+                                                            {statusOptions.map(opt => (<option key={opt} value={opt}>{opt}</option>))}
+                                                        </select>
+                                                    </td>
+                                                    <td><input type="date" className="cell-input text-center text-xs" value={formatDateForInput(row[KEYS.DATE])} onChange={e => handleChange(row._id, KEYS.DATE, e.target.value)} /></td>
+                                                    <td>
+                                                        <div className="flex items-center h-full px-1 relative">
+                                                            <div className="absolute inset-0 bg-green-100 z-0 transition-all duration-500" style={{width: `${Math.min(100, row[KEYS.PROG]||0)}%`, opacity: 0.3}}></div>
+                                                            <input type="number" min="0" max="100" className="cell-input text-center !p-0 z-10 font-bold text-xs" value={String(row[KEYS.PROG] || '0').replace(/\D/g, '')} onChange={e => handleChange(row._id, KEYS.PROG, e.target.value)} />
+                                                        </div>
+                                                    </td>
+                                                    <td><input type="text" className="cell-input text-xs" value={row[KEYS.APROV] || ''} onChange={e => handleChange(row._id, KEYS.APROV, e.target.value)} placeholder="..." /></td>
+                                                    <td><input type="text" className="cell-input text-xs" value={row[KEYS.OBJ] || ''} onChange={e => handleChange(row._id, KEYS.OBJ, e.target.value)} /></td>
+                                                    <td><input type="text" className="cell-input text-xs text-blue-600 underline" value={row[KEYS.DRIVE] || ''} onChange={e => handleChange(row._id, KEYS.DRIVE, e.target.value)} placeholder="http://..." /></td>
+                                                    <td className="text-center"><button onClick={() => deleteRow(row._id)} className="text-gray-300 hover:text-red-500 transition p-1 w-full h-full flex items-center justify-center"><i className="fas fa-times"></i></button></td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* MODAL DE AVISO (CENTRALIZADO E BONITO) */}
+                    {alertModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-pop-in">
+                            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm text-center transform transition-all scale-100 border border-gray-200">
+                                <div className="w-14 h-14 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mx-auto mb-4 border-4 border-yellow-50">
+                                    <i className="fas fa-exclamation-triangle text-2xl"></i>
+                                </div>
+                                <h3 className="text-lg font-extrabold text-gray-800 mb-2 tracking-tight">{alertModal.title}</h3>
+                                <p className="text-gray-500 text-sm mb-6 leading-relaxed">{alertModal.msg}</p>
+                                <button 
+                                    onClick={() => setAlertModal(null)}
+                                    className="w-full bg-primary text-white py-3 rounded-lg font-bold hover:bg-opacity-90 transition-all shadow-lg shadow-primary/30 transform hover:-translate-y-0.5"
+                                >
+                                    Entendi, vou corrigir
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TOAST FEEDBACK */}
+                    {feedback && (
+                        <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-xl text-white font-bold animate-bounce z-50 flex items-center gap-2 ${feedback.type === 'error' ? 'bg-red-600' : 'bg-green-600'}`}>
+                            <i className={`fas ${feedback.type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}`}></i>
+                            {feedback.msg}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
