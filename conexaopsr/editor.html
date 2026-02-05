@@ -124,7 +124,10 @@
     </style>
 </head>
 <body>
-
+<div id="loading-screen">
+    <i class="fas fa-circle-notch fa-spin fa-3x" style="color:var(--primary)"></i>
+    <p style="margin-top:20px; color:#555; font-weight:600;">Verificando credenciais...</p>
+</div>
 <div id="login-screen">
     <div style="margin-bottom: 30px;">
         <i class="fas fa-lock fa-3x" style="color:var(--primary); margin-bottom: 20px;"></i>
@@ -309,39 +312,48 @@
     const ALLOWED_EMAILS = ["marketingpsrimpressao@gmail.com", "rohsantos1@gmail.com"];
     // REMOVIDO ONE_WEEK_MS para evitar logout indesejado
 
-    // Monitora estado (Login/Logout)
-    firebase.auth().onAuthStateChanged(async user => {
-        if (user) {
-            // USUÁRIO LOGADO
-            if (ALLOWED_EMAILS.includes(user.email)) {
-                // E-mail PERMITIDO
-                
-                // ATUALIZA TIMESTAMP AUTOMATICAMENTE AO CARREGAR (Correção do Login Chato)
-                localStorage.setItem('secure_last_login_ts', Date.now());
+// Forçar persistência LOCAL para evitar pedir login ao fechar o navegador
+firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-                // Tudo OK: Esconde Login, Mostra App
-                user.getIdToken().then(token => { 
-                    AUTH_TOKEN = token;
-                    document.getElementById('login-screen').style.display = 'none';
-                    document.getElementById('access-denied').style.display = 'none';
-                    document.getElementById('app-content').style.display = 'block';
-                    loadContent(); 
-                });
+// Monitora estado (Login/Logout)
+firebase.auth().onAuthStateChanged(async user => {
+    const loadingScreen = document.getElementById('loading-screen');
+    const loginScreen = document.getElementById('login-screen');
+    const appContent = document.getElementById('app-content');
+    const accessDenied = document.getElementById('access-denied');
 
-            } else {
-                // E-mail NÃO PERMITIDO
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app-content').style.display = 'none';
-                document.getElementById('access-denied').style.display = 'flex';
-                firebase.auth().signOut(); // Desloga o intruso
-            }
+    if (user) {
+        // --- CENÁRIO: USUÁRIO JÁ LOGADO ---
+        if (ALLOWED_EMAILS.includes(user.email)) {
+            // E-mail PERMITIDO
+            localStorage.setItem('secure_last_login_ts', Date.now());
+
+            AUTH_TOKEN = await user.getIdToken();
+            
+            // Esconde Loading e Login, Mostra App
+            if(loadingScreen) loadingScreen.style.display = 'none';
+            loginScreen.style.display = 'none';
+            accessDenied.style.display = 'none';
+            appContent.style.display = 'block';
+            
+            loadContent(); 
         } else {
-            // USUÁRIO NÃO LOGADO
-            document.getElementById('app-content').style.display = 'none';
-            document.getElementById('access-denied').style.display = 'none';
-            document.getElementById('login-screen').style.display = 'flex'; // Mostra botão de login
+            // E-mail NÃO PERMITIDO
+            if(loadingScreen) loadingScreen.style.display = 'none';
+            appContent.style.display = 'none';
+            loginScreen.style.display = 'none';
+            accessDenied.style.display = 'flex';
+            firebase.auth().signOut(); 
         }
-    });
+    } else {
+        // --- CENÁRIO: USUÁRIO DESCONECTADO ---
+        // Só AQUI mostramos a tela de login
+        if(loadingScreen) loadingScreen.style.display = 'none'; // Tira o loading
+        appContent.style.display = 'none';
+        accessDenied.style.display = 'none';
+        loginScreen.style.display = 'flex'; // MOSTRA O LOGIN
+    }
+});
 
     // Função manual chamada pelo botão (EVITA BLOQUEIO DE POPUP)
     function performLogin() {
