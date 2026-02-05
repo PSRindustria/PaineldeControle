@@ -113,10 +113,12 @@
 
     <script type="text/babel" data-type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // Usando signInWithRedirect para evitar bloqueios de popup em alguns navegadores
+        // Usando signInWithRedirect para evitar bloqueios de popup
         import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // --- CONFIGURAÇÃO JÁ PREENCHIDA ---
+        // ============================================================
+        // CONFIGURAÇÕES DO FIREBASE
+        // ============================================================
         const firebaseConfig = {
             apiKey: "AIzaSyD4lN6iyKpdstb99vosxEDDaEn1QFXLCXI",
             authDomain: "agenda-portal-2d149.firebaseapp.com",
@@ -127,6 +129,7 @@
             appId: "1:172797946066:web:b3f50853717477661c650b"
         };
 
+        // LISTA DE E-MAILS PERMITIDOS (Minúsculo para evitar erros)
         const ALLOWED_EMAILS = [
             'marketingpsrimpressao@gmail.com',
             'rohsantos1@gmail.com'
@@ -136,9 +139,9 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         
-        // Garante persistência Local (Login Silencioso)
+        // Configura persistência local (Login silencioso)
         setPersistence(auth, browserLocalPersistence).catch((error) => {
-            console.error("Erro na persistência de auth:", error);
+            console.error("Erro na persistência:", error);
         });
 
         const provider = new GoogleAuthProvider();
@@ -166,6 +169,7 @@
             const [authToken, setAuthToken] = useState(null);
             const [authLoading, setAuthLoading] = useState(true);
             const [accessDenied, setAccessDenied] = useState(false);
+            const [deniedEmail, setDeniedEmail] = useState('');
 
             const [data, setData] = useState({});
             const [loading, setLoading] = useState(false);
@@ -183,18 +187,26 @@
             const statusOptions = ['Pendente', 'Em Progresso', 'Fila', 'Produção', 'Aprovação', 'Concluído', 'Postado'];
             const platformOptions = ['Instagram', 'LinkedIn', 'Comunicação interna', 'Site', 'Email - Mkt', 'Geral'];
 
-            // --- SISTEMA DE LOGIN SILENCIOSO ---
+            // --- LÓGICA DE LOGIN ---
             useEffect(() => {
                 const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-                    setAccessDenied(false);
                     if (currentUser) {
-                        if (!ALLOWED_EMAILS.includes(currentUser.email)) {
+                        const email = currentUser.email.toLowerCase().trim();
+                        console.log("Tentativa de login com:", email); // Debug no console
+
+                        // Verificação Robusta
+                        const isAllowed = ALLOWED_EMAILS.some(allowed => allowed.toLowerCase().trim() === email);
+
+                        if (!isAllowed) {
                             setAccessDenied(true);
-                            await signOut(auth);
+                            setDeniedEmail(email);
                             setAuthLoading(false);
+                            // NÃO fazemos signOut automático aqui para evitar loops.
+                            // O usuário deve clicar em "Sair" na tela de erro.
                             return;
                         }
 
+                        setAccessDenied(false);
                         const token = await currentUser.getIdToken();
                         setUser(currentUser);
                         setAuthToken(token);
@@ -217,11 +229,13 @@
                 }
             };
 
-            const handleLogout = () => {
-                signOut(auth);
+            const handleLogout = async () => {
+                await signOut(auth);
+                setAccessDenied(false); // Reseta estado de erro ao sair
+                window.location.reload(); // Garante limpeza total
             };
 
-            // --- DATA LOADING ---
+            // --- LÓGICA DE DADOS ---
             const loadDataInternal = async (token) => {
                 setLoading(true);
                 try {
@@ -254,7 +268,6 @@
                 setSortConfig({ key, direction });
             };
 
-            // --- MEMOS & FILTERS ---
             const { filteredData, stats, availableMonths } = useMemo(() => {
                 const rows = Object.values(data);
                 const monthsSet = new Map();
@@ -316,7 +329,6 @@
                 return { filteredData: filtered, stats: { total, done, pending, avgProgress }, availableMonths: sortedMonths };
             }, [data, searchTerm, filterMonth, filterStatus, filterPlatform, sortConfig]);
 
-            // --- ACTIONS ---
             const validateRow = (id) => {
                 const row = data[id];
                 if (!row[KEYS.TITLE] || row[KEYS.TITLE] === 'NOVA TAREFA (EDITAR)') {
@@ -469,6 +481,7 @@
                 return <div className="h-screen flex items-center justify-center bg-gray-100"><i className="fas fa-spinner fa-spin text-4xl text-primary"></i></div>;
             }
 
+            // TELA DE ACESSO NEGADO (Agora com botão de logout correto)
             if (accessDenied) {
                 return (
                     <div className="h-screen flex items-center justify-center bg-red-50 animate-pop-in">
@@ -477,8 +490,11 @@
                                 <i className="fas fa-ban text-3xl text-red-600"></i>
                             </div>
                             <h1 className="text-2xl font-bold text-red-700 mb-2">Acesso Negado</h1>
-                            <p className="text-gray-600 mb-6">Este e-mail não tem permissão de administrador.</p>
-                            <button onClick={handleLogin} className="w-full py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition font-bold">Trocar Conta</button>
+                            <p className="text-gray-600 mb-2">O e-mail <strong>{deniedEmail}</strong> não tem permissão para editar este painel.</p>
+                            <p className="text-sm text-gray-400 mb-6">Por favor, entre com uma conta autorizada.</p>
+                            <button onClick={handleLogout} className="w-full py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition font-bold shadow-md">
+                                <i className="fas fa-sign-out-alt mr-2"></i> Sair e Tentar Outra
+                            </button>
                         </div>
                     </div>
                 );
