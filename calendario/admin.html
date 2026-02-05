@@ -113,10 +113,10 @@
 
     <script type="text/babel" data-type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // Usando signInWithRedirect para máxima compatibilidade com GitHub Pages e Mobile
+        // IMPORTANTE: Trocamos signInWithPopup por signInWithRedirect para corrigir o erro de Cross-Origin
         import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // SUAS CONFIGURAÇÕES JÁ INSERIDAS:
+        // SUAS CONFIGURAÇÕES EXATAS
         const firebaseConfig = {
             apiKey: "AIzaSyD4lN6iyKpdstb99vosxEDDaEn1QFXLCXI",
             authDomain: "agenda-portal-2d149.firebaseapp.com",
@@ -136,7 +136,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         
-        // Persistência Local (Mantém logado)
+        // Ativa persistência local (Login Silencioso)
         setPersistence(auth, browserLocalPersistence).catch(console.error);
 
         const provider = new GoogleAuthProvider();
@@ -182,12 +182,13 @@
             const statusOptions = ['Pendente', 'Em Progresso', 'Fila', 'Produção', 'Aprovação', 'Concluído', 'Postado'];
             const platformOptions = ['Instagram', 'LinkedIn', 'Comunicação interna', 'Site', 'Email - Mkt', 'Geral'];
 
-            // --- AUTH LOGIC ---
+            // --- LÓGICA DE LOGIN (BLINDADA) ---
             useEffect(() => {
                 const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
                     if (currentUser) {
                         const email = currentUser.email.toLowerCase().trim();
-                        // Se não estiver na lista, bloqueia, mas NÃO desloga automaticamente (evita loop)
+                        
+                        // Se o e-mail NÃO for permitido, mostra tela de erro (NÃO DESLOGA AUTOMÁTICO para não dar loop)
                         if (!ALLOWED_EMAILS.includes(email)) {
                             setDeniedEmail(email);
                             setAccessDenied(true);
@@ -195,7 +196,7 @@
                             return;
                         }
 
-                        // Se estiver ok, carrega tudo
+                        // Se permitido, prossegue
                         setAccessDenied(false);
                         const token = await currentUser.getIdToken();
                         setUser(currentUser);
@@ -211,9 +212,9 @@
                 return () => unsubscribe();
             }, []);
 
+            // MÉTODO DE LOGIN ALTERADO PARA REDIRECT (CORREÇÃO DO ERRO)
             const handleLogin = async () => {
                 try {
-                    // Redirect é melhor para GitHub Pages
                     await signInWithRedirect(auth, provider);
                 } catch (error) {
                     alert("Erro no login: " + error.message);
@@ -225,11 +226,13 @@
                 window.location.reload();
             };
 
-            // --- DATA LOGIC ---
+            // --- LÓGICA DE DADOS ---
             const loadDataInternal = async (token) => {
                 setLoading(true);
                 try {
+                    // Passa o auth token na URL para cumprir a Regra de Segurança
                     const res = await fetch(`${DATABASE_URL}.json?auth=${token}`);
+                    
                     if (res.status === 401) throw new Error("Permissão negada. Verifique se o e-mail está nas Regras do Firebase.");
                     
                     const json = await res.json();
@@ -248,7 +251,7 @@
                     } else { setData({}); }
                 } catch (error) { 
                     console.error(error);
-                    showFeedback("Erro ao carregar. Tente recarregar a página.", 'error'); 
+                    showFeedback("Erro ao carregar dados.", 'error'); 
                 } 
                 finally { setLoading(false); }
             };
@@ -261,6 +264,7 @@
                 setSortConfig({ key, direction });
             };
 
+            // --- PROCESSAMENTO DA TABELA ---
             const { filteredData, stats, availableMonths } = useMemo(() => {
                 const rows = Object.values(data);
                 const monthsSet = new Map();
@@ -322,6 +326,7 @@
                 return { filteredData: filtered, stats: { total, done, pending, avgProgress }, availableMonths: sortedMonths };
             }, [data, searchTerm, filterMonth, filterStatus, filterPlatform, sortConfig]);
 
+            // --- AÇÕES DO USUÁRIO ---
             const validateRow = (id) => {
                 const row = data[id];
                 if (!row[KEYS.TITLE] || row[KEYS.TITLE] === 'NOVA TAREFA (EDITAR)') {
@@ -467,7 +472,7 @@
                     : <i className="fas fa-sort-down text-primary ml-1"></i>;
             };
 
-            // --- TELAS ---
+            // --- INTERFACE ---
             if (authLoading) {
                 return <div className="h-screen flex items-center justify-center bg-gray-100"><i className="fas fa-spinner fa-spin text-4xl text-primary"></i></div>;
             }
