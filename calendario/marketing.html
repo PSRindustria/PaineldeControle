@@ -4,7 +4,10 @@
     <meta name="robots" content="noindex, nofollow">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel PSR - Live Data</title>
+    <title>Painel PSR - Marketing</title>
+    
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2920/2920349.png" type="image/png">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
@@ -17,11 +20,9 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#003366',
-                        secondary: '#4682B4',
-                        success: '#10B981',
-                        warning: '#F59E0B',
-                        danger: '#EF4444',
+                        primary: '#003366',   /* Azul Escuro Institucional */
+                        secondary: '#4682B4', /* Azul Aço */
+                        darkbanner: '#003366', /* Fundo do Banner (Solicitado) */
                     },
                 }
             }
@@ -87,9 +88,6 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
-
-        /* Classes Utilitárias Adicionais */
-        .text-shadow { text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
@@ -102,10 +100,11 @@
         const FIREBASE_URL = 'https://agenda-portal-2d149-default-rtdb.firebaseio.com/agenda.json';
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzO7oR3CNBZD-NCnij7Xa-xScc09EWGU69uq81VDHPZmlmwjYJ4s_4rIYzy2Gp1iXvV/exec';
 
-        // ============ MAPEAMENTO DE CAMPOS (Fundamental para ler seu JSON) ============
+        // ============ MAPEAMENTO ROBUSTO DE CAMPOS ============
+        // Garante que o app encontre os dados não importa como o Excel os envie
         const FIELD_KEYS = {
             TITLE: ['Título', 'Nome', 'Title', 'titulo'],
-            ASSUNTO: ['objetivo', 'Objetivo', 'Assunto', 'assunto'], 
+            ASSUNTO: ['objetivo', 'Objetivo', 'Assunto', 'Objetivo e Assunto', 'assunto'], 
             STATUS: ['Status', 'Status:', 'status'],
             OBSERVACAO: ['Descrição', 'Descricao', 'Observação', 'Observacao', 'Observacão', 'observacao'],
             APROVACAO: ['Aprovação', 'Aprovacao', 'aprovacao'],
@@ -117,7 +116,9 @@
             PROGRESSO: ['Progresso (%)', 'Progresso', 'progresso', 'porcentagem']
         };
 
-        // ============ HELPERS ============
+        // ============ FUNÇÕES AUXILIARES (HELPERS) ============
+        
+        // Busca o valor em várias chaves possíveis
         function getFieldValue(item, possibleKeysArray, defaultValue = '') {
             if (!item) return defaultValue;
             for (const key of possibleKeysArray) {
@@ -129,15 +130,14 @@
             return defaultValue;
         }
 
+        // Processa datas de vários formatos (ISO, PT-BR, etc)
         function parseDate(dateStr) {
             if (!dateStr) return null;
             if (dateStr instanceof Date) return dateStr;
-            
             const isoDate = new Date(dateStr);
             if (!isNaN(isoDate.getTime()) && typeof dateStr === 'string' && dateStr.includes('-')) {
                 return isoDate;
             }
-
             if (typeof dateStr === 'string') {
                 try {
                     let d = null;
@@ -152,19 +152,19 @@
                         d = new Date(dateStr);
                     }
                     return (d && !isNaN(d.getTime())) ? d : null;
-                } catch (e) { 
-                    return null; 
-                }
+                } catch (e) { return null; }
             }
             return null;
         }
 
+        // Formata data para exibição (dd/mm/aaaa)
         const formatDate = (dateInput) => {
             const d = parseDate(dateInput);
             if (!d) return 'Sem data';
             return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
         };
 
+        // Verifica atraso
         const isDateOverdue = (dateStr) => {
             const d = parseDate(dateStr);
             if (!d) return false;
@@ -173,6 +173,7 @@
             return d < today;
         };
 
+        // Processa lista de comentários
         const parseComments = (rawComments) => {
             if (!rawComments) return [];
             if (Array.isArray(rawComments)) return rawComments;
@@ -180,7 +181,7 @@
             return [];
         };
 
-        // ============ COMPONENTE DE ÍCONE ============
+        // Componente de Ícone centralizado
         const Icon = ({ name, size = 18, className = "" }) => {
             const iconMap = {
                 'LayoutDashboard': 'fa-chart-line',
@@ -210,26 +211,26 @@
                 'Search': 'fa-search',
                 'Battery': 'fa-battery-half'
             };
-
             const faClass = iconMap[name] || 'fa-circle';
             return <i className={`fas ${faClass} ${className}`} style={{ fontSize: size }}></i>;
         };
 
-        // ============ COMPONENTE PRINCIPAL ============
+        // ============ APLICAÇÃO PRINCIPAL ============
         function App() {
+            // Estados
             const [rawTasks, setRawTasks] = useState([]);
             const [loading, setLoading] = useState(true);
             const [selectedTask, setSelectedTask] = useState(null);
             const [modalMessage, setModalMessage] = useState(null);
             const [searchTerm, setSearchTerm] = useState('');
-
+            
             // Filtros
             const [filterMonth, setFilterMonth] = useState('');
             const [filterStatus, setFilterStatus] = useState('all');
             const [filterPlatform, setFilterPlatform] = useState('all');
             const [showCompleted, setShowCompleted] = useState(false);
 
-            // ============ CARREGAR DADOS ============
+            // ============ CARREGAMENTO DE DADOS (Firebase) ============
             const loadData = useCallback(async () => {
                 setLoading(true);
                 try {
@@ -239,6 +240,7 @@
                     const json = await response.json();
                     
                     if (json && typeof json === 'object') {
+                        // Converte objeto/array do Firebase em lista limpa
                         const items = Object.entries(json)
                             .filter(([_, item]) => item !== null)
                             .map(([key, item]) => ({
@@ -249,17 +251,17 @@
                         
                         setRawTasks(items);
                         
-                        // Atualiza modal se aberto
+                        // Atualiza tarefa selecionada em tempo real se o modal estiver aberto
                         if (selectedTask) {
                             const updatedSelected = items.find(i => i._row === selectedTask._row);
                             if (updatedSelected) setSelectedTask(updatedSelected);
                         }
 
+                        // Define mês padrão
                         if (filterMonth === '') {
                             const now = new Date();
                             setFilterMonth(`${now.getFullYear()}-${now.getMonth()}`);
                         }
-                        
                         console.log(`✅ ${items.length} tarefas carregadas`);
                     } else {
                         setRawTasks([]);
@@ -275,11 +277,11 @@
 
             useEffect(() => {
                 loadData();
-                const interval = setInterval(loadData, 300000); // 5 min
+                const interval = setInterval(loadData, 300000); // Atualiza a cada 5 min
                 return () => clearInterval(interval);
             }, []);
 
-            // ============ FILTROS E ESTATÍSTICAS ============
+            // ============ LÓGICA DE FILTROS E ESTATÍSTICAS ============
             const { filteredTasks, stats, availableMonths, availablePlatforms, availableStatuses } = useMemo(() => {
                 let filtered = [...rawTasks];
                 const statsCounter = { total: 0, pending: 0, inProgress: 0, completed: 0, overdue: 0 };
@@ -287,11 +289,10 @@
                 const platformsSet = new Set();
                 const statusesSet = new Set();
 
-                // Coletar Filtros
+                // 1. Extrair opções de filtros
                 rawTasks.forEach(task => {
                     const s = getFieldValue(task, FIELD_KEYS.STATUS);
                     if (s) statusesSet.add(s);
-                    
                     const p = getFieldValue(task, FIELD_KEYS.PLATAFORMA);
                     if (p) {
                         p.split(',').forEach(x => {
@@ -299,7 +300,6 @@
                             if (trimmed) platformsSet.add(trimmed);
                         });
                     }
-
                     const d = parseDate(getFieldValue(task, FIELD_KEYS.DATA_ENTREGA));
                     if (d) {
                         const key = `${d.getFullYear()}-${d.getMonth()}`;
@@ -313,7 +313,7 @@
                     }
                 });
 
-                // Lógica de Busca
+                // 2. Aplicar Filtro de Texto
                 if (searchTerm.trim()) {
                     const search = searchTerm.toLowerCase();
                     filtered = filtered.filter(t => {
@@ -324,6 +324,7 @@
                     });
                 }
 
+                // 3. Aplicar Filtro de Mês
                 if (filterMonth) {
                     const [year, month] = filterMonth.split('-').map(Number);
                     filtered = filtered.filter(t => {
@@ -332,12 +333,12 @@
                     });
                 }
 
+                // 4. Aplicar Filtro de Status
                 if (filterStatus !== 'all') {
-                    filtered = filtered.filter(t => 
-                        getFieldValue(t, FIELD_KEYS.STATUS) === filterStatus
-                    );
+                    filtered = filtered.filter(t => getFieldValue(t, FIELD_KEYS.STATUS) === filterStatus);
                 }
 
+                // 5. Aplicar Filtro de Plataforma
                 if (filterPlatform !== 'all') {
                     filtered = filtered.filter(t => {
                         const p = getFieldValue(t, FIELD_KEYS.PLATAFORMA);
@@ -345,28 +346,25 @@
                     });
                 }
 
+                // 6. Ocultar Concluídos (se opção ativa)
                 if (!showCompleted) {
                     filtered = filtered.filter(t => {
                         const s = String(getFieldValue(t, FIELD_KEYS.STATUS)).toLowerCase();
                         const a = String(getFieldValue(t, FIELD_KEYS.APROVACAO)).toLowerCase();
-                        const isDone = (s.includes('conclu') || s.includes('finaliz') || s.includes('postado')) && 
-                                       a.includes('aprovado');
+                        const isDone = (s.includes('conclu') || s.includes('finaliz') || s.includes('postado')) && a.includes('aprovado');
                         return !isDone;
                     });
                 }
 
-                // Estatísticas
+                // 7. Calcular Estatísticas
                 filtered.forEach(t => {
                     const s = String(getFieldValue(t, FIELD_KEYS.STATUS)).toLowerCase();
                     const a = String(getFieldValue(t, FIELD_KEYS.APROVACAO)).toLowerCase();
                     const dateStr = getFieldValue(t, FIELD_KEYS.DATA_ENTREGA);
-                    
                     statsCounter.total++;
-                    
                     if (isDateOverdue(dateStr) && !s.includes('conclu') && !s.includes('finaliz')) {
                         statsCounter.overdue++;
                     }
-                    
                     if ((s.includes('conclu') || s.includes('finaliz') || s.includes('postado')) && a.includes('aprovado')) {
                         statsCounter.completed++;
                     } else if (s.includes('programado') || s.includes('andamento') || s.includes('fila') || s.includes('produção')) {
@@ -376,6 +374,7 @@
                     }
                 });
                 
+                // 8. Ordenar por data
                 filtered.sort((a, b) => {
                     const da = parseDate(getFieldValue(a, FIELD_KEYS.DATA_ENTREGA)) || new Date(8640000000000000);
                     const db = parseDate(getFieldValue(b, FIELD_KEYS.DATA_ENTREGA)) || new Date(8640000000000000);
@@ -391,25 +390,22 @@
                 };
             }, [rawTasks, filterMonth, filterStatus, filterPlatform, showCompleted, searchTerm]);
 
-            // ============ INTEGRAÇÃO GOOGLE APPS SCRIPT ============
+            // ============ INTEGRAÇÃO GOOGLE APPS SCRIPT (Escrita) ============
             const sendDataToSheet = (payload, successMsg) => {
                 setModalMessage({ type: 'loading', text: 'Enviando dados...' });
-                
                 const params = new URLSearchParams();
                 params.set('action', payload.action);
                 params.set('row', payload.row);
                 if (payload.action === 'addComment') params.set('comment', payload.comment);
                 if (payload.action === 'updateI') params.set('value', payload.value);
-
+                
+                // JSONP Hack para evitar CORS
                 const cbName = 'jsonpCallback_' + Math.random().toString(36).substr(2, 9);
                 params.set('callback', cbName);
 
                 window[cbName] = function(resp) {
-                    console.log('📩 Resposta do Apps Script:', resp);
-                    
                     if (resp && resp.status === 'ok') {
                         setModalMessage({ type: 'success', text: successMsg });
-                        
                         // Atualização Otimista
                         if (payload.action === 'addComment' && selectedTask) {
                              const currentComments = parseComments(getFieldValue(selectedTask, FIELD_KEYS.COMENTARIOS));
@@ -417,20 +413,15 @@
                              updatedTask['comments'] = [...currentComments, payload.comment];
                              setSelectedTask(updatedTask);
                         }
-
                         setTimeout(() => {
                             setModalMessage(null);
                             if (payload.action !== 'addComment') setSelectedTask(null);
                             loadData();
                         }, 1500);
                     } else {
-                        setModalMessage({ 
-                            type: 'error', 
-                            text: resp?.message || 'Erro ao processar solicitação' 
-                        });
+                        setModalMessage({ type: 'error', text: resp?.message || 'Erro ao processar solicitação' });
                         setTimeout(() => setModalMessage(null), 4000);
                     }
-                    
                     delete window[cbName];
                     const scriptEl = document.getElementById(cbName);
                     if (scriptEl) scriptEl.remove();
@@ -440,17 +431,14 @@
                 script.id = cbName;
                 script.src = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
                 script.onerror = () => {
-                    setModalMessage({ 
-                        type: 'error', 
-                        text: 'Erro de conexão com Google Apps Script. Verifique a URL.' 
-                    });
+                    setModalMessage({ type: 'error', text: 'Erro de conexão com Google Apps Script. Verifique a URL.' });
                     setTimeout(() => setModalMessage(null), 4000);
                     delete window[cbName];
                 };
-                
                 document.body.appendChild(script);
             };
 
+            // Handlers de Ação
             const handleApprove = (task, action) => {
                 const row = task._row;
                 if (!row) { alert("❌ Erro: ID da linha não encontrado."); return; }
@@ -478,24 +466,22 @@
                 sendDataToSheet({ action: 'addComment', row: row, comment: `[${timestamp}] ${text.trim()}` }, "✅ Comentário adicionado!");
             };
 
-            // ============ ESTILIZAÇÃO (Cores) ============
+            // ============ ESTILIZAÇÃO DINÂMICA ============
             const getStatusStyle = (status, approval) => {
                 const s = String(status).toLowerCase();
                 const a = String(approval).toLowerCase();
-                
                 if (a.includes('reprovado')) return { bg: 'bg-red-100', text: 'text-red-700', icon: 'XCircle' };
                 if (a.includes('aprovado') || s.includes('aprovado')) return { bg: 'bg-green-100', text: 'text-green-700', icon: 'CheckCircle2' };
                 if (s.includes('conclu') || s.includes('final') || s.includes('postado')) return { bg: 'bg-blue-100', text: 'text-blue-700', icon: 'Check' };
                 if (s.includes('pendente') || s.includes('aguardando')) return { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: 'Clock' };
                 if (s.includes('andamento') || s.includes('fila') || s.includes('produção') || s.includes('programado')) return { bg: 'bg-indigo-100', text: 'text-indigo-700', icon: 'Loader' };
-                
                 return { bg: 'bg-gray-200', text: 'text-gray-700', icon: 'HelpCircle' };
             };
 
-            // ============ RENDER ============
+            // ============ RENDERIZAÇÃO DA TELA ============
             return (
                 <div className="min-h-screen pb-12">
-                    {/* HEADER */}
+                    {/* --- HEADER --- */}
                     <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-20">
                         <div className="container mx-auto px-4 py-4">
                             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -508,7 +494,6 @@
                                         Gerenciamento de tarefas e aprovações
                                     </p>
                                 </div>
-
                                 <div className="flex items-center gap-3">
                                     <button 
                                         onClick={() => setShowCompleted(!showCompleted)}
@@ -521,14 +506,8 @@
                                         <Icon name={showCompleted ? "Eye" : "EyeOff"} size={16} />
                                         {showCompleted ? "Ocultar Concluídas" : "Mostrar Concluídas"}
                                     </button>
-
                                     {loading && <div className="loader w-5 h-5 border-2"></div>}
-                                    <button 
-                                        onClick={loadData} 
-                                        disabled={loading}
-                                        className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm border border-gray-200"
-                                        title="Recarregar dados"
-                                    >
+                                    <button onClick={loadData} disabled={loading} className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm border border-gray-200">
                                         <Icon name="RefreshCw" size={20} className={loading ? "fa-spin" : ""} />
                                     </button>
                                 </div>
@@ -536,111 +515,70 @@
                         </div>
                     </header>
 
-                    {/* KPIs */}
-                    <section className="bg-gradient-to-r from-primary to-secondary text-white shadow-md">
+                    {/* --- KPIS (Banner Azul Escuro) --- */}
+                    <section className="bg-darkbanner text-white shadow-md">
                         <div className="container mx-auto px-4 py-8">
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                                    <div className="text-xs uppercase tracking-wide opacity-80 mb-1">Total</div>
+                                    <div className="text-xs uppercase tracking-wide text-white mb-1 font-semibold opacity-100">Total</div>
                                     <div className="text-3xl font-bold">{stats.total}</div>
                                 </div>
                                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                                    <div className="text-xs uppercase tracking-wide opacity-80 mb-1">Pendentes</div>
+                                    <div className="text-xs uppercase tracking-wide text-white mb-1 font-semibold opacity-100">Pendentes</div>
                                     <div className="text-3xl font-bold">{stats.pending}</div>
                                 </div>
                                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                                    <div className="text-xs uppercase tracking-wide opacity-80 mb-1">Em Andamento</div>
+                                    <div className="text-xs uppercase tracking-wide text-white mb-1 font-semibold opacity-100">Em Andamento</div>
                                     <div className="text-3xl font-bold">{stats.inProgress}</div>
                                 </div>
                                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                                    <div className="text-xs uppercase tracking-wide opacity-80 mb-1">Concluídas</div>
+                                    <div className="text-xs uppercase tracking-wide text-white mb-1 font-semibold opacity-100">Concluídas</div>
                                     <div className="text-3xl font-bold">{stats.completed}</div>
                                 </div>
                                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                                    <div className="text-xs uppercase tracking-wide opacity-80 mb-1">Atrasadas</div>
+                                    <div className="text-xs uppercase tracking-wide text-white mb-1 font-semibold opacity-100">Atrasadas</div>
                                     <div className="text-3xl font-bold text-red-300">{stats.overdue}</div>
                                 </div>
                             </div>
                         </div>
                     </section>
 
-                    {/* FILTROS */}
+                    {/* --- FILTROS E BUSCA --- */}
                     <section className="bg-white py-6 border-b border-gray-200 sticky top-[88px] z-10 shadow-sm">
                         <div className="container mx-auto px-4">
-                            {/* Busca */}
                             <div className="mb-4">
                                 <div className="relative">
                                     <Icon name="Search" size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                    <input 
-                                        type="text"
-                                        placeholder="Buscar por título, assunto ou observação..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
-                                    />
+                                    <input type="text" placeholder="Buscar por título, assunto ou observação..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition" />
                                 </div>
                             </div>
-
-                            {/* Filtros */}
                             <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
                                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                                     <div className="flex items-center gap-2 text-gray-600">
                                         <Icon name="Filter" size={18} />
                                         <span className="font-medium text-sm">Filtros:</span>
                                     </div>
-                                    
-                                    <select 
-                                        className="px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary outline-none transition"
-                                        value={filterMonth}
-                                        onChange={(e) => setFilterMonth(e.target.value)}
-                                    >
+                                    <select className="px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary outline-none transition" value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}>
                                         <option value="">Todos os Meses</option>
-                                        {availableMonths.map(m => (
-                                            <option key={m.value} value={m.value}>{m.label}</option>
-                                        ))}
+                                        {availableMonths.map(m => (<option key={m.value} value={m.value}>{m.label}</option>))}
                                     </select>
-
-                                    <select 
-                                        className="px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary outline-none"
-                                        value={filterStatus}
-                                        onChange={(e) => setFilterStatus(e.target.value)}
-                                    >
+                                    <select className="px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary outline-none" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
                                         <option value="all">Todos os Status</option>
-                                        {availableStatuses.map(s => (
-                                            <option key={s} value={s}>{s}</option>
-                                        ))}
+                                        {availableStatuses.map(s => (<option key={s} value={s}>{s}</option>))}
                                     </select>
-
-                                    <select 
-                                        className="px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary outline-none"
-                                        value={filterPlatform}
-                                        onChange={(e) => setFilterPlatform(e.target.value)}
-                                    >
+                                    <select className="px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary outline-none" value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}>
                                         <option value="all">Todas as Plataformas</option>
-                                        {availablePlatforms.map(p => (
-                                            <option key={p} value={p}>{p}</option>
-                                        ))}
+                                        {availablePlatforms.map(p => (<option key={p} value={p}>{p}</option>))}
                                     </select>
                                 </div>
-                                
                                 {(searchTerm || filterMonth || filterStatus !== 'all' || filterPlatform !== 'all') && (
-                                    <button 
-                                        onClick={() => {
-                                            setSearchTerm('');
-                                            setFilterMonth('');
-                                            setFilterStatus('all');
-                                            setFilterPlatform('all');
-                                        }}
-                                        className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition shadow-sm font-medium"
-                                    >
-                                        Limpar Filtros
-                                    </button>
+                                    <button onClick={() => { setSearchTerm(''); setFilterMonth(''); setFilterStatus('all'); setFilterPlatform('all'); }} className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition shadow-sm font-medium">Limpar Filtros</button>
                                 )}
                             </div>
                         </div>
                     </section>
 
-                    {/* --- GRID DE TAREFAS --- */}
+                    {/* --- GRID DE TAREFAS (CARDS) --- */}
                     <main className="container mx-auto px-4 py-8">
                         {loading && rawTasks.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-20 animate-fadeInUp">
@@ -661,7 +599,6 @@
                                 <div className="mb-4 text-sm text-gray-500 flex justify-between items-center">
                                     <span>Exibindo <span className="font-bold text-primary">{filteredTasks.length}</span> tarefa(s)</span>
                                 </div>
-                                
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {filteredTasks.map((task, index) => {
                                         const status = getFieldValue(task, FIELD_KEYS.STATUS, 'Sem Status');
@@ -671,7 +608,7 @@
                                         const dueDate = getFieldValue(task, FIELD_KEYS.DATA_ENTREGA);
                                         const isOverdue = isDateOverdue(dueDate) && !status.toLowerCase().includes('conclu') && !status.toLowerCase().includes('finaliz');
                                         
-                                        // Progresso Lógica
+                                        // Progresso
                                         const rawProgress = getFieldValue(task, FIELD_KEYS.PROGRESSO, '0');
                                         const progressNum = parseInt(String(rawProgress).replace(/\D/g, '')) || 0;
                                         const progress = Math.min(100, Math.max(0, progressNum));
@@ -685,13 +622,13 @@
                                                 className="card-hover bg-white rounded-xl border border-gray-200 cursor-pointer group relative overflow-hidden flex flex-col h-full animate-fadeInUp"
                                                 style={{ animationDelay: `${index * 50}ms` }}
                                             >
-                                                {/* 1. BARRA DE STATUS (TOPO - FULL WIDTH) */}
+                                                {/* BARRA DE STATUS (TOPO - FULL WIDTH) */}
                                                 <div className={`w-full py-2 flex items-center justify-center gap-2 font-bold text-xs uppercase tracking-wider ${style.bg} ${style.text}`}>
                                                     <Icon name={style.icon} size={12} />
                                                     {status}
                                                 </div>
 
-                                                {/* 2. ATRASADA (OVERLAY - Sobrepõe a barra se necessário, alinhado à direita) */}
+                                                {/* ETIQUETA ATRASADA (OVERLAY) */}
                                                 {isOverdue && (
                                                     <div className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-3 py-2 rounded-bl-lg shadow-md z-10 flex items-center gap-1">
                                                         <Icon name="AlertTriangle" size={10} />
@@ -700,19 +637,16 @@
                                                 )}
                                                 
                                                 <div className="p-5 flex flex-col flex-grow">
-                                                    {/* Plataforma */}
                                                     <div className="flex justify-between items-start mb-2">
                                                         <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
                                                             {platform}
                                                         </span>
                                                     </div>
-
-                                                    {/* Título */}
                                                     <h3 className="text-base font-bold text-gray-900 mb-4 leading-snug line-clamp-2 flex-grow">
                                                         {title}
                                                     </h3>
 
-                                                    {/* 3. BARRA DE PROGRESSO (Bateria) */}
+                                                    {/* BARRA DE PROGRESSO (BATERIA) */}
                                                     {progress > 0 && (
                                                         <div className="mb-4">
                                                             <div className="flex justify-between text-[10px] font-bold text-gray-500 mb-1">
@@ -720,15 +654,11 @@
                                                                 <span>{progress}%</span>
                                                             </div>
                                                             <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden border border-gray-100">
-                                                                <div 
-                                                                    className="bg-green-500 h-2 rounded-full transition-all duration-500 shadow-sm" 
-                                                                    style={{ width: `${progress}%` }}
-                                                                ></div>
+                                                                <div className="bg-green-500 h-2 rounded-full transition-all duration-500 shadow-sm" style={{ width: `${progress}%` }}></div>
                                                             </div>
                                                         </div>
                                                     )}
 
-                                                    {/* Detalhes Inferiores */}
                                                     <div className="space-y-2 text-xs border-t border-gray-100 pt-3 mt-auto">
                                                         <div className="flex items-center gap-2 text-gray-600">
                                                             <Icon name="Calendar" size={12} className="text-gray-400" />
@@ -736,7 +666,6 @@
                                                                 Entrega: {formatDate(dueDate)}
                                                             </span>
                                                         </div>
-                                                        
                                                         <div className="flex items-center gap-2">
                                                             <Icon name="FileCheck" size={12} className="text-gray-400" />
                                                             <span className={`font-semibold ${
@@ -766,40 +695,20 @@
 
                     {/* --- MODAL DE DETALHES --- */}
                     {selectedTask && (
-                        <div 
-                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 modal-backdrop" 
-                            onClick={() => setSelectedTask(null)}
-                        >
-                            <div 
-                                className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-fadeInUp" 
-                                onClick={e => e.stopPropagation()}
-                            >
-                                {/* Modal Header */}
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 modal-backdrop" onClick={() => setSelectedTask(null)}>
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-fadeInUp" onClick={e => e.stopPropagation()}>
                                 <div className="p-6 bg-gradient-to-r from-primary to-secondary text-white flex justify-between items-start sticky top-0 z-10 shrink-0">
                                     <div className="flex-1 pr-4">
                                         <div className="flex flex-wrap gap-2 mb-3">
-                                            <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border border-white/10">
-                                                {getFieldValue(selectedTask, FIELD_KEYS.PLATAFORMA)}
-                                            </span>
-                                            <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold border border-white/10">
-                                                ID: {selectedTask._row || 'N/A'}
-                                            </span>
+                                            <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border border-white/10">{getFieldValue(selectedTask, FIELD_KEYS.PLATAFORMA)}</span>
+                                            <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold border border-white/10">ID: {selectedTask._row || 'N/A'}</span>
                                         </div>
-                                        <h2 className="text-xl md:text-2xl font-bold leading-tight">
-                                            {getFieldValue(selectedTask, FIELD_KEYS.TITLE)}
-                                        </h2>
+                                        <h2 className="text-xl md:text-2xl font-bold leading-tight">{getFieldValue(selectedTask, FIELD_KEYS.TITLE)}</h2>
                                     </div>
-                                    <button 
-                                        onClick={() => setSelectedTask(null)} 
-                                        className="text-white/80 hover:text-white transition p-2 hover:bg-white/10 rounded-lg"
-                                    >
-                                        <Icon name="X" size={24} />
-                                    </button>
+                                    <button onClick={() => setSelectedTask(null)} className="text-white/80 hover:text-white transition p-2 hover:bg-white/10 rounded-lg"><Icon name="X" size={24} /></button>
                                 </div>
 
-                                {/* Modal Body */}
                                 <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/50">
-                                    {/* Status Cards */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                         <div className="p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
                                             <div className="text-xs uppercase tracking-wide text-gray-500 mb-2 font-bold">Status Atual</div>
@@ -808,28 +717,16 @@
                                                 {getFieldValue(selectedTask, FIELD_KEYS.STATUS)}
                                             </div>
                                         </div>
-                                        <div className={`p-4 rounded-xl border shadow-sm ${
-                                            String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('reprovado')
-                                                ? 'bg-red-50 border-red-200'
-                                                : String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('aprovado')
-                                                ? 'bg-green-50 border-green-200'
-                                                : 'bg-yellow-50 border-yellow-200'
-                                        }`}>
+                                        <div className={`p-4 rounded-xl border shadow-sm ${String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('reprovado') ? 'bg-red-50 border-red-200' : String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('aprovado') ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
                                             <div className="text-xs uppercase tracking-wide mb-2 font-bold opacity-80">Aprovação</div>
-                                            <div className={`font-bold text-lg flex items-center gap-2 ${
-                                                String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('reprovado') ? 'text-red-700' : 
-                                                String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('aprovado') ? 'text-green-700' : 'text-yellow-700'
-                                            }`}>
-                                                <Icon name={
-                                                    String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('reprovado') ? 'XCircle' :
-                                                    String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('aprovado') ? 'CheckCircle2' : 'Clock'
-                                                } size={20} />
+                                            <div className={`font-bold text-lg flex items-center gap-2 ${String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('reprovado') ? 'text-red-700' : String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('aprovado') ? 'text-green-700' : 'text-yellow-700'}`}>
+                                                <Icon name={String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('reprovado') ? 'XCircle' : String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('aprovado') ? 'CheckCircle2' : 'Clock'} size={20} />
                                                 {getFieldValue(selectedTask, FIELD_KEYS.APROVACAO) || 'Pendente'}
                                             </div>
                                         </div>
                                     </div>
                                     
-                                    {/* Progresso Detalhado no Modal */}
+                                    {/* Progresso no Modal */}
                                     {(() => {
                                         const rawProgress = getFieldValue(selectedTask, FIELD_KEYS.PROGRESSO, '0');
                                         const progressNum = parseInt(String(rawProgress).replace(/\D/g, '')) || 0;
@@ -842,16 +739,12 @@
                                                     <span>{progress}%</span>
                                                 </div>
                                                 <div className="w-full bg-gray-100 rounded-full h-3 border border-gray-100 overflow-hidden">
-                                                    <div 
-                                                        className="bg-green-500 h-3 rounded-full shadow-sm" 
-                                                        style={{ width: `${progress}%` }}
-                                                    ></div>
+                                                    <div className="bg-green-500 h-3 rounded-full shadow-sm" style={{ width: `${progress}%` }}></div>
                                                 </div>
                                             </div>
                                         );
                                     })()}
 
-                                    {/* Info Details */}
                                     <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-6">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
@@ -866,9 +759,7 @@
                                                 </h4>
                                                 <p className={`text-sm pl-6 font-medium ${isDateOverdue(getFieldValue(selectedTask, FIELD_KEYS.DATA_ENTREGA)) ? 'text-red-600' : 'text-gray-600'}`}>
                                                     {formatDate(getFieldValue(selectedTask, FIELD_KEYS.DATA_ENTREGA))}
-                                                    {isDateOverdue(getFieldValue(selectedTask, FIELD_KEYS.DATA_ENTREGA)) && 
-                                                        <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">ATRASADA</span>
-                                                    }
+                                                    {isDateOverdue(getFieldValue(selectedTask, FIELD_KEYS.DATA_ENTREGA)) && <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">ATRASADA</span>}
                                                 </p>
                                             </div>
                                             <div className="md:col-span-2">
@@ -877,32 +768,18 @@
                                                 </h4>
                                                 <div className="pl-6">
                                                     {getFieldValue(selectedTask, FIELD_KEYS.LINK_DRIVE) ? (
-                                                        <a 
-                                                            href={getFieldValue(selectedTask, FIELD_KEYS.LINK_DRIVE)} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium transition bg-blue-50 px-3 py-1.5 rounded-md border border-blue-100"
-                                                        >
-                                                            <Icon name="ExternalLink" size={12} />
-                                                            Abrir arquivo no Google Drive
-                                                        </a>
-                                                    ) : (
-                                                        <span className="text-sm text-gray-400 italic">Nenhum link fornecido</span>
-                                                    )}
+                                                        <a href={getFieldValue(selectedTask, FIELD_KEYS.LINK_DRIVE)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium transition bg-blue-50 px-3 py-1.5 rounded-md border border-blue-100"><Icon name="ExternalLink" size={12} /> Abrir arquivo no Google Drive</a>
+                                                    ) : (<span className="text-sm text-gray-400 italic">Nenhum link fornecido</span>)}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Observation */}
                                     <div className="mb-6">
                                         <h4 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide">Descrição da Tarefa</h4>
-                                        <div className="bg-white p-4 rounded-xl border border-gray-200 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap shadow-sm">
-                                            {getFieldValue(selectedTask, FIELD_KEYS.OBSERVACAO) || 'Sem descrição registrada.'}
-                                        </div>
+                                        <div className="bg-white p-4 rounded-xl border border-gray-200 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap shadow-sm">{getFieldValue(selectedTask, FIELD_KEYS.OBSERVACAO) || 'Sem descrição registrada.'}</div>
                                     </div>
 
-                                    {/* Comments (Fixada a lista linha por linha) */}
                                     <div>
                                         <h4 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide flex items-center gap-2">
                                             <Icon name="MessageCircle" size={16} /> Histórico de Comentários
@@ -910,56 +787,29 @@
                                         <div className="bg-gray-100/50 rounded-xl border border-gray-200 p-4 max-h-48 overflow-y-auto custom-scrollbar">
                                             {(() => {
                                                 const commentsList = parseComments(getFieldValue(selectedTask, FIELD_KEYS.COMENTARIOS));
-                                                
                                                 if (commentsList.length > 0) {
                                                     return (
                                                         <div className="space-y-3">
                                                             {commentsList.map((comment, i) => (
-                                                                <div key={i} className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm text-sm text-gray-700 relative pl-4 border-l-4 border-l-secondary">
-                                                                    {comment}
-                                                                </div>
+                                                                <div key={i} className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm text-sm text-gray-700 relative pl-4 border-l-4 border-l-secondary">{comment}</div>
                                                             ))}
                                                         </div>
                                                     );
                                                 } else {
-                                                    return (
-                                                        <div className="text-center py-6 text-gray-400 text-sm italic">
-                                                            Nenhum comentário registrado.
-                                                        </div>
-                                                    );
+                                                    return (<div className="text-center py-6 text-gray-400 text-sm italic">Nenhum comentário registrado.</div>);
                                                 }
                                             })()}
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Modal Footer Actions */}
+                                {/* Modal Footer */}
                                 <div className="p-4 border-t border-gray-200 bg-white shrink-0">
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                        <button 
-                                            onClick={() => handleApprove(selectedTask, 'approve')}
-                                            className="btn-action bg-green-600 text-white hover:bg-green-700 shadow-sm flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition"
-                                        >
-                                            <Icon name="ThumbsUp" size={18} /> <span className="hidden sm:inline">Aprovar</span>
-                                        </button>
-                                        <button 
-                                            onClick={() => handleApprove(selectedTask, 'reject')}
-                                            className="btn-action bg-red-600 text-white hover:bg-red-700 shadow-sm flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition"
-                                        >
-                                            <Icon name="ThumbsDown" size={18} /> <span className="hidden sm:inline">Reprovar</span>
-                                        </button>
-                                        <button 
-                                            onClick={() => handleComment(selectedTask)}
-                                            className="btn-action bg-primary text-white hover:bg-primary/90 shadow-sm flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition"
-                                        >
-                                            <Icon name="MessageCircle" size={18} /> <span className="hidden sm:inline">Comentar</span>
-                                        </button>
-                                        <button 
-                                            onClick={() => handleApprove(selectedTask, 'custom')}
-                                            className="btn-action bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 shadow-sm flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition"
-                                        >
-                                            <Icon name="Edit" size={18} /> <span className="hidden sm:inline">Customizar</span>
-                                        </button>
+                                        <button onClick={() => handleApprove(selectedTask, 'approve')} className="btn-action bg-green-600 text-white hover:bg-green-700 shadow-sm flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition"><Icon name="ThumbsUp" size={18} /> <span className="hidden sm:inline">Aprovar</span></button>
+                                        <button onClick={() => handleApprove(selectedTask, 'reject')} className="btn-action bg-red-600 text-white hover:bg-red-700 shadow-sm flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition"><Icon name="ThumbsDown" size={18} /> <span className="hidden sm:inline">Reprovar</span></button>
+                                        <button onClick={() => handleComment(selectedTask)} className="btn-action bg-primary text-white hover:bg-primary/90 shadow-sm flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition"><Icon name="MessageCircle" size={18} /> <span className="hidden sm:inline">Comentar</span></button>
+                                        <button onClick={() => handleApprove(selectedTask, 'custom')} className="btn-action bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 shadow-sm flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition"><Icon name="Edit" size={18} /> <span className="hidden sm:inline">Customizar</span></button>
                                     </div>
                                 </div>
                             </div>
