@@ -25,12 +25,20 @@
         #app-content { display: none; } /* Oculto por padrão */
         
         /* TELA DE LOGIN */
-        #login-screen {
-            display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.95); z-index: 9999;
-            flex-direction: column; justify-content: center; align-items: center; text-align: center;
-            backdrop-filter: blur(5px);
-        }
+#loading-screen {
+    display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #f5f7fa; z-index: 20000;
+    justify-content: center; align-items: center; flex-direction: column;
+}
+
+/* --- ALTERAÇÃO: TELA DE LOGIN (Mude de flex para none) --- */
+#login-screen {
+    display: none; /* <--- IMPORTANTE: Começa oculto */
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255,255,255,0.95); z-index: 9999;
+    flex-direction: column; justify-content: center; align-items: center; text-align: center;
+    backdrop-filter: blur(5px);
+}
         
         /* TELA DE ACESSO NEGADO */
         #access-denied {
@@ -145,7 +153,10 @@
     </style>
 </head>
 <body>
-
+<div id="loading-screen">
+    <i class="fas fa-circle-notch fa-spin fa-3x" style="color:var(--primary)"></i>
+    <p style="margin-top:20px; color:#555; font-weight:600;">Verificando acessos...</p>
+</div>
 <div id="login-screen">
     <div style="margin-bottom: 30px;">
         <i class="fas fa-lock fa-3x" style="color:var(--primary); margin-bottom: 20px;"></i>
@@ -209,33 +220,45 @@
     const now = new Date();
     document.getElementById('filter-date').value = now.toISOString().slice(0, 7);
 
+// Forçar persistência LOCAL
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
     // --- LÓGICA DE LOGIN/AUTENTICAÇÃO ---
     firebase.auth().onAuthStateChanged(async user => {
+        const loadingScreen = document.getElementById('loading-screen');
+        const loginScreen = document.getElementById('login-screen');
+        const appContent = document.getElementById('app-content');
+        const accessDenied = document.getElementById('access-denied');
+
         if (user) {
-            // Verifica se o e-mail está na lista permitida
+            // USUÁRIO LOGADO
             if (ALLOWED_EMAILS.includes(user.email)) {
                 
                 // Login Autorizado
-                user.getIdToken().then(token => { 
-                    AUTH_TOKEN = token;
-                    document.getElementById('login-screen').style.display = 'none';
-                    document.getElementById('access-denied').style.display = 'none';
-                    document.getElementById('app-content').style.display = 'block';
-                    loadInteractions(); 
-                });
+                AUTH_TOKEN = await user.getIdToken();
+                
+                // Esconde Loading e Login, Mostra Painel
+                if(loadingScreen) loadingScreen.style.display = 'none';
+                loginScreen.style.display = 'none';
+                accessDenied.style.display = 'none';
+                appContent.style.display = 'block';
+                
+                loadInteractions(); 
 
             } else {
                 // E-mail NÃO permitido
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app-content').style.display = 'none';
-                document.getElementById('access-denied').style.display = 'flex';
+                if(loadingScreen) loadingScreen.style.display = 'none';
+                loginScreen.style.display = 'none';
+                appContent.style.display = 'none';
+                accessDenied.style.display = 'flex';
                 firebase.auth().signOut();
             }
         } else {
-            // Não logado
-            document.getElementById('app-content').style.display = 'none';
-            document.getElementById('access-denied').style.display = 'none';
-            document.getElementById('login-screen').style.display = 'flex';
+            // USUÁRIO DESCONECTADO (Só agora mostra o login)
+            if(loadingScreen) loadingScreen.style.display = 'none';
+            appContent.style.display = 'none';
+            accessDenied.style.display = 'none';
+            loginScreen.style.display = 'flex';
         }
     });
 
