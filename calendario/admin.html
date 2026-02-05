@@ -21,6 +21,15 @@
                         excelGreen: '#217346',
                         excelHeader: '#f3f2f1',
                         primary: '#003366',
+                    },
+                    animation: {
+                        'pop-in': 'popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                    },
+                    keyframes: {
+                        popIn: {
+                            '0%': { opacity: '0', transform: 'scale(0.95)' },
+                            '100%': { opacity: '1', transform: 'scale(1)' },
+                        }
                     }
                 }
             }
@@ -29,26 +38,74 @@
 
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; }
-        .table-wrapper { height: calc(100vh - 220px); overflow: auto; background: white; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        
+        .table-wrapper {
+            height: calc(100vh - 220px); 
+            overflow: auto;
+            background: white;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
         table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
-        thead th { background-color: #f3f2f1; color: #444; font-weight: 600; text-align: left; padding: 8px; border-bottom: 2px solid #d1d5db; border-right: 1px solid #d1d5db; white-space: nowrap; position: sticky; top: 0; z-index: 20; cursor: pointer; user-select: none; transition: background 0.2s; }
+        
+        thead th {
+            background-color: #f3f2f1;
+            color: #444;
+            font-weight: 600;
+            text-align: left;
+            padding: 8px;
+            border-bottom: 2px solid #d1d5db;
+            border-right: 1px solid #d1d5db;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
         thead th:hover { background-color: #e5e7eb; }
-        td { border-bottom: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; padding: 0; margin: 0; height: 35px; position: relative; background-clip: padding-box; }
-        .cell-input { width: 100%; height: 100%; border: none; padding: 4px 8px; outline: none; background: transparent; font-family: inherit; color: #374151; transition: background 0.2s; }
+        
+        td {
+            border-bottom: 1px solid #e5e7eb;
+            border-right: 1px solid #e5e7eb;
+            padding: 0;
+            margin: 0;
+            height: 35px;
+            position: relative;
+            background-clip: padding-box;
+        }
+
+        .cell-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            padding: 4px 8px;
+            outline: none;
+            background: transparent;
+            font-family: inherit;
+            color: #374151;
+            transition: background 0.2s;
+        }
+
         .cell-input:focus { background-color: #e0f2fe; box-shadow: inset 0 0 0 2px #2563eb; }
+
         tr:hover td { background-color: #f9fafb; }
         .saving-row { background-color: #fffbeb !important; }
+
+        @keyframes pulseGreen {
+            0% { background-color: #f0fdf4; }
+            50% { background-color: #bbf7d0; }
+            100% { background-color: #f0fdf4; }
+        }
+        .new-row-pulse td { animation: pulseGreen 2s infinite; }
+        
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
-        
-        /* Debug Box */
-        .debug-console {
-            position: fixed; bottom: 10px; left: 10px; width: 300px; max-height: 200px;
-            background: rgba(0,0,0,0.85); color: #00ff00; font-family: monospace; font-size: 11px;
-            padding: 10px; border-radius: 5px; overflow-y: auto; z-index: 9999;
-            pointer-events: none;
-        }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
     </style>
 </head>
 <body>
@@ -56,9 +113,10 @@
 
     <script type="text/babel" data-type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        // Usando signInWithRedirect para máxima compatibilidade com GitHub Pages e Mobile
+        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // CONFIGURAÇÕES DO FIREBASE (JÁ INSERIDAS)
+        // SUAS CONFIGURAÇÕES JÁ INSERIDAS:
         const firebaseConfig = {
             apiKey: "AIzaSyD4lN6iyKpdstb99vosxEDDaEn1QFXLCXI",
             authDomain: "agenda-portal-2d149.firebaseapp.com",
@@ -77,21 +135,29 @@
         // Inicializa Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        setPersistence(auth, browserLocalPersistence).catch(e => console.error(e));
+        
+        // Persistência Local (Mantém logado)
+        setPersistence(auth, browserLocalPersistence).catch(console.error);
+
         const provider = new GoogleAuthProvider();
 
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useCallback } = React;
+
         const DATABASE_URL = firebaseConfig.databaseURL + '/agenda';
 
-        // COMPONENTE DE DEBUG
-        const DebugLog = ({ logs }) => (
-            <div className="debug-console">
-                <strong>DIAGNÓSTICO DO SISTEMA:</strong><br/>
-                {logs.map((log, i) => <div key={i}>&gt; {log}</div>)}
-            </div>
-        );
-
-        const KEYS = { CREATED: 'Data de Criação', TITLE: 'Título', DESC: 'Descrição', OBJ: 'Objetivo e Assunto', PLAT: 'Plataforma', STATUS: 'Status', DATE: 'Data de Entrega', RESP: 'Responsável', PROG: 'Progresso (%)', APROV: 'Aprovação', DRIVE: 'Link do Drive' };
+        const KEYS = {
+            CREATED: 'Data de Criação',
+            TITLE: 'Título',
+            DESC: 'Descrição',
+            OBJ: 'Objetivo e Assunto',
+            PLAT: 'Plataforma',
+            STATUS: 'Status',
+            DATE: 'Data de Entrega',
+            RESP: 'Responsável',
+            PROG: 'Progresso (%)',
+            APROV: 'Aprovação',
+            DRIVE: 'Link do Drive'
+        };
 
         const App = () => {
             const [user, setUser] = useState(null);
@@ -99,7 +165,6 @@
             const [authLoading, setAuthLoading] = useState(true);
             const [accessDenied, setAccessDenied] = useState(false);
             const [deniedEmail, setDeniedEmail] = useState('');
-            const [logs, setLogs] = useState([]);
 
             const [data, setData] = useState({});
             const [loading, setLoading] = useState(false);
@@ -117,37 +182,26 @@
             const statusOptions = ['Pendente', 'Em Progresso', 'Fila', 'Produção', 'Aprovação', 'Concluído', 'Postado'];
             const platformOptions = ['Instagram', 'LinkedIn', 'Comunicação interna', 'Site', 'Email - Mkt', 'Geral'];
 
-            const addLog = (msg) => setLogs(prev => [...prev.slice(-4), msg]);
-
+            // --- AUTH LOGIC ---
             useEffect(() => {
-                addLog("Iniciando Auth...");
-                if (window.location.protocol === 'file:') {
-                    addLog("ERRO: Rodando em file://. Use um servidor local!");
-                    alert("ERRO CRÍTICO: O Login Google NÃO funciona abrindo o arquivo direto. Use o Live Server do VSCode ou suba para o GitHub.");
-                }
-
                 const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-                    setAccessDenied(false);
                     if (currentUser) {
-                        addLog(`Usuário detectado: ${currentUser.email}`);
                         const email = currentUser.email.toLowerCase().trim();
-                        const isAllowed = ALLOWED_EMAILS.some(e => e.toLowerCase().trim() === email);
-
-                        if (!isAllowed) {
-                            addLog("Acesso negado para este e-mail.");
+                        // Se não estiver na lista, bloqueia, mas NÃO desloga automaticamente (evita loop)
+                        if (!ALLOWED_EMAILS.includes(email)) {
                             setDeniedEmail(email);
                             setAccessDenied(true);
                             setAuthLoading(false);
                             return;
                         }
 
-                        addLog("E-mail autorizado. Obtendo token...");
+                        // Se estiver ok, carrega tudo
+                        setAccessDenied(false);
                         const token = await currentUser.getIdToken();
                         setUser(currentUser);
                         setAuthToken(token);
                         loadDataInternal(token);
                     } else {
-                        addLog("Nenhum usuário logado.");
                         setUser(null);
                         setAuthToken(null);
                         setData({});
@@ -158,53 +212,43 @@
             }, []);
 
             const handleLogin = async () => {
-                addLog("Abrindo popup de login...");
                 try {
-                    await signInWithPopup(auth, provider);
-                    addLog("Popup fechado com sucesso.");
+                    // Redirect é melhor para GitHub Pages
+                    await signInWithRedirect(auth, provider);
                 } catch (error) {
-                    addLog(`ERRO LOGIN: ${error.code}`);
-                    addLog(error.message);
-                    if(error.code === 'auth/unauthorized-domain') {
-                        alert("ERRO DE DOMÍNIO: Adicione este site no Firebase Console > Authentication > Settings > Authorized Domains");
-                    }
+                    alert("Erro no login: " + error.message);
                 }
             };
 
             const handleLogout = async () => {
-                addLog("Fazendo logout...");
                 await signOut(auth);
-                setAccessDenied(false);
-                setLogs([]);
-                addLog("Logout concluído.");
                 window.location.reload();
             };
 
+            // --- DATA LOGIC ---
             const loadDataInternal = async (token) => {
-                addLog("Carregando dados do banco...");
                 setLoading(true);
                 try {
                     const res = await fetch(`${DATABASE_URL}.json?auth=${token}`);
-                    if (res.status === 401) throw new Error("Permissão negada (401). Verifique Rules.");
+                    if (res.status === 401) throw new Error("Permissão negada. Verifique se o e-mail está nas Regras do Firebase.");
+                    
                     const json = await res.json();
                     if (json) {
                         const normalized = {};
                         Object.keys(json).forEach(key => {
-                            if (json[key] && typeof json[key] === 'object') normalized[key] = { ...json[key], _id: key };
+                            if (json[key] && typeof json[key] === 'object') {
+                                normalized[key] = { ...json[key], _id: key };
+                            }
                         });
                         setData(normalized);
-                        addLog(`Dados carregados: ${Object.keys(normalized).length} registros.`);
                         if (filterMonth === '') {
                             const now = new Date();
                             setFilterMonth(`${now.getFullYear()}-${now.getMonth()}`);
                         }
-                    } else { 
-                        addLog("Banco de dados vazio ou nulo.");
-                        setData({}); 
-                    }
+                    } else { setData({}); }
                 } catch (error) { 
-                    addLog("ERRO DADOS: " + error.message);
-                    showFeedback(error.message, 'error'); 
+                    console.error(error);
+                    showFeedback("Erro ao carregar. Tente recarregar a página.", 'error'); 
                 } 
                 finally { setLoading(false); }
             };
@@ -220,6 +264,7 @@
             const { filteredData, stats, availableMonths } = useMemo(() => {
                 const rows = Object.values(data);
                 const monthsSet = new Map();
+                
                 rows.forEach(row => {
                     const dStr = row[KEYS.DATE];
                     if (dStr) {
@@ -227,7 +272,9 @@
                             const d = new Date(dStr);
                             if(!isNaN(d)) {
                                 const key = `${d.getFullYear()}-${d.getMonth()}`;
-                                if (!monthsSet.has(key)) monthsSet.set(key, { value: key, label: d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase(), sort: d.getTime() });
+                                if (!monthsSet.has(key)) {
+                                    monthsSet.set(key, { value: key, label: d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase(), sort: d.getTime() });
+                                }
                             }
                         } catch(e){}
                     }
@@ -278,7 +325,11 @@
             const validateRow = (id) => {
                 const row = data[id];
                 if (!row[KEYS.TITLE] || row[KEYS.TITLE] === 'NOVA TAREFA (EDITAR)') {
-                    setAlertModal({ title: 'Título Obrigatório', msg: 'Preencha o título da tarefa para continuar.', targetId: id });
+                    setAlertModal({
+                        title: 'Título Obrigatório',
+                        msg: 'Preencha o título da tarefa para continuar.',
+                        targetId: id
+                    });
                     const el = document.getElementById(`row-${id}`);
                     if(el) el.scrollIntoView({behavior: 'smooth', block: 'center'});
                     return false;
@@ -289,7 +340,9 @@
             const handleChange = (id, field, value) => {
                 setData(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
                 setUnsavedRows(prev => new Set(prev).add(id));
-                if (newRows.has(id)) setNewRows(prev => { const next = new Set(prev); next.delete(id); return next; });
+                if (newRows.has(id)) {
+                    setNewRows(prev => { const next = new Set(prev); next.delete(id); return next; });
+                }
             };
 
             const saveRow = async (id) => {
@@ -298,7 +351,6 @@
                 delete rowData._id;
                 if(rowData[KEYS.PROG]) rowData[KEYS.PROG] = parseInt(String(rowData[KEYS.PROG]).replace(/\D/g, '')) || 0;
 
-                addLog("Salvando linha...");
                 try {
                     const res = await fetch(`${DATABASE_URL}/${id}.json?auth=${authToken}`, {
                         method: 'PATCH', 
@@ -315,12 +367,8 @@
                             setNewRows(updatedNew);
                         }
                         showFeedback('Salvo com sucesso!', 'success');
-                        addLog("Linha salva.");
                     } else { throw new Error('Erro ao salvar'); }
-                } catch (err) { 
-                    addLog("ERRO SAVE: " + err.message);
-                    showFeedback('Erro de conexão.', 'error'); 
-                }
+                } catch (err) { showFeedback('Erro de conexão.', 'error'); }
             };
 
             const saveAll = async () => {
@@ -329,7 +377,6 @@
                 for (let id of rowsToSave) { if (!validateRow(id)) return; }
 
                 setLoading(true);
-                addLog(`Salvando ${rowsToSave.length} linhas...`);
                 let successCount = 0;
                 for (let id of rowsToSave) {
                     const rowData = { ...data[id] };
@@ -347,13 +394,11 @@
                     } catch (e) { console.error(`Erro ao salvar ${id}`, e); }
                 }
                 setLoading(false);
-                addLog("Salvar tudo concluído.");
                 showFeedback(`${successCount} tarefas salvas com sucesso!`, 'success');
             };
 
             const addNewRow = async () => {
                 if(!authToken) return;
-                addLog("Criando nova linha...");
                 const now = new Date();
                 const newObj = {
                     [KEYS.CREATED]: now.toISOString(),
@@ -376,31 +421,22 @@
                         setNewRows(prev => new Set(prev).add(json.name));
                         setUnsavedRows(prev => new Set(prev).add(json.name));
                         showFeedback('Nova linha criada! Edite para salvar.', 'success');
-                        addLog("Linha criada: " + json.name);
                         setTimeout(() => {
                             const el = document.getElementById(`row-${json.name}`);
                             if(el) el.scrollIntoView({behavior: 'smooth', block: 'center'});
                         }, 200);
                     }
-                } catch (err) { 
-                    addLog("ERRO CREATE: " + err.message);
-                    alert("Erro ao criar."); 
-                }
+                } catch (err) { alert("Erro ao criar."); }
             };
 
             const deleteRow = async (id) => {
                 if (!authToken) return;
                 if (!confirm('Excluir esta tarefa permanentemente?')) return;
-                addLog("Excluindo linha...");
                 try {
                     await fetch(`${DATABASE_URL}/${id}.json?auth=${authToken}`, { method: 'DELETE' });
                     setData(prev => { const copy = { ...prev }; delete copy[id]; return copy; });
                     showFeedback('Excluído.', 'success');
-                    addLog("Linha excluída.");
-                } catch (err) { 
-                    addLog("ERRO DELETE: " + err.message);
-                    alert("Erro ao excluir."); 
-                }
+                } catch (err) { alert("Erro ao excluir."); }
             };
 
             const showFeedback = (msg, type) => {
@@ -431,7 +467,10 @@
                     : <i className="fas fa-sort-down text-primary ml-1"></i>;
             };
 
-            if (authLoading) return <div className="h-screen flex items-center justify-center bg-gray-100 flex-col"><i className="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i><div className="text-gray-500">Iniciando sistema...</div><DebugLog logs={logs} /></div>;
+            // --- TELAS ---
+            if (authLoading) {
+                return <div className="h-screen flex items-center justify-center bg-gray-100"><i className="fas fa-spinner fa-spin text-4xl text-primary"></i></div>;
+            }
 
             if (accessDenied) {
                 return (
@@ -441,11 +480,10 @@
                                 <i className="fas fa-ban text-3xl text-red-600"></i>
                             </div>
                             <h1 className="text-2xl font-bold text-red-700 mb-2">Acesso Negado</h1>
-                            <p className="text-gray-600 mb-2">O e-mail <strong>{deniedEmail}</strong> não tem permissão.</p>
+                            <p className="text-gray-600 mb-2">O e-mail <strong>{deniedEmail}</strong> não tem permissão de administrador.</p>
                             <button onClick={handleLogout} className="w-full py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition font-bold shadow-md">
                                 <i className="fas fa-sign-out-alt mr-2"></i> Sair e Tentar Outra
                             </button>
-                            <DebugLog logs={logs} />
                         </div>
                     </div>
                 );
@@ -464,7 +502,6 @@
                                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" />
                                 Entrar com Google
                             </button>
-                            <DebugLog logs={logs} />
                         </div>
                     </div>
                 );
@@ -602,8 +639,6 @@
                             {feedback.msg}
                         </div>
                     )}
-                    
-                    <DebugLog logs={logs} />
                 </div>
             );
         };
