@@ -21,15 +21,6 @@
                         excelGreen: '#217346',
                         excelHeader: '#f3f2f1',
                         primary: '#003366',
-                    },
-                    animation: {
-                        'pop-in': 'popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                    },
-                    keyframes: {
-                        popIn: {
-                            '0%': { opacity: '0', transform: 'scale(0.95)' },
-                            '100%': { opacity: '1', transform: 'scale(1)' },
-                        }
                     }
                 }
             }
@@ -38,74 +29,20 @@
 
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; }
-        
-        .table-wrapper {
-            height: calc(100vh - 220px); 
-            overflow: auto;
-            background: white;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        
+        .table-wrapper { height: calc(100vh - 220px); overflow: auto; background: white; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
-        
-        thead th {
-            background-color: #f3f2f1;
-            color: #444;
-            font-weight: 600;
-            text-align: left;
-            padding: 8px;
-            border-bottom: 2px solid #d1d5db;
-            border-right: 1px solid #d1d5db;
-            white-space: nowrap;
-            position: sticky;
-            top: 0;
-            z-index: 20;
-            cursor: pointer;
-            user-select: none;
-            transition: background 0.2s;
-        }
-
+        thead th { background-color: #f3f2f1; color: #444; font-weight: 600; text-align: left; padding: 8px; border-bottom: 2px solid #d1d5db; border-right: 1px solid #d1d5db; white-space: nowrap; position: sticky; top: 0; z-index: 20; cursor: pointer; user-select: none; transition: background 0.2s; }
         thead th:hover { background-color: #e5e7eb; }
-        
-        td {
-            border-bottom: 1px solid #e5e7eb;
-            border-right: 1px solid #e5e7eb;
-            padding: 0;
-            margin: 0;
-            height: 35px;
-            position: relative;
-            background-clip: padding-box;
-        }
-
-        .cell-input {
-            width: 100%;
-            height: 100%;
-            border: none;
-            padding: 4px 8px;
-            outline: none;
-            background: transparent;
-            font-family: inherit;
-            color: #374151;
-            transition: background 0.2s;
-        }
-
+        td { border-bottom: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; padding: 0; margin: 0; height: 35px; position: relative; background-clip: padding-box; }
+        .cell-input { width: 100%; height: 100%; border: none; padding: 4px 8px; outline: none; background: transparent; font-family: inherit; color: #374151; transition: background 0.2s; }
         .cell-input:focus { background-color: #e0f2fe; box-shadow: inset 0 0 0 2px #2563eb; }
-
         tr:hover td { background-color: #f9fafb; }
         .saving-row { background-color: #fffbeb !important; }
-
-        @keyframes pulseGreen {
-            0% { background-color: #f0fdf4; }
-            50% { background-color: #bbf7d0; }
-            100% { background-color: #f0fdf4; }
-        }
+        @keyframes pulseGreen { 0% { background-color: #f0fdf4; } 50% { background-color: #bbf7d0; } 100% { background-color: #f0fdf4; } }
         .new-row-pulse td { animation: pulseGreen 2s infinite; }
-        
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
     </style>
 </head>
 <body>
@@ -113,10 +50,9 @@
 
     <script type="text/babel" data-type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // IMPORTANTE: Trocamos signInWithPopup por signInWithRedirect para corrigir o erro de Cross-Origin
-        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        // VOLTANDO PARA POPUP (Funciona melhor no GitHub Pages HTTPS)
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // SUAS CONFIGURAÇÕES EXATAS
         const firebaseConfig = {
             apiKey: "AIzaSyD4lN6iyKpdstb99vosxEDDaEn1QFXLCXI",
             authDomain: "agenda-portal-2d149.firebaseapp.com",
@@ -132,32 +68,18 @@
             'rohsantos1@gmail.com'
         ];
 
-        // Inicializa Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         
-        // Ativa persistência local (Login Silencioso)
+        // Mantém logado
         setPersistence(auth, browserLocalPersistence).catch(console.error);
 
         const provider = new GoogleAuthProvider();
 
         const { useState, useEffect, useMemo, useCallback } = React;
-
         const DATABASE_URL = firebaseConfig.databaseURL + '/agenda';
 
-        const KEYS = {
-            CREATED: 'Data de Criação',
-            TITLE: 'Título',
-            DESC: 'Descrição',
-            OBJ: 'Objetivo e Assunto',
-            PLAT: 'Plataforma',
-            STATUS: 'Status',
-            DATE: 'Data de Entrega',
-            RESP: 'Responsável',
-            PROG: 'Progresso (%)',
-            APROV: 'Aprovação',
-            DRIVE: 'Link do Drive'
-        };
+        const KEYS = { CREATED: 'Data de Criação', TITLE: 'Título', DESC: 'Descrição', OBJ: 'Objetivo e Assunto', PLAT: 'Plataforma', STATUS: 'Status', DATE: 'Data de Entrega', RESP: 'Responsável', PROG: 'Progresso (%)', APROV: 'Aprovação', DRIVE: 'Link do Drive' };
 
         const App = () => {
             const [user, setUser] = useState(null);
@@ -182,13 +104,12 @@
             const statusOptions = ['Pendente', 'Em Progresso', 'Fila', 'Produção', 'Aprovação', 'Concluído', 'Postado'];
             const platformOptions = ['Instagram', 'LinkedIn', 'Comunicação interna', 'Site', 'Email - Mkt', 'Geral'];
 
-            // --- LÓGICA DE LOGIN (BLINDADA) ---
+            // --- AUTH CHECK ---
             useEffect(() => {
                 const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
                     if (currentUser) {
                         const email = currentUser.email.toLowerCase().trim();
                         
-                        // Se o e-mail NÃO for permitido, mostra tela de erro (NÃO DESLOGA AUTOMÁTICO para não dar loop)
                         if (!ALLOWED_EMAILS.includes(email)) {
                             setDeniedEmail(email);
                             setAccessDenied(true);
@@ -196,7 +117,6 @@
                             return;
                         }
 
-                        // Se permitido, prossegue
                         setAccessDenied(false);
                         const token = await currentUser.getIdToken();
                         setUser(currentUser);
@@ -212,12 +132,16 @@
                 return () => unsubscribe();
             }, []);
 
-            // MÉTODO DE LOGIN ALTERADO PARA REDIRECT (CORREÇÃO DO ERRO)
             const handleLogin = async () => {
                 try {
-                    await signInWithRedirect(auth, provider);
+                    // POPUP É O CORRETO PARA GITHUB PAGES (EVITA ERRO 404 NO INIT.JSON)
+                    await signInWithPopup(auth, provider);
                 } catch (error) {
-                    alert("Erro no login: " + error.message);
+                    console.error("Erro Login:", error);
+                    let msg = "Erro ao fazer login.";
+                    if (error.code === 'auth/popup-blocked') msg = "O navegador bloqueou a janela. Permita popups para este site.";
+                    if (error.code === 'auth/unauthorized-domain') msg = "Domínio não autorizado no Firebase Console.";
+                    alert(msg + "\n\nDetalhe: " + error.message);
                 }
             };
 
@@ -226,22 +150,18 @@
                 window.location.reload();
             };
 
-            // --- LÓGICA DE DADOS ---
+            // --- DATA LOAD ---
             const loadDataInternal = async (token) => {
                 setLoading(true);
                 try {
-                    // Passa o auth token na URL para cumprir a Regra de Segurança
                     const res = await fetch(`${DATABASE_URL}.json?auth=${token}`);
-                    
-                    if (res.status === 401) throw new Error("Permissão negada. Verifique se o e-mail está nas Regras do Firebase.");
+                    if (res.status === 401) throw new Error("Permissão negada. Verifique Regras do Firebase.");
                     
                     const json = await res.json();
                     if (json) {
                         const normalized = {};
                         Object.keys(json).forEach(key => {
-                            if (json[key] && typeof json[key] === 'object') {
-                                normalized[key] = { ...json[key], _id: key };
-                            }
+                            if (json[key] && typeof json[key] === 'object') normalized[key] = { ...json[key], _id: key };
                         });
                         setData(normalized);
                         if (filterMonth === '') {
@@ -264,7 +184,7 @@
                 setSortConfig({ key, direction });
             };
 
-            // --- PROCESSAMENTO DA TABELA ---
+            // --- MEMOS ---
             const { filteredData, stats, availableMonths } = useMemo(() => {
                 const rows = Object.values(data);
                 const monthsSet = new Map();
@@ -276,9 +196,7 @@
                             const d = new Date(dStr);
                             if(!isNaN(d)) {
                                 const key = `${d.getFullYear()}-${d.getMonth()}`;
-                                if (!monthsSet.has(key)) {
-                                    monthsSet.set(key, { value: key, label: d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase(), sort: d.getTime() });
-                                }
+                                if (!monthsSet.has(key)) monthsSet.set(key, { value: key, label: d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase(), sort: d.getTime() });
                             }
                         } catch(e){}
                     }
@@ -326,15 +244,11 @@
                 return { filteredData: filtered, stats: { total, done, pending, avgProgress }, availableMonths: sortedMonths };
             }, [data, searchTerm, filterMonth, filterStatus, filterPlatform, sortConfig]);
 
-            // --- AÇÕES DO USUÁRIO ---
+            // --- AÇÕES ---
             const validateRow = (id) => {
                 const row = data[id];
                 if (!row[KEYS.TITLE] || row[KEYS.TITLE] === 'NOVA TAREFA (EDITAR)') {
-                    setAlertModal({
-                        title: 'Título Obrigatório',
-                        msg: 'Preencha o título da tarefa para continuar.',
-                        targetId: id
-                    });
+                    setAlertModal({ title: 'Título Obrigatório', msg: 'Preencha o título da tarefa para continuar.', targetId: id });
                     const el = document.getElementById(`row-${id}`);
                     if(el) el.scrollIntoView({behavior: 'smooth', block: 'center'});
                     return false;
@@ -345,9 +259,7 @@
             const handleChange = (id, field, value) => {
                 setData(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
                 setUnsavedRows(prev => new Set(prev).add(id));
-                if (newRows.has(id)) {
-                    setNewRows(prev => { const next = new Set(prev); next.delete(id); return next; });
-                }
+                if (newRows.has(id)) setNewRows(prev => { const next = new Set(prev); next.delete(id); return next; });
             };
 
             const saveRow = async (id) => {
@@ -449,6 +361,7 @@
                 setTimeout(() => setFeedback(null), 3000);
             };
 
+            // Formatters
             const formatDateForInput = (isoString) => {
                 if (!isoString) return '';
                 try {
@@ -472,23 +385,17 @@
                     : <i className="fas fa-sort-down text-primary ml-1"></i>;
             };
 
-            // --- INTERFACE ---
-            if (authLoading) {
-                return <div className="h-screen flex items-center justify-center bg-gray-100"><i className="fas fa-spinner fa-spin text-4xl text-primary"></i></div>;
-            }
+            // --- TELAS ---
+            if (authLoading) return <div className="h-screen flex items-center justify-center bg-gray-100 flex-col"><i className="fas fa-spinner fa-spin text-4xl text-primary mb-2"></i><span className="text-gray-500 text-sm">Carregando editor...</span></div>;
 
             if (accessDenied) {
                 return (
                     <div className="h-screen flex items-center justify-center bg-red-50 animate-pop-in">
                         <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-4 border border-red-100">
-                            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <i className="fas fa-ban text-3xl text-red-600"></i>
-                            </div>
+                            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fas fa-ban text-3xl text-red-600"></i></div>
                             <h1 className="text-2xl font-bold text-red-700 mb-2">Acesso Negado</h1>
-                            <p className="text-gray-600 mb-2">O e-mail <strong>{deniedEmail}</strong> não tem permissão de administrador.</p>
-                            <button onClick={handleLogout} className="w-full py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition font-bold shadow-md">
-                                <i className="fas fa-sign-out-alt mr-2"></i> Sair e Tentar Outra
-                            </button>
+                            <p className="text-gray-600 mb-2">O e-mail <strong>{deniedEmail}</strong> não tem permissão.</p>
+                            <button onClick={handleLogout} className="w-full py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition font-bold shadow-md"><i className="fas fa-sign-out-alt mr-2"></i> Sair e Tentar Outra</button>
                         </div>
                     </div>
                 );
@@ -498,9 +405,7 @@
                 return (
                     <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary to-blue-900">
                         <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-4 animate-pop-in">
-                            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <i className="fas fa-lock text-3xl text-primary"></i>
-                            </div>
+                            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6"><i className="fas fa-lock text-3xl text-primary"></i></div>
                             <h1 className="text-2xl font-bold text-gray-800 mb-2">Área Restrita</h1>
                             <p className="text-gray-500 mb-8">Faça login para gerenciar a Agenda PSR.</p>
                             <button onClick={handleLogin} className="w-full py-3 px-4 bg-white border-2 border-gray-200 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-50 transition font-bold text-gray-700 shadow-sm hover:shadow-md">
