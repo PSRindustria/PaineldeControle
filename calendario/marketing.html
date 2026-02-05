@@ -4,7 +4,7 @@
     <meta name="robots" content="noindex, nofollow">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel PSR - Marketing</title>
+    <title>Painel PSR - Live Data</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -18,74 +18,112 @@
                     colors: {
                         primary: '#003366',
                         secondary: '#4682B4',
-                        accent: '#FF8C00'
                     },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
                 }
             }
         }
     </script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap');
         
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        body { font-family: 'Inter', sans-serif; }
         
-        /* Animações */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeInUp { animation: fadeInUp 0.5s ease-out forwards; }
         
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loader { border: 3px solid #e5e7eb; border-top: 3px solid #003366; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-
-        /* Scrollbar */
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        .animate-slideIn { animation: slideIn 0.3s ease-out; }
+        
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #003366;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+        
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-        /* Utilitários */
-        .glass-header { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-        .card-shadow:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.15);
+        }
+        
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .badge-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 text-gray-900">
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
         // ============ CONFIGURAÇÕES ============
-        // URL do Firebase (Base de leitura)
         const FIREBASE_URL = 'https://agenda-portal-2d149-default-rtdb.firebaseio.com/agenda.json';
-        
-        // URL do Google Apps Script (Para escrita: Aprovar/Comentar)
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzO7oR3CNBZD-NCnij7Xa-xScc09EWGU69uq81VDHPZmlmwjYJ4s_4rIYzy2Gp1iXvV/exec';
 
-        // ============ MAPEAMENTO DE CAMPOS (CRUCIAL) ============
-        // Estas chaves devem bater exatamente com os cabeçalhos do seu Excel/JSON
+        // ============ CORREÇÃO DAS CHAVES (MAPEAMENTO) ============
+        // Ajustado para bater com o seu Excel/Firebase (Descrição, objetivo, comments)
         const FIELD_KEYS = {
-            TITLE: ['Título', 'Title', 'titulo'],
-            // Como seu Excel não tem coluna "Assunto", usaremos "objetivo" ou "Plataforma" como secundário se necessário
-            ASSUNTO: ['objetivo', 'Assunto', 'Objetivo'], 
-            STATUS: ['Status', 'status'],
-            // "Descrição" do Excel mapeia para a área de Observação/Detalhes do card
-            OBSERVACAO: ['Descrição', 'Descricao', 'description', 'Observação'],
+            TITLE: ['Título', 'Nome', 'Title', 'titulo'],
+            ASSUNTO: ['objetivo', 'Objetivo', 'Assunto', 'assunto'], // Adicionado 'objetivo'
+            STATUS: ['Status', 'Status:', 'status'],
+            OBSERVACAO: ['Descrição', 'Descricao', 'Observação', 'Observacao', 'Observacão', 'observacao'], // Adicionado 'Descrição'
             APROVACAO: ['Aprovação', 'Aprovacao', 'aprovacao'],
-            PLATAFORMA: ['Plataforma', 'Plataformas'],
-            COMENTARIOS: ['comments', 'Comentários'],
-            DATA_ENTREGA: ['Data de Entrega', 'Data Entrega', 'Prazo'],
-            RESPONSAVEL: ['Responsável', 'Responsavel']
+            PLATAFORMA: ['Plataforma', 'Plataformas', 'plataforma'],
+            LINK_DRIVE: ['Link do Drive', 'Link Drive', 'Drive', 'link'],
+            COMENTARIOS: ['comments', 'Comentários', 'Comentarios', 'comentarios'],
+            DATA_POSTAGEM: ['Data da Postagem', 'Data Postagem', 'dataPostagem', 'Data:', 'data'],
+            DATA_ENTREGA: ['Data de Entrega', 'Data Entrega', 'dataEntrega', 'Prazo', 'prazo']
         };
 
         // ============ HELPERS ============
         function getFieldValue(item, possibleKeysArray, defaultValue = '') {
             if (!item) return defaultValue;
             for (const key of possibleKeysArray) {
-                if (item[key] !== undefined && item[key] !== null && String(item[key]).trim() !== '') {
+                if (item.hasOwnProperty(key) && item[key] != null && String(item[key]).trim() !== '') {
                     return item[key];
                 }
             }
@@ -94,21 +132,30 @@
 
         function parseDate(dateStr) {
             if (!dateStr) return null;
-            
-            // Caso já seja objeto Date
             if (dateStr instanceof Date) return dateStr;
             
-            // Tenta formato ISO (padrão JSON)
-            let d = new Date(dateStr);
-            if (!isNaN(d.getTime())) return d;
+            // Correção para ler ISO Dates do Firebase direto (ex: 2025-12-30T03:00:00.000Z)
+            const isoDate = new Date(dateStr);
+            if (!isNaN(isoDate.getTime()) && typeof dateStr === 'string' && dateStr.includes('-')) {
+                return isoDate;
+            }
 
-            // Tenta formato BR (dd/mm/yyyy) vindo do Excel
-            if (typeof dateStr === 'string' && dateStr.includes('/')) {
-                const parts = dateStr.split('/');
-                if (parts.length === 3) {
-                    // dia, mês (0-indexado), ano
-                    d = new Date(parts[2], parseInt(parts[1]) - 1, parts[0]);
-                    if (!isNaN(d.getTime())) return d;
+            if (typeof dateStr === 'string') {
+                try {
+                    let d = null;
+                    if (dateStr.includes('/')) {
+                        const parts = dateStr.split('/');
+                        if (parts.length === 3) {
+                            d = new Date(parts[2], parseInt(parts[1])-1, parts[0]);
+                        } else if (parts.length === 2) {
+                            d = new Date(new Date().getFullYear(), parseInt(parts[1])-1, parts[0]);
+                        }
+                    } else if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+                        d = new Date(dateStr);
+                    }
+                    return (d && !isNaN(d.getTime())) ? d : null;
+                } catch (e) { 
+                    return null; 
                 }
             }
             return null;
@@ -117,395 +164,814 @@
         const formatDate = (dateInput) => {
             const d = parseDate(dateInput);
             if (!d) return 'Sem data';
-            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
         };
 
-        const isOverdue = (dateStr, status) => {
+        const isDateOverdue = (dateStr) => {
             const d = parseDate(dateStr);
             if (!d) return false;
             const today = new Date();
-            today.setHours(0,0,0,0);
-            const s = String(status || '').toLowerCase();
-            // Não considera atrasado se já estiver concluído/postado
-            if (s.includes('conclu') || s.includes('final') || s.includes('postado')) return false;
+            today.setHours(0, 0, 0, 0);
             return d < today;
         };
 
         // ============ COMPONENTE DE ÍCONE ============
-        const Icon = ({ name, className = "" }) => <i className={`fas fa-${name} ${className}`}></i>;
+        const Icon = ({ name, size = 18, className = "" }) => {
+            const iconMap = {
+                'LayoutDashboard': 'fa-chart-line',
+                'RefreshCw': 'fa-sync-alt',
+                'Filter': 'fa-filter',
+                'Eye': 'fa-eye',
+                'EyeOff': 'fa-eye-slash',
+                'Inbox': 'fa-inbox',
+                'Calendar': 'fa-calendar-alt',
+                'FileCheck': 'fa-file-check',
+                'ArrowRight': 'fa-arrow-right',
+                'X': 'fa-times',
+                'Link': 'fa-link',
+                'MessageSquare': 'fa-comments',
+                'ThumbsUp': 'fa-thumbs-up',
+                'ThumbsDown': 'fa-thumbs-down',
+                'MessageCircle': 'fa-comment-dots',
+                'Edit': 'fa-pen-to-square',
+                'Check': 'fa-check',
+                'CheckCircle2': 'fa-circle-check',
+                'XCircle': 'fa-circle-xmark',
+                'AlertTriangle': 'fa-triangle-exclamation',
+                'Clock': 'fa-clock',
+                'HelpCircle': 'fa-circle-question',
+                'Loader': 'fa-spinner fa-spin',
+                'ExternalLink': 'fa-external-link-alt',
+                'Search': 'fa-search'
+            };
 
-        // ============ APP PRINCIPAL ============
+            const faClass = iconMap[name] || 'fa-circle';
+            return <i className={`fas ${faClass} ${className}`} style={{ fontSize: size }}></i>;
+        };
+
+        // ============ COMPONENTE PRINCIPAL ============
         function App() {
-            const [tasks, setTasks] = useState([]);
+            const [rawTasks, setRawTasks] = useState([]);
             const [loading, setLoading] = useState(true);
             const [selectedTask, setSelectedTask] = useState(null);
-            const [toast, setToast] = useState(null);
-            
-            // Filtros
-            const [search, setSearch] = useState('');
-            const [filterStatus, setFilterStatus] = useState('all');
-            const [filterPlat, setFilterPlat] = useState('all');
+            const [modalMessage, setModalMessage] = useState(null);
+            const [searchTerm, setSearchTerm] = useState('');
 
-            // Carregar Dados
+            // Filtros
+            const [filterMonth, setFilterMonth] = useState('');
+            const [filterStatus, setFilterStatus] = useState('all');
+            const [filterPlatform, setFilterPlatform] = useState('all');
+            const [showCompleted, setShowCompleted] = useState(false);
+
+            // ============ CARREGAR DADOS ============
             const loadData = useCallback(async () => {
                 setLoading(true);
                 try {
-                    // Adiciona timestamp para evitar cache do navegador
-                    const res = await fetch(`${FIREBASE_URL}?t=${new Date().getTime()}`);
-                    const json = await res.json();
+                    const response = await fetch(FIREBASE_URL);
+                    if (!response.ok) throw new Error('Erro ao conectar com Firebase');
                     
-                    let data = [];
-                    if (Array.isArray(json)) {
-                        data = json.filter(item => item !== null); // Remove entradas vazias
-                    } else if (typeof json === 'object' && json !== null) {
-                        data = Object.values(json);
+                    const json = await response.json();
+                    
+                    if (json && typeof json === 'object') {
+                        // Correção: filtra itens nulos que podem vir do array do Firebase
+                        const items = Object.entries(json)
+                            .filter(([_, item]) => item !== null) 
+                            .map(([key, item]) => ({
+                                ...item,
+                                _internalId: item._internalId || key,
+                                _row: item._row || key
+                            }));
+                        
+                        setRawTasks(items);
+                        
+                        // Define mês atual se não houver filtro
+                        if (filterMonth === '') {
+                            const now = new Date();
+                            setFilterMonth(`${now.getFullYear()}-${now.getMonth()}`);
+                        }
+                        
+                        console.log(`✅ ${items.length} tarefas carregadas`);
+                    } else {
+                        setRawTasks([]);
                     }
-                    
-                    setTasks(data);
                 } catch (err) {
-                    console.error("Erro ao carregar:", err);
-                    showToast('Erro ao carregar dados', 'error');
+                    console.error("❌ Erro ao carregar dados:", err);
+                    setModalMessage({ type: 'error', text: 'Erro ao carregar dados do Firebase' });
+                    setTimeout(() => setModalMessage(null), 3000);
                 } finally {
                     setLoading(false);
                 }
-            }, []);
+            }, [filterMonth]);
 
-            useEffect(() => { loadData(); }, [loadData]);
+            useEffect(() => {
+                loadData();
+                // Auto-refresh a cada 5 minutos
+                const interval = setInterval(loadData, 300000);
+                return () => clearInterval(interval);
+            }, [loadData]);
 
-            // Mostrar Toast
-            const showToast = (msg, type = 'success') => {
-                setToast({ msg, type });
-                setTimeout(() => setToast(null), 4000);
-            };
+            // ============ FILTROS E ESTATÍSTICAS ============
+            const { filteredTasks, stats, availableMonths, availablePlatforms, availableStatuses } = useMemo(() => {
+                let filtered = [...rawTasks];
+                const statsCounter = { total: 0, pending: 0, inProgress: 0, completed: 0, overdue: 0 };
+                const monthsSet = new Map();
+                const platformsSet = new Set();
+                const statusesSet = new Set();
 
-            // Enviar para Google Sheets (JSONP Hack)
-            const sendToScript = (action, payload) => {
-                showToast('Processando...', 'loading');
-                
-                const scriptId = 'jsonp_callback_' + Math.round(100000 * Math.random());
-                const params = new URLSearchParams({ 
-                    action, 
-                    callback: scriptId,
-                    row: payload.row,
-                    ...(payload.value && { value: payload.value }),
-                    ...(payload.comment && { comment: payload.comment })
+                // Coletar valores únicos
+                rawTasks.forEach(task => {
+                    const s = getFieldValue(task, FIELD_KEYS.STATUS);
+                    if (s) statusesSet.add(s);
+                    
+                    const p = getFieldValue(task, FIELD_KEYS.PLATAFORMA);
+                    if (p) {
+                        p.split(',').forEach(x => {
+                            const trimmed = x.trim();
+                            if (trimmed) platformsSet.add(trimmed);
+                        });
+                    }
+
+                    const d = parseDate(getFieldValue(task, FIELD_KEYS.DATA_ENTREGA));
+                    if (d) {
+                        const key = `${d.getFullYear()}-${d.getMonth()}`;
+                        if (!monthsSet.has(key)) {
+                            monthsSet.set(key, { 
+                                value: key, 
+                                label: d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase()),
+                                sort: d.getTime()
+                            });
+                        }
+                    }
                 });
 
-                window[scriptId] = (data) => {
-                    delete window[scriptId];
-                    document.getElementById(scriptId).remove();
-                    if (data.status === 'ok') {
-                        showToast('Atualizado com sucesso!', 'success');
-                        setTimeout(loadData, 1000); // Recarrega dados após 1s
-                        if (action === 'addComment') {
-                             // Atualização otimista local para feedback imediato no modal
-                             if (selectedTask) {
-                                const currentComments = getFieldValue(selectedTask, FIELD_KEYS.COMENTARIOS) || [];
-                                const newComments = Array.isArray(currentComments) ? [...currentComments] : [];
-                                const now = new Date();
-                                const timeStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-                                newComments.push(`[${timeStr}] ${payload.comment.replace(`[${timeStr}] `, '')}`);
-                                
-                                // Cria uma cópia da task atualizada
-                                const updatedTask = { ...selectedTask };
-                                // Atualiza a propriedade baseada na chave correta (comments)
-                                updatedTask['comments'] = newComments; 
-                                setSelectedTask(updatedTask);
-                             }
-                        } else {
-                            setSelectedTask(null); // Fecha modal em aprovações
-                        }
-                    } else {
-                        showToast('Erro na resposta do servidor', 'error');
+                // Aplicar busca
+                if (searchTerm.trim()) {
+                    const search = searchTerm.toLowerCase();
+                    filtered = filtered.filter(t => {
+                        const title = String(getFieldValue(t, FIELD_KEYS.TITLE)).toLowerCase();
+                        const assunto = String(getFieldValue(t, FIELD_KEYS.ASSUNTO)).toLowerCase();
+                        const obs = String(getFieldValue(t, FIELD_KEYS.OBSERVACAO)).toLowerCase();
+                        return title.includes(search) || assunto.includes(search) || obs.includes(search);
+                    });
+                }
+
+                // Aplicar filtro de mês
+                if (filterMonth) {
+                    const [year, month] = filterMonth.split('-').map(Number);
+                    filtered = filtered.filter(t => {
+                        const d = parseDate(getFieldValue(t, FIELD_KEYS.DATA_ENTREGA));
+                        return d && d.getMonth() === month && d.getFullYear() === year;
+                    });
+                }
+
+                // Aplicar filtro de status
+                if (filterStatus !== 'all') {
+                    filtered = filtered.filter(t => 
+                        getFieldValue(t, FIELD_KEYS.STATUS) === filterStatus
+                    );
+                }
+
+                // Aplicar filtro de plataforma
+                if (filterPlatform !== 'all') {
+                    filtered = filtered.filter(t => {
+                        const p = getFieldValue(t, FIELD_KEYS.PLATAFORMA);
+                        return p && p.includes(filterPlatform);
+                    });
+                }
+
+                // Filtro de concluídos
+                if (!showCompleted) {
+                    filtered = filtered.filter(t => {
+                        const s = String(getFieldValue(t, FIELD_KEYS.STATUS)).toLowerCase();
+                        const a = String(getFieldValue(t, FIELD_KEYS.APROVACAO)).toLowerCase();
+                        const isDone = (s.includes('conclu') || s.includes('finaliz') || s.includes('postado')) && 
+                                       a.includes('aprovado');
+                        return !isDone;
+                    });
+                }
+
+                // Calcular estatísticas
+                filtered.forEach(t => {
+                    const s = String(getFieldValue(t, FIELD_KEYS.STATUS)).toLowerCase();
+                    const a = String(getFieldValue(t, FIELD_KEYS.APROVACAO)).toLowerCase();
+                    const dateStr = getFieldValue(t, FIELD_KEYS.DATA_ENTREGA);
+                    
+                    statsCounter.total++;
+                    
+                    if (isDateOverdue(dateStr) && !s.includes('conclu') && !s.includes('finaliz')) {
+                        statsCounter.overdue++;
                     }
+                    
+                    if ((s.includes('conclu') || s.includes('finaliz') || s.includes('postado')) && a.includes('aprovado')) {
+                        statsCounter.completed++;
+                    } else if (s.includes('programado') || s.includes('andamento') || s.includes('fila') || s.includes('produção')) {
+                        statsCounter.inProgress++;
+                    } else {
+                        statsCounter.pending++;
+                    }
+                });
+                
+                // Ordenar por data
+                filtered.sort((a, b) => {
+                    const da = parseDate(getFieldValue(a, FIELD_KEYS.DATA_ENTREGA)) || new Date(0);
+                    const db = parseDate(getFieldValue(b, FIELD_KEYS.DATA_ENTREGA)) || new Date(0);
+                    return da - db;
+                });
+
+                return {
+                    filteredTasks: filtered,
+                    stats: statsCounter,
+                    availableMonths: Array.from(monthsSet.values()).sort((a, b) => b.sort - a.sort),
+                    availablePlatforms: Array.from(platformsSet).sort(),
+                    availableStatuses: Array.from(statusesSet).sort()
+                };
+            }, [rawTasks, filterMonth, filterStatus, filterPlatform, showCompleted, searchTerm]);
+
+            // ============ INTEGRAÇÃO COM GOOGLE APPS SCRIPT ============
+            const sendDataToSheet = (payload, successMsg) => {
+                setModalMessage({ type: 'loading', text: 'Enviando dados...' });
+                
+                const params = new URLSearchParams();
+                params.set('action', payload.action);
+                params.set('row', payload.row);
+                if (payload.action === 'addComment') params.set('comment', payload.comment);
+                if (payload.action === 'updateI') params.set('value', payload.value);
+
+                const cbName = 'jsonpCallback_' + Math.random().toString(36).substr(2, 9);
+                params.set('callback', cbName);
+
+                window[cbName] = function(resp) {
+                    console.log('📩 Resposta do Apps Script:', resp);
+                    
+                    if (resp && resp.status === 'ok') {
+                        setModalMessage({ type: 'success', text: successMsg });
+                        setTimeout(() => {
+                            setModalMessage(null);
+                            setSelectedTask(null);
+                            loadData();
+                        }, 1500);
+                    } else {
+                        setModalMessage({ 
+                            type: 'error', 
+                            text: resp?.message || 'Erro ao processar solicitação' 
+                        });
+                        setTimeout(() => setModalMessage(null), 4000);
+                    }
+                    
+                    delete window[cbName];
+                    const scriptEl = document.getElementById(cbName);
+                    if (scriptEl) scriptEl.remove();
                 };
 
                 const script = document.createElement('script');
-                script.src = `${GOOGLE_SCRIPT_URL}?${params}`;
-                script.id = scriptId;
+                script.id = cbName;
+                script.src = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
+                script.onerror = () => {
+                    setModalMessage({ 
+                        type: 'error', 
+                        text: 'Erro de conexão com Google Apps Script. Verifique a URL.' 
+                    });
+                    setTimeout(() => setModalMessage(null), 4000);
+                    delete window[cbName];
+                };
+                
                 document.body.appendChild(script);
             };
 
-            const handleApprove = (task, type) => {
+            const handleApprove = (task, action) => {
                 const row = task._row;
-                if (!row) return showToast('Erro: Tarefa sem ID', 'error');
-
+                if (!row) {
+                    alert("❌ Erro: ID da linha não encontrado.");
+                    return;
+                }
+                
                 const now = new Date();
-                const timeStr = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+                const timeStr = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")} às ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
                 
-                let value = '';
-                if (type === 'approve') value = `Aprovado em ${timeStr}`;
-                if (type === 'reject') value = `Reprovado em ${timeStr}`;
+                let val = '';
                 
-                sendToScript('updateI', { row, value });
+                if (action === 'approve') {
+                    val = `Aprovado em ${timeStr}`;
+                } else if (action === 'reject') {
+                    val = `Reprovado em ${timeStr}`;
+                } else if (action === 'pending') {
+                    val = 'Pendente';
+                } else if (action === 'custom') {
+                    const userVal = prompt("Digite o status de aprovação personalizado:", "Aprovado com ressalvas");
+                    if (!userVal || !userVal.trim()) return;
+                    val = `${userVal.trim()} - ${timeStr}`;
+                }
+
+                sendDataToSheet(
+                    { action: "updateI", row: row, value: val }, 
+                    "✅ Status de aprovação atualizado!"
+                );
             };
 
             const handleComment = (task) => {
+                const row = task._row;
+                if (!row) {
+                    alert("❌ Erro: ID da linha não encontrado.");
+                    return;
+                }
+                
                 const text = prompt("Digite seu comentário:");
-                if (!text) return;
+                if (!text || !text.trim()) return;
                 
                 const now = new Date();
-                const timeStr = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+                const timestamp = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
                 
-                sendToScript('addComment', { 
-                    row: task._row, 
-                    comment: `[${timeStr}] ${text}` 
-                });
+                sendDataToSheet(
+                    { action: 'addComment', row: row, comment: `[${timestamp}] ${text.trim()}` }, 
+                    "✅ Comentário adicionado!"
+                );
             };
 
-            // Filtragem
-            const filteredData = useMemo(() => {
-                return tasks.filter(t => {
-                    const title = String(getFieldValue(t, FIELD_KEYS.TITLE)).toLowerCase();
-                    const desc = String(getFieldValue(t, FIELD_KEYS.OBSERVACAO)).toLowerCase();
-                    const status = String(getFieldValue(t, FIELD_KEYS.STATUS));
-                    const plat = String(getFieldValue(t, FIELD_KEYS.PLATAFORMA));
-                    const sTerm = search.toLowerCase();
-
-                    const matchSearch = title.includes(sTerm) || desc.includes(sTerm);
-                    const matchStatus = filterStatus === 'all' || status === filterStatus;
-                    const matchPlat = filterPlat === 'all' || plat === filterPlat;
-
-                    return matchSearch && matchStatus && matchPlat;
-                }).sort((a, b) => {
-                    // Ordenar por data (mais recente primeiro se sem data, ou data mais próxima)
-                    const da = parseDate(getFieldValue(a, FIELD_KEYS.DATA_ENTREGA));
-                    const db = parseDate(getFieldValue(b, FIELD_KEYS.DATA_ENTREGA));
-                    if (!da) return 1;
-                    if (!db) return -1;
-                    return da - db;
-                });
-            }, [tasks, search, filterStatus, filterPlat]);
-
-            // Opções únicas para selects
-            const uniqueStatus = [...new Set(tasks.map(t => getFieldValue(t, FIELD_KEYS.STATUS)))].filter(Boolean).sort();
-            const uniquePlat = [...new Set(tasks.map(t => getFieldValue(t, FIELD_KEYS.PLATAFORMA)))].filter(Boolean).sort();
-
-            // Status Styling Helper
-            const getStatusColor = (status, approval) => {
+            // ============ ESTILIZAÇÃO DE STATUS ============
+            const getStatusStyle = (status, approval) => {
                 const s = String(status).toLowerCase();
                 const a = String(approval).toLowerCase();
                 
-                if (a.includes('reprovado')) return 'bg-red-100 text-red-700 border-red-200';
-                if (a.includes('aprovado')) return 'bg-green-100 text-green-700 border-green-200';
+                if (a.includes('reprovado')) {
+                    return { 
+                        bg: 'bg-red-100', 
+                        text: 'text-red-700', 
+                        border: 'border-red-300', 
+                        icon: 'XCircle' 
+                    };
+                }
                 
-                if (s.includes('conclu') || s.includes('final') || s.includes('postado')) return 'bg-blue-100 text-blue-700 border-blue-200';
-                if (s.includes('andamento') || s.includes('progresso')) return 'bg-amber-100 text-amber-700 border-amber-200';
+                if (a.includes('aprovado') || s.includes('aprovado')) {
+                    return { 
+                        bg: 'bg-green-100', 
+                        text: 'text-green-700', 
+                        border: 'border-green-300', 
+                        icon: 'CheckCircle2' 
+                    };
+                }
                 
-                return 'bg-gray-100 text-gray-600 border-gray-200';
+                if (s.includes('conclu') || s.includes('final') || s.includes('postado')) {
+                    return { 
+                        bg: 'bg-blue-100', 
+                        text: 'text-blue-700', 
+                        border: 'border-blue-300', 
+                        icon: 'Check' 
+                    };
+                }
+                
+                if (s.includes('pendente') || s.includes('aguardando')) {
+                    return { 
+                        bg: 'bg-yellow-100', 
+                        text: 'text-yellow-700', 
+                        border: 'border-yellow-300', 
+                        icon: 'Clock' 
+                    };
+                }
+                
+                if (s.includes('andamento') || s.includes('fila') || s.includes('produção') || s.includes('programado')) {
+                    return { 
+                        bg: 'bg-indigo-100', 
+                        text: 'text-indigo-700', 
+                        border: 'border-indigo-300', 
+                        icon: 'Loader' 
+                    };
+                }
+                
+                return { 
+                    bg: 'bg-gray-100', 
+                    text: 'text-gray-700', 
+                    border: 'border-gray-300', 
+                    icon: 'HelpCircle' 
+                };
             };
 
+            // ============ RENDER ============
             return (
-                <div className="min-h-screen pb-20">
-                    {/* TOAST */}
-                    {toast && (
-                        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-fadeIn">
-                            <div className={`px-6 py-3 rounded-full shadow-lg flex items-center gap-3 font-medium text-white ${
-                                toast.type === 'error' ? 'bg-red-500' : 
-                                toast.type === 'loading' ? 'bg-blue-600' : 'bg-green-600'
-                            }`}>
-                                {toast.type === 'loading' && <div className="loader !w-4 !h-4 !border-white/30 !border-t-white"></div>}
-                                {toast.msg}
-                            </div>
-                        </div>
-                    )}
-
+                <div className="min-h-screen pb-12">
                     {/* HEADER */}
-                    <header className="glass-header sticky top-0 z-40 border-b border-gray-200 shadow-sm">
+                    <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-20">
                         <div className="container mx-auto px-4 py-4">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/30">
-                                        <Icon name="chart-simple" />
-                                    </div>
-                                    <h1 className="text-xl font-bold text-gray-800">Painel Marketing</h1>
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                                <div>
+                                    <h1 className="text-2xl md:text-3xl font-bold text-primary flex items-center gap-3">
+                                        <Icon name="LayoutDashboard" size={28} className="text-secondary" />
+                                        Painel Marketing PSR
+                                    </h1>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Gerenciamento de tarefas e aprovações
+                                    </p>
                                 </div>
-                                
-                                <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-                                    <div className="bg-white border rounded-lg flex items-center px-3 py-2 w-full md:w-64">
-                                        <Icon name="search" className="text-gray-400 mr-2" />
-                                        <input 
-                                            type="text" 
-                                            placeholder="Buscar tarefas..." 
-                                            className="bg-transparent outline-none w-full text-sm"
-                                            value={search}
-                                            onChange={e => setSearch(e.target.value)}
-                                        />
-                                    </div>
-                                    <button onClick={loadData} className="bg-gray-100 hover:bg-gray-200 text-gray-600 p-2 rounded-lg transition">
-                                        <Icon name="rotate" className={loading ? "fa-spin" : ""} />
+
+                                <div className="flex items-center gap-3">
+                                    <button 
+                                        onClick={() => setShowCompleted(!showCompleted)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
+                                            showCompleted 
+                                                ? 'bg-primary text-white shadow-sm' 
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        <Icon name={showCompleted ? "Eye" : "EyeOff"} size={16} />
+                                        {showCompleted ? "Ocultar Concluídas" : "Mostrar Concluídas"}
+                                    </button>
+
+                                    {loading && <div className="loader w-5 h-5 border-2"></div>}
+                                    <button 
+                                        onClick={loadData} 
+                                        disabled={loading}
+                                        className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm border border-gray-200"
+                                        title="Recarregar dados"
+                                    >
+                                        <Icon name="RefreshCw" size={20} className={loading ? "fa-spin" : ""} />
                                     </button>
                                 </div>
-                            </div>
-                            
-                            {/* Filters Row */}
-                            <div className="flex gap-3 mt-4 overflow-x-auto pb-2 custom-scrollbar">
-                                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-white text-sm border border-gray-300 rounded-full px-4 py-1.5 outline-none hover:border-primary cursor-pointer">
-                                    <option value="all">Todos Status</option>
-                                    {uniqueStatus.map(s => <option key={s} value={s}>{s}</option>)}
-                                </select>
-                                <select value={filterPlat} onChange={e => setFilterPlat(e.target.value)} className="bg-white text-sm border border-gray-300 rounded-full px-4 py-1.5 outline-none hover:border-primary cursor-pointer">
-                                    <option value="all">Todas Plataformas</option>
-                                    {uniquePlat.map(p => <option key={p} value={p}>{p}</option>)}
-                                </select>
                             </div>
                         </div>
                     </header>
 
-                    {/* KANBAN/GRID */}
+                    {/* KPIs */}
+                    <section className="bg-gradient-to-r from-primary to-secondary text-white">
+                        <div className="container mx-auto px-4 py-8">
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                                    <div className="text-xs uppercase tracking-wide opacity-80 mb-1">Total</div>
+                                    <div className="text-3xl font-bold">{stats.total}</div>
+                                </div>
+                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                                    <div className="text-xs uppercase tracking-wide opacity-80 mb-1">Pendentes</div>
+                                    <div className="text-3xl font-bold">{stats.pending}</div>
+                                </div>
+                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                                    <div className="text-xs uppercase tracking-wide opacity-80 mb-1">Em Andamento</div>
+                                    <div className="text-3xl font-bold">{stats.inProgress}</div>
+                                </div>
+                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                                    <div className="text-xs uppercase tracking-wide opacity-80 mb-1">Concluídas</div>
+                                    <div className="text-3xl font-bold">{stats.completed}</div>
+                                </div>
+                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                                    <div className="text-xs uppercase tracking-wide opacity-80 mb-1">Atrasadas</div>
+                                    <div className="text-3xl font-bold text-red-300">{stats.overdue}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* FILTROS */}
+                    <section className="bg-white py-6 border-b border-gray-200 sticky top-[88px] z-10 shadow-sm">
+                        <div className="container mx-auto px-4">
+                            {/* Busca */}
+                            <div className="mb-4">
+                                <div className="relative">
+                                    <Icon name="Search" size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                    <input 
+                                        type="text"
+                                        placeholder="Buscar por título, assunto ou observação..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Filtros */}
+                            <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
+                                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                                    <div className="flex items-center gap-2 text-gray-600">
+                                        <Icon name="Filter" size={18} />
+                                        <span className="font-medium text-sm">Filtros:</span>
+                                    </div>
+                                    
+                                    <select 
+                                        className="px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary outline-none transition"
+                                        value={filterMonth}
+                                        onChange={(e) => setFilterMonth(e.target.value)}
+                                    >
+                                        <option value="">Todos os Meses</option>
+                                        {availableMonths.map(m => (
+                                            <option key={m.value} value={m.value}>{m.label}</option>
+                                        ))}
+                                    </select>
+
+                                    <select 
+                                        className="px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary outline-none"
+                                        value={filterStatus}
+                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                    >
+                                        <option value="all">Todos os Status</option>
+                                        {availableStatuses.map(s => (
+                                            <option key={s} value={s}>{s}</option>
+                                        ))}
+                                    </select>
+
+                                    <select 
+                                        className="px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary outline-none"
+                                        value={filterPlatform}
+                                        onChange={(e) => setFilterPlatform(e.target.value)}
+                                    >
+                                        <option value="all">Todas as Plataformas</option>
+                                        {availablePlatforms.map(p => (
+                                            <option key={p} value={p}>{p}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                {(searchTerm || filterMonth || filterStatus !== 'all' || filterPlatform !== 'all') && (
+                                    <button 
+                                        onClick={() => {
+                                            setSearchTerm('');
+                                            setFilterMonth('');
+                                            setFilterStatus('all');
+                                            setFilterPlatform('all');
+                                        }}
+                                        className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition shadow-sm font-medium"
+                                    >
+                                        Limpar Filtros
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* --- GRID DE TAREFAS --- */}
                     <main className="container mx-auto px-4 py-8">
-                        {loading && tasks.length === 0 ? (
-                            <div className="text-center py-20 text-gray-400">
-                                <div className="loader mx-auto mb-3"></div>
-                                <p>Sincronizando tarefas...</p>
+                        {loading && rawTasks.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-20 animate-fadeInUp">
+                                <div className="loader mb-4"></div>
+                                <p className="text-gray-600 font-medium">Carregando tarefas...</p>
+                                <p className="text-sm text-gray-400 mt-2">Sincronizando com o banco de dados</p>
+                            </div>
+                        ) : filteredTasks.length === 0 ? (
+                            <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-gray-300 animate-fadeInUp">
+                                <Icon name="Inbox" size={64} className="mx-auto text-gray-300 mb-4" />
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">Nenhuma tarefa encontrada</h3>
+                                <p className="text-gray-500 mb-4">
+                                    {searchTerm ? 'Tente ajustar sua busca ou' : 'Tente ajustar os'} filtros acima
+                                </p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                {filteredData.map((task) => {
-                                    const status = getFieldValue(task, FIELD_KEYS.STATUS, 'Pendente');
-                                    const approval = getFieldValue(task, FIELD_KEYS.APROVACAO, '');
-                                    const dateStr = getFieldValue(task, FIELD_KEYS.DATA_ENTREGA);
-                                    const isLate = isOverdue(dateStr, status);
-                                    const statusClass = getStatusColor(status, approval);
-
-                                    return (
-                                        <div 
-                                            key={task._row} 
-                                            onClick={() => setSelectedTask(task)}
-                                            className="bg-white rounded-xl p-5 border border-gray-100 card-shadow cursor-pointer relative group transition-all hover:-translate-y-1 animate-fadeIn"
-                                        >
-                                            {/* Header Card */}
-                                            <div className="flex justify-between items-start mb-3">
-                                                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                                                    {getFieldValue(task, FIELD_KEYS.PLATAFORMA, 'Geral')}
-                                                </span>
-                                                {isLate && (
-                                                    <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1 rounded flex items-center gap-1">
-                                                        <Icon name="circle-exclamation" /> Atrasado
-                                                    </span>
+                            <>
+                                <div className="mb-4 text-sm text-gray-500 flex justify-between items-center">
+                                    <span>Exibindo <span className="font-bold text-primary">{filteredTasks.length}</span> tarefa(s)</span>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {filteredTasks.map((task, index) => {
+                                        const status = getFieldValue(task, FIELD_KEYS.STATUS, 'Sem Status');
+                                        const approval = getFieldValue(task, FIELD_KEYS.APROVACAO, 'Pendente');
+                                        const title = getFieldValue(task, FIELD_KEYS.TITLE, 'Sem Título');
+                                        const platform = getFieldValue(task, FIELD_KEYS.PLATAFORMA, 'Geral');
+                                        const dueDate = getFieldValue(task, FIELD_KEYS.DATA_ENTREGA);
+                                        const isOverdue = isDateOverdue(dueDate) && !status.toLowerCase().includes('conclu') && !status.toLowerCase().includes('finaliz');
+                                        
+                                        const style = getStatusStyle(status, approval);
+                                        
+                                        return (
+                                            <div 
+                                                key={task._internalId}
+                                                onClick={() => setSelectedTask(task)}
+                                                className="card-hover bg-white rounded-xl border border-gray-200 p-5 cursor-pointer group relative overflow-hidden flex flex-col h-full animate-fadeInUp"
+                                                style={{ animationDelay: `${index * 50}ms`, borderTop: `4px solid ${style.border.replace('border-', '#').replace('-300', '')}` }}
+                                            >
+                                                {/* Badge de Atraso */}
+                                                {isOverdue && (
+                                                    <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg flex items-center gap-1 shadow-sm z-10">
+                                                        <Icon name="AlertTriangle" size={10} />
+                                                        ATRASADA
+                                                    </div>
                                                 )}
-                                            </div>
+                                                
+                                                <div className="flex justify-between items-start mb-3 mt-1">
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
+                                                        {platform}
+                                                    </span>
+                                                    <div className={`${style.bg} ${style.text} px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 border ${style.border}`}>
+                                                        <Icon name={style.icon} size={10} />
+                                                        {status}
+                                                    </div>
+                                                </div>
 
-                                            {/* Content */}
-                                            <h3 className="font-bold text-gray-800 leading-tight mb-2 line-clamp-2">
-                                                {getFieldValue(task, FIELD_KEYS.TITLE, 'Sem título')}
-                                            </h3>
-                                            
-                                            {/* Footer Card */}
-                                            <div className="mt-4 pt-3 border-t border-gray-50 flex justify-between items-center text-xs">
-                                                <div className="flex items-center gap-2 text-gray-500">
-                                                    <Icon name="calendar" />
-                                                    {formatDate(dateStr)}
+                                                <h3 className="text-base font-bold text-gray-900 mb-3 leading-snug line-clamp-2 flex-grow">
+                                                    {title}
+                                                </h3>
+
+                                                <div className="space-y-2 text-xs border-t border-gray-100 pt-3">
+                                                    <div className="flex items-center gap-2 text-gray-600">
+                                                        <Icon name="Calendar" size={12} className="text-gray-400" />
+                                                        <span className={isOverdue ? "font-bold text-red-600" : "font-medium"}>
+                                                            Entrega: {formatDate(dueDate)}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <div className="flex items-center gap-2">
+                                                        <Icon name="FileCheck" size={12} className="text-gray-400" />
+                                                        <span className={`font-semibold ${
+                                                            approval.toLowerCase().includes('reprovado') 
+                                                                ? 'text-red-600' 
+                                                                : approval.toLowerCase().includes('aprovado')
+                                                                ? 'text-green-600'
+                                                                : 'text-yellow-600'
+                                                        }`}>
+                                                            {approval}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className={`px-2 py-1 rounded border font-semibold ${statusClass}`}>
-                                                    {approval.includes('rovado') ? (approval.includes('Apro') ? 'Aprovado' : 'Reprovado') : status}
+
+                                                <div className="mt-3 pt-2 flex justify-end items-center text-xs text-primary font-bold opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
+                                                    <span>Ver detalhes</span>
+                                                    <Icon name="ArrowRight" size={12} className="ml-1" />
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </>
                         )}
                     </main>
 
-                    {/* MODAL DETALHES */}
+                    {/* --- MODAL DE DETALHES --- */}
                     {selectedTask && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={() => setSelectedTask(null)}>
-                            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
-                                
+                        <div 
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 modal-backdrop" 
+                            onClick={() => setSelectedTask(null)}
+                        >
+                            <div 
+                                className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-fadeInUp" 
+                                onClick={e => e.stopPropagation()}
+                            >
                                 {/* Modal Header */}
-                                <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-gray-50">
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="bg-white border px-2 py-0.5 rounded text-xs font-bold text-gray-500 uppercase">
+                                <div className="p-6 bg-gradient-to-r from-primary to-secondary text-white flex justify-between items-start sticky top-0 z-10 shrink-0">
+                                    <div className="flex-1 pr-4">
+                                        <div className="flex flex-wrap gap-2 mb-3">
+                                            <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border border-white/10">
                                                 {getFieldValue(selectedTask, FIELD_KEYS.PLATAFORMA)}
                                             </span>
-                                            <span className="text-xs text-gray-400">#{selectedTask._row}</span>
+                                            <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold border border-white/10">
+                                                ID: {selectedTask._row || 'N/A'}
+                                            </span>
                                         </div>
-                                        <h2 className="text-xl font-bold text-gray-900 leading-snug">
+                                        <h2 className="text-xl md:text-2xl font-bold leading-tight">
                                             {getFieldValue(selectedTask, FIELD_KEYS.TITLE)}
                                         </h2>
                                     </div>
-                                    <button onClick={() => setSelectedTask(null)} className="text-gray-400 hover:text-gray-700 bg-white p-2 rounded-full shadow-sm hover:shadow transition">
-                                        <Icon name="xmark" className="text-lg" />
+                                    <button 
+                                        onClick={() => setSelectedTask(null)} 
+                                        className="text-white/80 hover:text-white transition p-2 hover:bg-white/10 rounded-lg"
+                                    >
+                                        <Icon name="X" size={24} />
                                     </button>
                                 </div>
 
                                 {/* Modal Body */}
-                                <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-                                    
-                                    {/* Status Bar */}
-                                    <div className="flex flex-wrap gap-4 mb-6 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
-                                        <div className="flex-1">
-                                            <div className="text-xs text-blue-800 uppercase font-bold mb-1">Status</div>
-                                            <div className="font-semibold text-gray-800 flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/50">
+                                    {/* Status Cards */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                        <div className="p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+                                            <div className="text-xs uppercase tracking-wide text-gray-500 mb-2 font-bold">Status Atual</div>
+                                            <div className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                                                <Icon name={getStatusStyle(getFieldValue(selectedTask, FIELD_KEYS.STATUS), '').icon} size={20} className="text-primary" />
                                                 {getFieldValue(selectedTask, FIELD_KEYS.STATUS)}
                                             </div>
                                         </div>
-                                        <div className="flex-1">
-                                            <div className="text-xs text-blue-800 uppercase font-bold mb-1">Aprovação</div>
-                                            <div className={`font-semibold ${
-                                                String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).includes('Repro') ? 'text-red-600' :
-                                                String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).includes('Apro') ? 'text-green-600' : 'text-gray-500'
+                                        <div className={`p-4 rounded-xl border shadow-sm ${
+                                            String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('reprovado')
+                                                ? 'bg-red-50 border-red-200'
+                                                : String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('aprovado')
+                                                ? 'bg-green-50 border-green-200'
+                                                : 'bg-yellow-50 border-yellow-200'
+                                        }`}>
+                                            <div className="text-xs uppercase tracking-wide mb-2 font-bold opacity-80">Aprovação</div>
+                                            <div className={`font-bold text-lg flex items-center gap-2 ${
+                                                String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('reprovado') ? 'text-red-700' : 
+                                                String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('aprovado') ? 'text-green-700' : 'text-yellow-700'
                                             }`}>
+                                                <Icon name={
+                                                    String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('reprovado') ? 'XCircle' :
+                                                    String(getFieldValue(selectedTask, FIELD_KEYS.APROVACAO)).toLowerCase().includes('aprovado') ? 'CheckCircle2' : 'Clock'
+                                                } size={20} />
                                                 {getFieldValue(selectedTask, FIELD_KEYS.APROVACAO) || 'Pendente'}
-                                            </div>
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="text-xs text-blue-800 uppercase font-bold mb-1">Entrega</div>
-                                            <div className="font-semibold text-gray-800">
-                                                {formatDate(getFieldValue(selectedTask, FIELD_KEYS.DATA_ENTREGA))}
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Description */}
-                                    <div className="mb-8">
-                                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2">
-                                            <Icon name="align-left" className="text-gray-400" /> Descrição da Tarefa
-                                        </h3>
-                                        <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap pl-6 border-l-2 border-gray-200">
-                                            {getFieldValue(selectedTask, FIELD_KEYS.OBSERVACAO) || 'Sem descrição.'}
+                                    {/* Info Details */}
+                                    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <h4 className="font-bold text-gray-900 mb-1 text-sm flex items-center gap-2">
+                                                    <Icon name="MessageSquare" size={14} className="text-primary" /> Objetivo / Assunto
+                                                </h4>
+                                                <p className="text-sm text-gray-600 pl-6">{getFieldValue(selectedTask, FIELD_KEYS.ASSUNTO) || 'Não especificado'}</p>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-gray-900 mb-1 text-sm flex items-center gap-2">
+                                                    <Icon name="Calendar" size={14} className="text-primary" /> Data de Entrega
+                                                </h4>
+                                                <p className={`text-sm pl-6 font-medium ${isDateOverdue(getFieldValue(selectedTask, FIELD_KEYS.DATA_ENTREGA)) ? 'text-red-600' : 'text-gray-600'}`}>
+                                                    {formatDate(getFieldValue(selectedTask, FIELD_KEYS.DATA_ENTREGA))}
+                                                    {isDateOverdue(getFieldValue(selectedTask, FIELD_KEYS.DATA_ENTREGA)) && 
+                                                        <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">ATRASADA</span>
+                                                    }
+                                                </p>
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <h4 className="font-bold text-gray-900 mb-1 text-sm flex items-center gap-2">
+                                                    <Icon name="Link" size={14} className="text-primary" /> Link do Drive
+                                                </h4>
+                                                <div className="pl-6">
+                                                    {getFieldValue(selectedTask, FIELD_KEYS.LINK_DRIVE) ? (
+                                                        <a 
+                                                            href={getFieldValue(selectedTask, FIELD_KEYS.LINK_DRIVE)} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium transition bg-blue-50 px-3 py-1.5 rounded-md border border-blue-100"
+                                                        >
+                                                            <Icon name="ExternalLink" size={12} />
+                                                            Abrir arquivo no Google Drive
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-sm text-gray-400 italic">Nenhum link fornecido</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Observation */}
+                                    <div className="mb-6">
+                                        <h4 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide">Descrição da Tarefa</h4>
+                                        <div className="bg-white p-4 rounded-xl border border-gray-200 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap shadow-sm">
+                                            {getFieldValue(selectedTask, FIELD_KEYS.OBSERVACAO) || 'Sem descrição registrada.'}
                                         </div>
                                     </div>
 
                                     {/* Comments */}
                                     <div>
-                                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2">
-                                            <Icon name="comments" className="text-gray-400" /> Histórico
-                                        </h3>
-                                        <div className="space-y-3 bg-gray-50 p-4 rounded-xl">
-                                            {(() => {
-                                                const rawComments = getFieldValue(selectedTask, FIELD_KEYS.COMENTARIOS);
-                                                // Garante que é array, mesmo se vier string única ou undefined
-                                                const commentsList = Array.isArray(rawComments) ? rawComments : (rawComments ? [rawComments] : []);
-                                                
-                                                if (commentsList.length === 0) return <p className="text-gray-400 text-sm italic text-center">Nenhum comentário.</p>;
-                                                
-                                                return commentsList.map((c, i) => (
-                                                    <div key={i} className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm text-sm text-gray-700">
-                                                        {c}
-                                                    </div>
-                                                ));
-                                            })()}
+                                        <h4 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide flex items-center gap-2">
+                                            <Icon name="MessageCircle" size={16} /> Histórico de Comentários
+                                        </h4>
+                                        <div className="bg-gray-100/50 rounded-xl border border-gray-200 p-4 max-h-48 overflow-y-auto custom-scrollbar">
+                                            {String(getFieldValue(selectedTask, FIELD_KEYS.COMENTARIOS, '')).split('\n').filter(c => c.trim()).length > 0 ? (
+                                                <div className="space-y-3">
+                                                    {String(getFieldValue(selectedTask, FIELD_KEYS.COMENTARIOS, '')).split('\n').filter(c => c.trim()).map((comment, i) => (
+                                                        <div key={i} className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm text-sm text-gray-700 relative pl-4 border-l-4 border-l-secondary">
+                                                            {comment}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-6 text-gray-400 text-sm italic">
+                                                    Nenhum comentário registrado.
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-
                                 </div>
 
-                                {/* Footer Actions */}
-                                <div className="p-4 bg-white border-t border-gray-200 grid grid-cols-3 gap-3">
-                                    <button onClick={() => handleApprove(selectedTask, 'approve')} className="flex items-center justify-center gap-2 bg-green-50 text-green-700 hover:bg-green-100 font-semibold py-3 rounded-lg transition border border-green-200">
-                                        <Icon name="thumbs-up" /> Aprovar
-                                    </button>
-                                    <button onClick={() => handleApprove(selectedTask, 'reject')} className="flex items-center justify-center gap-2 bg-red-50 text-red-700 hover:bg-red-100 font-semibold py-3 rounded-lg transition border border-red-200">
-                                        <Icon name="thumbs-down" /> Reprovar
-                                    </button>
-                                    <button onClick={() => handleComment(selectedTask)} className="flex items-center justify-center gap-2 bg-primary text-white hover:bg-primary/90 font-semibold py-3 rounded-lg transition shadow-md shadow-primary/20">
-                                        <Icon name="comment-dots" /> Comentar
-                                    </button>
+                                {/* Modal Footer Actions */}
+                                <div className="p-4 border-t border-gray-200 bg-white shrink-0">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <button 
+                                            onClick={() => handleApprove(selectedTask, 'approve')}
+                                            className="btn-action bg-green-600 text-white hover:bg-green-700 shadow-sm flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition"
+                                        >
+                                            <Icon name="ThumbsUp" size={18} /> <span className="hidden sm:inline">Aprovar</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => handleApprove(selectedTask, 'reject')}
+                                            className="btn-action bg-red-600 text-white hover:bg-red-700 shadow-sm flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition"
+                                        >
+                                            <Icon name="ThumbsDown" size={18} /> <span className="hidden sm:inline">Reprovar</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => handleComment(selectedTask)}
+                                            className="btn-action bg-primary text-white hover:bg-primary/90 shadow-sm flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition"
+                                        >
+                                            <Icon name="MessageCircle" size={18} /> <span className="hidden sm:inline">Comentar</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => handleApprove(selectedTask, 'custom')}
+                                            className="btn-action bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 shadow-sm flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition"
+                                        >
+                                            <Icon name="Edit" size={18} /> <span className="hidden sm:inline">Customizar</span>
+                                        </button>
+                                    </div>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* --- TOAST DE FEEDBACK --- */}
+                    {modalMessage && (
+                        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-[100] animate-slideIn">
+                            <div className={`px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 font-medium text-white min-w-[300px] justify-center ${
+                                modalMessage.type === 'loading' ? 'bg-primary' : 
+                                modalMessage.type === 'error' ? 'bg-red-600' : 'bg-green-600'
+                            }`}>
+                                {modalMessage.type === 'loading' && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>}
+                                {modalMessage.type === 'success' && <Icon name="CheckCircle2" size={20} />}
+                                {modalMessage.type === 'error' && <Icon name="AlertTriangle" size={20} />}
+                                <span>{modalMessage.text}</span>
                             </div>
                         </div>
                     )}
