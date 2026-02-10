@@ -15,6 +15,10 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -96,18 +100,34 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
 
-        const FIREBASE_URL = 'https://agenda-portal-2d149-default-rtdb.firebaseio.com/agenda.json';
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzO7oR3CNBZD-NCnij7Xa-xScc09EWGU69uq81VDHPZmlmwjYJ4s_4rIYzy2Gp1iXvV/exec';
+        // ============ CONFIGURAÇÃO FIREBASE ============
+        const firebaseConfig = {
+            apiKey: "AIzaSyD4lN6iyKpdstb99vosxEDDaEn1QFXLCXI",
+            authDomain: "agenda-portal-2d149.firebaseapp.com",
+            databaseURL: "https://agenda-portal-2d149-default-rtdb.firebaseio.com",
+            projectId: "agenda-portal-2d149",
+            storageBucket: "agenda-portal-2d149.appspot.com",
+            messagingSenderId: "937873636592",
+            appId: "1:937873636592:web:e3925c4692797e84126388"
+        };
 
+        // Inicializa Firebase apenas uma vez
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        const FIREBASE_URL = 'https://agenda-portal-2d149-default-rtdb.firebaseio.com/agenda.json';
+
+        // Mapeamento de campos para leitura
         const FIELD_KEYS = {
             TITLE: ['Título', 'Nome', 'Title', 'titulo'],
-            ASSUNTO: ['objetivo', 'Objetivo', 'Assunto', 'assunto'], 
+            ASSUNTO: ['Objetivo e Assunto', 'objetivo', 'Objetivo', 'Assunto', 'assunto'], 
             STATUS: ['Status', 'Status:', 'status'],
             OBSERVACAO: ['Descrição', 'Descricao', 'Observação', 'Observacao', 'Observacão', 'observacao'],
             APROVACAO: ['Aprovação', 'Aprovacao', 'aprovacao'],
             PLATAFORMA: ['Plataforma', 'Plataformas', 'plataforma'],
             LINK_DRIVE: ['Link do Drive', 'Link Drive', 'Drive', 'link'],
-            COMENTARIOS: ['comments', 'Comentários', 'Comentarios', 'comentarios'],
+            COMENTARIOS: ['Comentários', 'Comentarios', 'comments', 'comentarios'],
             DATA_POSTAGEM: ['Data da Postagem', 'Data Postagem', 'dataPostagem', 'Data:', 'data'],
             DATA_ENTREGA: ['Data de Entrega', 'Data Entrega', 'dataEntrega', 'Prazo', 'prazo'],
             PROGRESSO: ['Progresso (%)', 'Progresso', 'progresso', 'porcentagem']
@@ -117,7 +137,7 @@
             if (!item) return defaultValue;
             for (const key of possibleKeysArray) {
                 if (item.hasOwnProperty(key) && item[key] != null) {
-                    if (typeof item[key] === 'string' && item[key].trim() === '') continue;
+                    // if (typeof item[key] === 'string' && item[key].trim() === '') continue; // Comentado para permitir leitura de strings vazias se existirem chaves
                     return item[key];
                 }
             }
@@ -199,7 +219,8 @@
                 'ExternalLink': 'fa-external-link-alt',
                 'Search': 'fa-search',
                 'Battery': 'fa-battery-half',
-                'Bolt': 'fa-bolt'
+                'Bolt': 'fa-bolt',
+                'Google': 'fa-google'
             };
             const faClass = iconMap[name] || 'fa-circle';
             return <i className={`fas ${faClass} ${className}`} style={{ fontSize: size }}></i>;
@@ -212,11 +233,34 @@
             const [selectedTask, setSelectedTask] = useState(null);
             const [modalMessage, setModalMessage] = useState(null);
             const [searchTerm, setSearchTerm] = useState('');
+            const [currentUser, setCurrentUser] = useState(null);
             
             const [filterMonth, setFilterMonth] = useState('');
             const [filterStatus, setFilterStatus] = useState('all');
             const [filterPlatform, setFilterPlatform] = useState('all');
             const [showCompleted, setShowCompleted] = useState(false);
+
+            // Monitorar estado de autenticação
+            useEffect(() => {
+                const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+                    setCurrentUser(user);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            // Função de Login
+            const signInWithGoogle = async () => {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                try {
+                    await firebase.auth().signInWithPopup(provider);
+                    setModalMessage({ type: 'success', text: 'Login realizado com sucesso!' });
+                    setTimeout(() => setModalMessage(null), 2000);
+                } catch (error) {
+                    console.error(error);
+                    setModalMessage({ type: 'error', text: 'Erro ao logar: ' + error.message });
+                    setTimeout(() => setModalMessage(null), 4000);
+                }
+            };
 
             const loadData = useCallback(async () => {
                 setLoading(true);
@@ -232,7 +276,7 @@
                             .map(([key, item]) => ({
                                 ...item,
                                 _internalId: item._internalId || key,
-                                _row: item._row || key
+                                _row: key // Usando a chave do Firebase como ID principal
                             }));
                         
                         setRawTasks(items);
@@ -362,10 +406,7 @@
                     return da - db;
                 });
 
-                // Cálculo do Progresso Global (Média)
                 const globalAvg = statsCounter.total > 0 ? Math.round(totalProgressSum / statsCounter.total) : 0;
-
-                // Label do Mês Atual para o Título Mobile
                 const currentMonthObj = Array.from(monthsSet.values()).find(m => m.value === filterMonth);
                 const currentLabel = currentMonthObj ? currentMonthObj.label : "Todos os Períodos";
 
@@ -380,48 +421,76 @@
                 };
             }, [rawTasks, filterMonth, filterStatus, filterPlatform, showCompleted, searchTerm]);
 
-            const sendDataToSheet = (payload, successMsg) => {
-                setModalMessage({ type: 'loading', text: 'Enviando dados...' });
-                const params = new URLSearchParams();
-                params.set('action', payload.action);
-                params.set('row', payload.row);
-                if (payload.action === 'addComment') params.set('comment', payload.comment);
-                if (payload.action === 'updateI') params.set('value', payload.value);
-                const cbName = 'jsonpCallback_' + Math.random().toString(36).substr(2, 9);
-                params.set('callback', cbName);
+            // ============ ENVIO SEGURO PARA FIREBASE (AUTENTICADO) ============
+            const sendDataToSheet = async (payload, successMsg) => {
+                // 1. Verifica autenticação
+                const user = firebase.auth().currentUser;
+                if (!user) {
+                    setModalMessage({ type: 'error', text: 'Faça login com Google primeiro!' });
+                    signInWithGoogle(); // Tenta abrir o popup
+                    return;
+                }
 
-                window[cbName] = function(resp) {
-                    if (resp && resp.status === 'ok') {
-                        setModalMessage({ type: 'success', text: successMsg });
-                        if (payload.action === 'addComment' && selectedTask) {
-                             const currentComments = parseComments(getFieldValue(selectedTask, FIELD_KEYS.COMENTARIOS));
-                             const updatedTask = { ...selectedTask };
-                             updatedTask['comments'] = [...currentComments, payload.comment];
-                             setSelectedTask(updatedTask);
-                        }
-                        setTimeout(() => {
-                            setModalMessage(null);
-                            if (payload.action !== 'addComment') setSelectedTask(null);
-                            loadData();
-                        }, 1500);
-                    } else {
-                        setModalMessage({ type: 'error', text: resp?.message || 'Erro ao processar solicitação' });
-                        setTimeout(() => setModalMessage(null), 4000);
+                setModalMessage({ type: 'loading', text: 'Salvando no Firebase...' });
+
+                try {
+                    const taskId = payload.row;
+                    if (!taskId) throw new Error("ID da tarefa não encontrado");
+
+                    // 2. Obtém Token Seguro
+                    const token = await user.getIdToken();
+
+                    // 3. Monta URL com auth
+                    const baseUrl = FIREBASE_URL.replace('.json', '');
+                    const itemUrl = `${baseUrl}/${taskId}.json?auth=${token}`;
+
+                    let dataToUpdate = {};
+
+                    if (payload.action === 'updateI') {
+                        // Atualiza campo Aprovação
+                        dataToUpdate = { "Aprovação": payload.value };
+                    } 
+                    else if (payload.action === 'addComment') {
+                        // Concatena Comentários
+                        const currentCommentsRaw = getFieldValue(selectedTask, FIELD_KEYS.COMENTARIOS) || '';
+                        const newCommentText = currentCommentsRaw 
+                            ? `${currentCommentsRaw}\n${payload.comment}`
+                            : payload.comment;
+                        dataToUpdate = { "Comentários": newCommentText };
                     }
-                    delete window[cbName];
-                    const scriptEl = document.getElementById(cbName);
-                    if (scriptEl) scriptEl.remove();
-                };
 
-                const script = document.createElement('script');
-                script.id = cbName;
-                script.src = `${GOOGLE_SCRIPT_URL}?${params.toString()}`;
-                script.onerror = () => {
-                    setModalMessage({ type: 'error', text: 'Erro de conexão com Google Apps Script. Verifique a URL.' });
+                    // 4. Executa PATCH
+                    const response = await fetch(itemUrl, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(dataToUpdate)
+                    });
+
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        if(response.status === 401) throw new Error("Sem permissão. Verifique as Regras do Firebase.");
+                        throw new Error('Erro Firebase: ' + response.statusText);
+                    }
+
+                    // 5. Sucesso
+                    setModalMessage({ type: 'success', text: successMsg });
+
+                    if (selectedTask) {
+                        const updatedTask = { ...selectedTask, ...dataToUpdate };
+                        setSelectedTask(updatedTask);
+                        setRawTasks(prev => prev.map(t => t._row === taskId ? updatedTask : t));
+                    }
+
+                    setTimeout(() => {
+                        setModalMessage(null);
+                        if (payload.action !== 'addComment') setSelectedTask(null);
+                    }, 1500);
+
+                } catch (error) {
+                    console.error("Erro ao salvar:", error);
+                    setModalMessage({ type: 'error', text: error.message });
                     setTimeout(() => setModalMessage(null), 4000);
-                    delete window[cbName];
-                };
-                document.body.appendChild(script);
+                }
             };
 
             const handleApprove = (task, action) => {
@@ -448,7 +517,9 @@
                 if (!text || !text.trim()) return;
                 const now = new Date();
                 const timestamp = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-                sendDataToSheet({ action: 'addComment', row: row, comment: `[${timestamp}] ${text.trim()}` }, "✅ Comentário adicionado!");
+                // Adicionando usuario que comentou se disponível
+                const author = currentUser ? ` (${currentUser.email.split('@')[0]})` : '';
+                sendDataToSheet({ action: 'addComment', row: row, comment: `[${timestamp}${author}] ${text.trim()}` }, "✅ Comentário adicionado!");
             };
 
             const getStatusStyle = (status, approval) => {
@@ -478,6 +549,24 @@
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-3">
+                                    {/* Botão de Login Google */}
+                                    {!currentUser ? (
+                                        <button 
+                                            onClick={signInWithGoogle}
+                                            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium flex items-center gap-2 text-gray-700 hover:bg-gray-50 transition shadow-sm"
+                                        >
+                                            <i className="fab fa-google text-red-500"></i>
+                                            <span>Entrar</span>
+                                        </button>
+                                    ) : (
+                                        <div className="flex items-center gap-2 px-3 py-1 bg-green-50 border border-green-200 rounded-lg" title={currentUser.email}>
+                                            <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold">
+                                                {currentUser.email[0].toUpperCase()}
+                                            </div>
+                                            <span className="text-xs text-green-800 font-medium hidden md:inline">Logado</span>
+                                        </div>
+                                    )}
+
                                     <button 
                                         onClick={() => setShowCompleted(!showCompleted)}
                                         className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
@@ -488,7 +577,6 @@
                                     >
                                         <Icon name={showCompleted ? "Eye" : "EyeOff"} size={16} />
                                         <span className="hidden md:inline">{showCompleted ? "Ocultar Concluídas" : "Mostrar Concluídas"}</span>
-                                        <span className="md:hidden">{showCompleted ? "Ocultar" : "Mostrar"}</span>
                                     </button>
                                     {loading && <div className="loader w-5 h-5 border-2"></div>}
                                     <button onClick={loadData} disabled={loading} className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm border border-gray-200">
@@ -524,7 +612,6 @@
                                     <div className="text-3xl font-bold text-red-300">{stats.overdue}</div>
                                 </div>
                                 
-                                {/* BATERIA VERTICAL (NOVO CARD) */}
                                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20 flex flex-col items-center justify-center relative overflow-hidden group">
                                     <div className="text-[10px] uppercase tracking-wide text-white mb-1 font-semibold text-center">Progresso Geral</div>
                                     <div className="relative w-6 h-10 border border-white/50 rounded-md p-0.5">
@@ -554,20 +641,15 @@
                                 </div>
                             </div>
                             
-                            {/* Container Filtros: Flex Col no mobile, Flex Row no desktop */}
                             <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
                                 <div className="flex flex-col md:flex-row flex-wrap items-center gap-3 w-full md:w-auto">
                                     
-                                    {/* Label do Filtro (Dinâmico no Mobile) */}
                                     <div className="flex items-center gap-2 text-gray-600 w-full md:w-auto mb-2 md:mb-0">
                                         <Icon name="Filter" size={18} />
-                                        {/* Mobile Title */}
                                         <span className="font-bold text-lg md:text-sm md:font-medium block md:hidden">Filtros: {currentMonthLabel}</span>
-                                        {/* Desktop Title */}
                                         <span className="hidden md:block font-medium text-sm">Filtros:</span>
                                     </div>
                                     
-                                    {/* Seletor de Mês (100% no mobile) */}
                                     <select 
                                         className="w-full md:w-auto px-3 py-3 md:py-2 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary outline-none transition cursor-pointer font-medium" 
                                         value={filterMonth} 
@@ -577,7 +659,6 @@
                                         {availableMonths.map(m => (<option key={m.value} value={m.value}>{m.label}</option>))}
                                     </select>
 
-                                    {/* Seletor de Status (100% no mobile) */}
                                     <select 
                                         className="w-full md:w-auto px-3 py-3 md:py-2 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary outline-none cursor-pointer" 
                                         value={filterStatus} 
@@ -587,7 +668,6 @@
                                         {availableStatuses.map(s => (<option key={s} value={s}>{s}</option>))}
                                     </select>
 
-                                    {/* Seletor de Plataforma (100% no mobile) */}
                                     <select 
                                         className="w-full md:w-auto px-3 py-3 md:py-2 rounded-lg border border-gray-300 text-sm bg-white focus:ring-2 focus:ring-primary outline-none cursor-pointer" 
                                         value={filterPlatform} 
@@ -816,7 +896,7 @@
                                                     return (
                                                         <div className="space-y-3">
                                                             {commentsList.map((comment, i) => (
-                                                                <div key={i} className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm text-sm text-gray-700 relative pl-4 border-l-4 border-l-secondary">{comment}</div>
+                                                                <div key={i} className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm text-sm text-gray-700 relative pl-4 border-l-4 border-l-secondary whitespace-pre-wrap">{comment}</div>
                                                             ))}
                                                         </div>
                                                     );
